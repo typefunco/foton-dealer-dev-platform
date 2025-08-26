@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import DealersTable from './pages/DealersTable'
 import SalesTeamTable from './pages/SalesTeamTable'
 import AfterSalesTable from './pages/AfterSalesTable'
 import PerformanceTable from './pages/PerformanceTable'
 import AllTable from './pages/AllTable'
+import DealerCard from './pages/DealerCard'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import Admin from './pages/Admin'
@@ -306,34 +307,7 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Table Navigation Links */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-                  Access Data Tables
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Link to="/dealers" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 text-center">
-                    Dealers Table
-                  </Link>
-                  <Link to="/sales-team" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 text-center">
-                    Sales Team Table
-                  </Link>
-                  <Link to="/after-sales" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 text-center">
-                    After Sales Table
-                  </Link>
-                  <Link to="/performance" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 text-center">
-                    Performance Table
-                  </Link>
-                  <Link to="/all" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 text-center">
-                    All Data Table
-                  </Link>
-                  <Link to="/admin" className="bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 text-center">
-                    Admin Panel
-                  </Link>
-                </div>
-              </div>
-            </div>
+
 
 
 
@@ -409,6 +383,7 @@ const App: React.FC = () => {
         <Route path="/after-sales" element={<AfterSalesTable />} />
         <Route path="/performance" element={<PerformanceTable />} />
         <Route path="/all" element={<AllTable />} />
+        <Route path="/dealer/:dealerId" element={<DealerCard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/admin" element={<Admin />} />

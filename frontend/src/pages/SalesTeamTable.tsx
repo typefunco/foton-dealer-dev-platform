@@ -285,7 +285,12 @@ const SalesTeamTable: React.FC = () => {
             {dealers.map((dealer) => (
               <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm font-medium text-white">{dealer.name}</div>
+                  <Link 
+                    to={`/dealer/${dealer.id}`}
+                    className="text-sm font-medium text-white hover:text-blue-200 transition-colors duration-200 cursor-pointer"
+                  >
+                    {dealer.name}
+                  </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.city}</div>

@@ -640,7 +640,12 @@ const AllTable: React.FC = () => {
                     <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30">
                       {/* Common Fields */}
                       <td className="px-3 py-2 text-center">
-                        <div className="text-xs font-medium text-white">{dealer.name}</div>
+                        <Link 
+                          to={`/dealer/${dealer.id}`}
+                          className="text-xs font-medium text-white hover:text-blue-200 transition-colors duration-200 cursor-pointer"
+                        >
+                          {dealer.name}
+                        </Link>
                       </td>
                       <td className="px-3 py-2 text-center">
                         <div className="text-xs text-white">{dealer.city}</div>
