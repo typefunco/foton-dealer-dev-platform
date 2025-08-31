@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar } from 'recharts'
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import BrandLogos from '../components/BrandLogos'
 
 interface DealerData {
   id: string
@@ -18,9 +19,9 @@ interface DealerData {
   srRub: string
   salesProfit: number
   salesMargin: number
-  autoSalesRevenue: string
-  autoSalesProfitsRap: string
-  autoSalesMargin: number
+  afterSalesRevenue: string
+  afterSalesProfitsRap: string
+  afterSalesMargin: number
   ranking: number
   recommendedStock: number
   warrantyStock: number
@@ -43,8 +44,8 @@ const DealerCard: React.FC = () => {
       salesManager: 'Ivan Petrov',
       class: 'A',
       checklist: 92,
-      brandsInPortfolio: ['Foton', 'Honda', 'Toyota'],
-      salesTarget: '1000',
+      brandsInPortfolio: ['Foton', 'Shacman', 'Dongfeng', 'Kamaz', 'GAZ'],
+      salesTarget: '100',
       stockHdtMdtLdt: 'HDT: 50, MDT: 30, LDT: 20',
       buyoutHdtMdtLdt: 'HDT: 45, MDT: 25, LDT: 15',
       fotonSalesmen: '15',
@@ -52,9 +53,9 @@ const DealerCard: React.FC = () => {
       srRub: '15,000,000',
       salesProfit: 25,
       salesMargin: 18,
-      autoSalesRevenue: '8,000,000',
-      autoSalesProfitsRap: '2,400,000',
-      autoSalesMargin: 30,
+      afterSalesRevenue: '8,000,000',
+      afterSalesProfitsRap: '2,400,000',
+      afterSalesMargin: 30,
       ranking: 1,
       recommendedStock: 85,
       warrantyStock: 70,
@@ -67,7 +68,7 @@ const DealerCard: React.FC = () => {
     setDealer(mockDealer)
   }, [dealerId])
 
-  // Данные для pie charts
+  // Данные для pie charts - единые цвета для HDT, MDT, LDT
   const stockData = [
     { name: 'HDT', value: 50, color: '#3B82F6' },
     { name: 'MDT', value: 30, color: '#10B981' },
@@ -75,23 +76,23 @@ const DealerCard: React.FC = () => {
   ]
 
   const buyoutData = [
-    { name: 'HDT', value: 45, color: '#EF4444' },
-    { name: 'MDT', value: 25, color: '#F97316' },
-    { name: 'LDT', value: 15, color: '#EAB308' }
+    { name: 'HDT', value: 45, color: '#3B82F6' }, // Тот же цвет что и для стоков
+    { name: 'MDT', value: 25, color: '#10B981' }, // Тот же цвет что и для стоков
+    { name: 'LDT', value: 15, color: '#8B5CF6' }  // Тот же цвет что и для стоков
   ]
 
-  // Данные для performance metrics
-  const performanceData = [
-    { name: 'Recommended Stock', value: 85, fill: '#10B981' },
-    { name: 'Warranty Stock', value: 70, fill: '#3B82F6' },
-    { name: 'Foton Labor Hours', value: 92, fill: '#8B5CF6' }
+
+
+  // Данные для sales target pie chart - план по году и выполнение в квартале
+  const salesTargetData = [
+    { name: 'Completed', value: 32, color: '#10B981' },
+    { name: 'Remaining', value: 68, color: '#E5E7EB' }
   ]
 
-  // Данные для sales performance
+  // Данные для sales performance (без Sales Target)
   const salesData = [
-    { name: 'Sales Target', value: 1000, color: '#3B82F6' },
     { name: 'Sales Revenue', value: 15000, color: '#10B981' },
-    { name: 'Auto Sales', value: 8000, color: '#8B5CF6' }
+    { name: 'AfterSales', value: 8000, color: '#8B5CF6' }
   ]
 
   if (!dealer) {
@@ -153,7 +154,63 @@ const DealerCard: React.FC = () => {
             Comprehensive Performance Analytics
           </h2>
           
-          {/* Sales Performance Bar Chart */}
+          {/* Sales Target Pie Chart */}
+          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+            <h3 className="text-xl font-semibold text-white mb-4">Sales Target Performance</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="text-center">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={salesTargetData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {salesTargetData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(0,0,0,0.9)', 
+                        border: 'none', 
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}
+                      labelStyle={{ color: 'white' }}
+                      itemStyle={{ color: 'white' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="text-center lg:text-left">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-medium text-white mb-2">Annual Target</h4>
+                    <p className="text-3xl font-bold text-white">{dealer.salesTarget} units</p>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-medium text-white mb-2">Q3 2025 Performance</h4>
+                    <p className="text-2xl font-bold text-green-400">32 units sold</p>
+                    <p className="text-blue-200">68 units remaining</p>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-white mb-2">Completion Rate</h4>
+                    <p className="text-xl font-bold text-white">32%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sales Performance Bar Chart (только Revenue и AfterSales) */}
           <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
             <h3 className="text-xl font-semibold text-white mb-4">Sales Performance Overview</h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -173,11 +230,15 @@ const DealerCard: React.FC = () => {
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: 'rgba(0,0,0,0.8)', 
+                    backgroundColor: 'rgba(0,0,0,0.9)', 
                     border: 'none', 
                     borderRadius: '8px',
-                    color: 'white'
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '500'
                   }}
+                  labelStyle={{ color: 'white' }}
+                  itemStyle={{ color: 'white' }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {salesData.map((entry, index) => (
@@ -197,27 +258,31 @@ const DealerCard: React.FC = () => {
                 <h4 className="text-lg font-medium text-white mb-4">Stock Distribution</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                                         <Pie
-                       data={stockData}
-                       cx="50%"
-                       cy="50%"
-                       labelLine={false}
-                       label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                       outerRadius={80}
-                       fill="#8884d8"
-                       dataKey="value"
-                     >
+                    <Pie
+                      data={stockData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
                       {stockData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                        backgroundColor: 'rgba(0,0,0,0.9)', 
                         border: 'none', 
                         borderRadius: '8px',
-                        color: 'white'
+                        color: 'white',
+                        fontSize: '14px',
+                        fontWeight: '500'
                       }}
+                      labelStyle={{ color: 'white' }}
+                      itemStyle={{ color: 'white' }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -236,27 +301,31 @@ const DealerCard: React.FC = () => {
                 <h4 className="text-lg font-medium text-white mb-4">Buyout Distribution</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                                         <Pie
-                       data={buyoutData}
-                       cx="50%"
-                       cy="50%"
-                       labelLine={false}
-                       label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                       outerRadius={80}
-                       fill="#8884d8"
-                       dataKey="value"
-                     >
+                    <Pie
+                      data={buyoutData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
                       {buyoutData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                        backgroundColor: 'rgba(0,0,0,0.9)', 
                         border: 'none', 
                         borderRadius: '8px',
-                        color: 'white'
+                        color: 'white',
+                        fontSize: '14px',
+                        fontWeight: '500'
                       }}
+                      labelStyle={{ color: 'white' }}
+                      itemStyle={{ color: 'white' }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -270,29 +339,28 @@ const DealerCard: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            {/* Unified Color Legend */}
+            <div className="mt-6 pt-6 border-t border-white border-opacity-20">
+              <h5 className="text-lg font-medium text-white mb-3 text-center">Color Legend</h5>
+              <div className="flex justify-center space-x-8">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                  <span className="text-white text-sm">HDT (Heavy Duty Truck)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                  <span className="text-white text-sm">MDT (Medium Duty Truck)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+                  <span className="text-white text-sm">LDT (Light Duty Truck)</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Performance Metrics Radial Bar Chart */}
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <h3 className="text-xl font-semibold text-white mb-4">Performance Metrics Radar</h3>
-            <ResponsiveContainer width="100%" height={300}>
-                             <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" data={performanceData}>
-                 <RadialBar 
-                   label={{ fill: 'white', position: 'insideEnd', fontSize: 12 }}
-                   background 
-                   dataKey="value"
-                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(0,0,0,0.8)', 
-                    border: 'none', 
-                    borderRadius: '8px',
-                    color: 'white'
-                  }}
-                />
-              </RadialBarChart>
-            </ResponsiveContainer>
-          </div>
+
 
           {/* Training & Contract Status */}
           <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
@@ -345,16 +413,7 @@ const DealerCard: React.FC = () => {
           {/* Brands Portfolio Visualization */}
           <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
             <h3 className="text-xl font-semibold text-white mb-4">Brands Portfolio</h3>
-            <div className="flex justify-center space-x-6">
-              {dealer.brandsInPortfolio.map((brand, index) => (
-                <div key={index} className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mb-3">
-                    <span className="text-white font-bold text-lg">{brand.charAt(0)}</span>
-                  </div>
-                  <div className="text-white font-medium">{brand}</div>
-                </div>
-              ))}
-            </div>
+            <BrandLogos brands={dealer.brandsInPortfolio} className="justify-center" />
           </div>
 
           {/* CSI Score Pie Chart */}
@@ -380,11 +439,15 @@ const DealerCard: React.FC = () => {
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      backgroundColor: 'rgba(0,0,0,0.9)', 
                       border: 'none', 
                       borderRadius: '8px',
-                      color: 'white'
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '500'
                     }}
+                    labelStyle={{ color: 'white' }}
+                    itemStyle={{ color: 'white' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -429,21 +492,21 @@ const DealerCard: React.FC = () => {
                   <td className="text-center text-white py-3">{dealer.salesMargin}%</td>
                   <td className="text-gray-300 py-3">Sales margin percentage</td>
                 </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Auto Sales Revenue</td>
-                  <td className="text-center text-white py-3">{dealer.autoSalesRevenue}</td>
-                  <td className="text-gray-300 py-3">Revenue from automotive sales</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Auto Sales Profits</td>
-                  <td className="text-center text-white py-3">{dealer.autoSalesProfitsRap}</td>
-                  <td className="text-gray-300 py-3">Profits from automotive sales</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Auto Sales Margin %</td>
-                  <td className="text-center text-white py-3">{dealer.autoSalesMargin}%</td>
-                  <td className="text-gray-300 py-3">Margin percentage from auto sales</td>
-                </tr>
+                                  <tr>
+                    <td className="text-blue-200 py-3">AfterSales Revenue</td>
+                    <td className="text-center text-white py-3">{dealer.afterSalesRevenue}</td>
+                    <td className="text-gray-300 py-3">Revenue from after sales service</td>
+                  </tr>
+                  <tr>
+                    <td className="text-blue-200 py-3">AfterSales Profits</td>
+                    <td className="text-center text-white py-3">{dealer.afterSalesProfitsRap}</td>
+                    <td className="text-gray-300 py-3">Profits from after sales service</td>
+                  </tr>
+                  <tr>
+                    <td className="text-blue-200 py-3">AfterSales Margin %</td>
+                    <td className="text-center text-white py-3">{dealer.afterSalesMargin}%</td>
+                    <td className="text-gray-300 py-3">Margin percentage from after sales service</td>
+                  </tr>
                 <tr>
                   <td className="text-blue-200 py-3">Ranking</td>
                   <td className="text-center text-white py-3">#{dealer.ranking}</td>

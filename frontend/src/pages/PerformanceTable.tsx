@@ -5,7 +5,6 @@ interface PerformanceDealer {
   id: string
   name: string
   city: string
-  salesManager: string
   srRub: string
   salesProfit: number
   salesMargin: number
@@ -36,7 +35,6 @@ const PerformanceTable: React.FC = () => {
       id: '1',
       name: 'AvtoFurgon',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -51,7 +49,6 @@ const PerformanceTable: React.FC = () => {
       id: '2',
       name: 'Avtokub',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -66,7 +63,6 @@ const PerformanceTable: React.FC = () => {
       id: '3',
       name: 'Avto-M',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -81,7 +77,6 @@ const PerformanceTable: React.FC = () => {
       id: '4',
       name: 'BTS Belgorod',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -96,7 +91,6 @@ const PerformanceTable: React.FC = () => {
       id: '5',
       name: 'BTS Smolensk',
       city: 'Noginsk',
-      salesManager: 'Kozeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -111,7 +105,6 @@ const PerformanceTable: React.FC = () => {
       id: '6',
       name: 'Centr Trak Grupp',
       city: 'Solnechnogorsk',
-      salesManager: 'Kozeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -126,7 +119,6 @@ const PerformanceTable: React.FC = () => {
       id: '7',
       name: 'Ecomtekh',
       city: 'Ecomtekh',
-      salesManager: 'Avdeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -141,7 +133,6 @@ const PerformanceTable: React.FC = () => {
       id: '8',
       name: 'GAS 36',
       city: 'Yaroslavl',
-      salesManager: 'Avdeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -156,7 +147,6 @@ const PerformanceTable: React.FC = () => {
       id: '9',
       name: 'Global Truck Sales',
       city: 'Ryazan',
-      salesManager: 'Avdeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -171,7 +161,6 @@ const PerformanceTable: React.FC = () => {
       id: '10',
       name: 'Gus Tekhcentr',
       city: 'Tambov',
-      salesManager: 'Avdeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -186,7 +175,6 @@ const PerformanceTable: React.FC = () => {
       id: '11',
       name: 'KomDorAvto',
       city: 'Tula',
-      salesManager: 'Avdeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -201,7 +189,6 @@ const PerformanceTable: React.FC = () => {
       id: '12',
       name: 'Major Trak Centr',
       city: 'Lipeck',
-      salesManager: 'Avdeev',
       srRub: '5 555 555',
       salesProfit: 5,
       salesMargin: 5,
@@ -296,9 +283,6 @@ const PerformanceTable: React.FC = () => {
                 City
               </th>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Manager
-              </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                 Sales Revenue Rub
               </th>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
@@ -337,9 +321,6 @@ const PerformanceTable: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.city}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.salesManager}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.srRub}</div>

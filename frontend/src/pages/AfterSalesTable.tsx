@@ -5,7 +5,6 @@ interface AfterSalesDealer {
   id: string
   name: string
   city: string
-  salesManager: string
   rStockPercent: number
   wStockPercent: number
   flhPercent: number
@@ -34,7 +33,6 @@ const AfterSalesTable: React.FC = () => {
       id: '1',
       name: 'AvtoFurgon',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -47,7 +45,6 @@ const AfterSalesTable: React.FC = () => {
       id: '2',
       name: 'Avtokub',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -60,7 +57,6 @@ const AfterSalesTable: React.FC = () => {
       id: '3',
       name: 'Avto-M',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -73,7 +69,6 @@ const AfterSalesTable: React.FC = () => {
       id: '4',
       name: 'BTS Belgorod',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -86,7 +81,6 @@ const AfterSalesTable: React.FC = () => {
       id: '5',
       name: 'BTS Smolensk',
       city: 'Noginsk',
-      salesManager: 'Kozeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -99,7 +93,6 @@ const AfterSalesTable: React.FC = () => {
       id: '6',
       name: 'Centr Trak Grupp',
       city: 'Solnechnogorsk',
-      salesManager: 'Kozeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -112,7 +105,6 @@ const AfterSalesTable: React.FC = () => {
       id: '7',
       name: 'Ecomtekh',
       city: 'Ecomtekh',
-      salesManager: 'Avdeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -125,7 +117,6 @@ const AfterSalesTable: React.FC = () => {
       id: '8',
       name: 'GAS 36',
       city: 'Yaroslavl',
-      salesManager: 'Avdeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -138,7 +129,6 @@ const AfterSalesTable: React.FC = () => {
       id: '9',
       name: 'Global Truck Sales',
       city: 'Ryazan',
-      salesManager: 'Avdeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -151,7 +141,6 @@ const AfterSalesTable: React.FC = () => {
       id: '10',
       name: 'Gus Tekhcentr',
       city: 'Tambov',
-      salesManager: 'Avdeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -164,7 +153,6 @@ const AfterSalesTable: React.FC = () => {
       id: '11',
       name: 'KomDorAvto',
       city: 'Tula',
-      salesManager: 'Avdeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -177,7 +165,6 @@ const AfterSalesTable: React.FC = () => {
       id: '12',
       name: 'Major Trak Centr',
       city: 'Lipeck',
-      salesManager: 'Avdeev',
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
@@ -270,9 +257,6 @@ const AfterSalesTable: React.FC = () => {
                 City
               </th>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Manager
-              </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                 Recommended Stock %
               </th>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
@@ -308,9 +292,6 @@ const AfterSalesTable: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.city}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.salesManager}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.rStockPercent}</div>

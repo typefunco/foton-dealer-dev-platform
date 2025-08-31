@@ -5,10 +5,12 @@ interface Dealer {
   id: string
   name: string
   city: string
-  salesManager: string
   class: 'A' | 'B' | 'C' | 'D'
   checklist: number
   brandsInPortfolio: string[]
+  branding: boolean
+  marketingInvestments: number // в миллионах рублей
+  buySideBusiness: string[]
   dealerDevRecommendation: 'Planned Result' | 'Needs Development' | 'Find New Candidate' | 'Close Down'
 }
 
@@ -80,120 +82,144 @@ const DealersTable: React.FC = () => {
       id: '1',
       name: 'AvtoFurgon',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       class: 'B',
       checklist: 80,
       brandsInPortfolio: ['FOTON'],
+      branding: true,
+      marketingInvestments: 2.5,
+      buySideBusiness: ['Logistics', 'Warehousing'],
       dealerDevRecommendation: 'Needs Development'
     },
     {
       id: '2',
       name: 'Avtokub',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       class: 'B',
       checklist: 85,
       brandsInPortfolio: ['FOTON'],
+      branding: false,
+      marketingInvestments: 1.8,
+      buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Needs Development'
     },
     {
       id: '3',
       name: 'Avto-M',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       class: 'B',
       checklist: 82,
       brandsInPortfolio: ['FOTON'],
+      branding: true,
+      marketingInvestments: 3.2,
+      buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Needs Development'
     },
     {
       id: '4',
       name: 'BTS Belgorod',
       city: 'Moscow',
-      salesManager: 'Kozeev',
       class: 'A',
       checklist: 92,
       brandsInPortfolio: ['FOTON'],
+      branding: true,
+      marketingInvestments: 5.0,
+      buySideBusiness: ['Logistics', 'Warehousing', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
     },
     {
       id: '5',
       name: 'BTS Smolensk',
       city: 'Noginsk',
-      salesManager: 'Kozeev',
       class: 'A',
       checklist: 95,
       brandsInPortfolio: ['FOTON'],
+      branding: true,
+      marketingInvestments: 4.8,
+      buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
     },
     {
       id: '6',
       name: 'Centr Trak Grupp',
       city: 'Solnechnogorsk',
-      salesManager: 'Kozeev',
       class: 'A',
       checklist: 96,
       brandsInPortfolio: ['FOTON'],
+      branding: true,
+      marketingInvestments: 6.2,
+      buySideBusiness: ['Logistics', 'Warehousing', 'Retail', 'Service'],
       dealerDevRecommendation: 'Planned Result'
     },
     {
       id: '7',
       name: 'Ecomtekh',
       city: 'Ecomtekh',
-      salesManager: 'Avdeev',
       class: 'A',
       checklist: 91,
       brandsInPortfolio: ['FOTON'],
+      branding: true,
+      marketingInvestments: 4.5,
+      buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
     },
     {
       id: '8',
       name: 'GAS 36',
       city: 'Yaroslavl',
-      salesManager: 'Avdeev',
       class: 'C',
       checklist: 76,
       brandsInPortfolio: ['FOTON'],
+      branding: false,
+      marketingInvestments: 1.2,
+      buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
     },
     {
       id: '9',
       name: 'Global Truck Sales',
       city: 'Ryazan',
-      salesManager: 'Avdeev',
       class: 'C',
       checklist: 73,
       brandsInPortfolio: ['FOTON'],
+      branding: false,
+      marketingInvestments: 0.8,
+      buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
     },
     {
       id: '10',
       name: 'Gus Tekhcentr',
       city: 'Tambov',
-      salesManager: 'Avdeev',
       class: 'C',
       checklist: 72,
       brandsInPortfolio: ['FOTON'],
+      branding: false,
+      marketingInvestments: 0.6,
+      buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
     },
     {
       id: '11',
       name: 'KomDorAvto',
       city: 'Tula',
-      salesManager: 'Avdeev',
       class: 'D',
       checklist: 68,
       brandsInPortfolio: ['FOTON'],
+      branding: false,
+      marketingInvestments: 0.3,
+      buySideBusiness: [],
       dealerDevRecommendation: 'Close Down'
     },
     {
       id: '12',
       name: 'Major Trak Centr',
       city: 'Lipeck',
-      salesManager: 'Avdeev',
       class: 'D',
       checklist: 66,
       brandsInPortfolio: ['FOTON'],
+      branding: false,
+      marketingInvestments: 0.2,
+      buySideBusiness: [],
       dealerDevRecommendation: 'Close Down'
     }
   ]
@@ -329,9 +355,6 @@ const DealersTable: React.FC = () => {
                 <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                   City
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                  Sales Manager
-                </th>
                 <th 
                   className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
                   onClick={() => handleSort('class')}
@@ -346,6 +369,15 @@ const DealersTable: React.FC = () => {
                 </th>
                 <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                   Brands in Portfolio
+                </th>
+                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Branding
+                </th>
+                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Marketing Investments (M RUB)
+                </th>
+                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Buy Side Business
                 </th>
                 <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                   Dealer Dev Recommendation
@@ -365,9 +397,6 @@ const DealersTable: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className="text-sm text-white">{dealer.city}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="text-sm text-white">{dealer.salesManager}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border-2 ${getClassColor(dealer.class)}`}>
@@ -391,6 +420,33 @@ const DealersTable: React.FC = () => {
                             </div>
                           ))}
                         </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className={`text-sm font-medium ${dealer.branding ? 'text-green-600' : 'text-red-600'}`}>
+                      {dealer.branding ? 'Yes' : 'No'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className="text-sm text-white font-medium">
+                      {dealer.marketingInvestments} M RUB
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className="flex justify-center space-x-2">
+                      {dealer.buySideBusiness.length > 0 ? (
+                        dealer.buySideBusiness.map((business, index) => (
+                          <div
+                            key={index}
+                            className="w-8 h-8 bg-purple-400 bg-opacity-80 rounded-full flex items-center justify-center border border-purple-300"
+                            title={business}
+                          >
+                            <span className="text-xs font-bold text-white">B</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-400">-</div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className={`text-sm font-medium ${getRecommendationColor(dealer.dealerDevRecommendation)}`}>
