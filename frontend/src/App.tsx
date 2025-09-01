@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import DealersTable from './pages/DealersTable'
 import SalesTeamTable from './pages/SalesTeamTable'
 import AfterSalesTable from './pages/AfterSalesTable'

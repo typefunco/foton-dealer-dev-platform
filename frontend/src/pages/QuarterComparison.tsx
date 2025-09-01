@@ -242,41 +242,7 @@ const QuarterComparison: React.FC = () => {
     )
   }
 
-  const renderBarChart = (value1: number, value2: number, label: string, unit: string = '') => {
-    const maxValue = Math.max(value1, value2)
-    const percentage1 = (value1 / maxValue) * 100
-    const percentage2 = (value2 / maxValue) * 100
-
-    return (
-      <div className="space-y-2">
-        <div className="text-sm font-medium text-white">{label}</div>
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <div className="w-16 text-xs text-gray-300">Q1</div>
-            <div className="flex-1 bg-gray-700 rounded-full h-3">
-              <div 
-                className="bg-blue-500 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${percentage1}%` }}
-              />
-            </div>
-            <div className="w-12 text-xs text-white">{value1}{unit}</div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-16 text-xs text-gray-300">Q2</div>
-            <div className="flex-1 bg-gray-700 rounded-full h-3">
-              <div 
-                className="bg-green-500 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${percentage2}%` }}
-              />
-            </div>
-            <div className="w-12 text-xs text-white">{value2}{unit}</div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const renderMetricCard = (title: string, value1: string | number, value2: string | number, unit: string = '', isPercentage: boolean = false) => {
+  const renderMetricCard = (title: string, value1: string | number, value2: string | number, unit: string = '') => {
     const num1 = typeof value1 === 'string' ? parseFloat(value1.replace(/[^\d.-]/g, '')) : value1
     const num2 = typeof value2 === 'string' ? parseFloat(value2.replace(/[^\d.-]/g, '')) : value2
     const change = num2 - num1
@@ -628,8 +594,7 @@ const QuarterComparison: React.FC = () => {
                   'Sales Margin',
                   currentQuarter1Data.metrics.averageSalesMargin,
                   currentQuarter1Data.metrics.averageSalesMargin,
-                  '%',
-                  true
+                  '%'
                 )}
                 
                 {renderMetricCard(
@@ -650,8 +615,7 @@ const QuarterComparison: React.FC = () => {
                   'After Sales Margin',
                   currentQuarter1Data.metrics.autoSalesMargin,
                   currentQuarter1Data.metrics.autoSalesMargin,
-                  '%',
-                  true
+                  '%'
                 )}
                 
                 {renderMetricCard(
@@ -896,8 +860,7 @@ const QuarterComparison: React.FC = () => {
                   'Sales Margin',
                   currentQuarter2Data.metrics.averageSalesMargin,
                   currentQuarter2Data.metrics.averageSalesMargin,
-                  '%',
-                  true
+                  '%'
                 )}
                 
                 {renderMetricCard(
@@ -918,8 +881,7 @@ const QuarterComparison: React.FC = () => {
                   'After Sales Margin',
                   currentQuarter2Data.metrics.autoSalesMargin,
                   currentQuarter2Data.metrics.autoSalesMargin,
-                  '%',
-                  true
+                  '%'
                 )}
                 
                 {renderMetricCard(

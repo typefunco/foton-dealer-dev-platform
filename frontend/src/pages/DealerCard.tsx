@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import BrandLogos from '../components/BrandLogos'
 
 interface DealerData {
@@ -93,12 +93,6 @@ const DealerCard: React.FC = () => {
   const salesTargetData = [
     { name: 'Completed', value: 32, color: '#10B981' },
     { name: 'Remaining', value: 68, color: '#EF4444' }
-  ]
-
-  // Данные для sales performance (без Sales Target)
-  const salesData = [
-    { name: 'Sales Revenue', value: 15000, color: '#10B981' },
-    { name: 'AfterSales', value: 8000, color: '#8B5CF6' }
   ]
 
   if (!dealer) {
