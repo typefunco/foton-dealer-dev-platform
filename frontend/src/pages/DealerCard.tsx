@@ -29,6 +29,9 @@ interface DealerData {
   serviceContract: boolean
   asTrainings: boolean
   csi: number
+  branding: boolean
+  buySideBusiness: string[]
+  marketingInvestment: number
 }
 
 const DealerCard: React.FC = () => {
@@ -62,7 +65,10 @@ const DealerCard: React.FC = () => {
       fotonLaborHours: 92,
       serviceContract: true,
       asTrainings: true,
-      csi: 95
+      csi: 95,
+      branding: true,
+      buySideBusiness: ['Logistics', 'Warehousing', 'Retail'],
+      marketingInvestment: 3200
     }
 
     setDealer(mockDealer)
@@ -86,7 +92,7 @@ const DealerCard: React.FC = () => {
   // Данные для sales target pie chart - план по году и выполнение в квартале
   const salesTargetData = [
     { name: 'Completed', value: 32, color: '#10B981' },
-    { name: 'Remaining', value: 68, color: '#E5E7EB' }
+    { name: 'Remaining', value: 68, color: '#EF4444' }
   ]
 
   // Данные для sales performance (без Sales Target)
@@ -129,29 +135,57 @@ const DealerCard: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Basic Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <div className="text-blue-200 text-sm font-medium">Class</div>
-            <div className="text-2xl font-bold text-white">{dealer.class}</div>
+        <div className="space-y-6 mb-8">
+          {/* Dealer Development Group */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4 text-center">Dealer Development</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+                <div className="text-blue-200 text-sm font-medium">Class</div>
+                <div className="text-2xl font-bold text-white">{dealer.class}</div>
+              </div>
+              <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+                <div className="text-blue-200 text-sm font-medium">Checklist</div>
+                <div className="text-2xl font-bold text-white">{dealer.checklist}</div>
+              </div>
+              <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+                <div className="text-blue-200 text-sm font-medium">Branding</div>
+                <div className={`text-2xl font-bold ${dealer.branding ? 'text-green-400' : 'text-red-400'}`}>
+                  {dealer.branding ? 'YES' : 'NO'}
+                </div>
+              </div>
+              <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+                <div className="text-blue-200 text-sm font-medium">Byside Businesses</div>
+                <div className="flex justify-center space-x-2 mt-2">
+                  {dealer.buySideBusiness.length > 0 ? (
+                    dealer.buySideBusiness.map((business, index) => (
+                      <div
+                        key={index}
+                        className="w-8 h-8 bg-purple-400 bg-opacity-80 rounded-full flex items-center justify-center border border-purple-300"
+                        title={business}
+                      >
+                        <span className="text-xs font-bold text-white">B</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-400">-</div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <div className="text-blue-200 text-sm font-medium">Checklist</div>
-            <div className="text-2xl font-bold text-white">{dealer.checklist}</div>
-          </div>
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <div className="text-blue-200 text-sm font-medium">Ranking</div>
-            <div className="text-2xl font-bold text-white">#{dealer.ranking}</div>
-          </div>
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <div className="text-blue-200 text-sm font-medium">CSI Score</div>
-            <div className="text-2xl font-bold text-white">{dealer.csi}%</div>
-          </div>
+        </div>
+
+        {/* Brands Portfolio Visualization */}
+        <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20 mb-8">
+          <h3 className="text-xl font-semibold text-white mb-4">Brands Portfolio</h3>
+          <BrandLogos brands={dealer.brandsInPortfolio} className="justify-center" />
         </div>
 
         {/* Charts Section */}
         <div className="space-y-8">
           <h2 className="text-2xl font-bold text-white text-center mb-8">
-            Comprehensive Performance Analytics
+            Sales
           </h2>
           
           {/* Sales Target Pie Chart */}
@@ -193,69 +227,29 @@ const DealerCard: React.FC = () => {
               <div className="text-center lg:text-left">
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-lg font-medium text-white mb-2">Annual Target</h4>
-                    <p className="text-3xl font-bold text-white">{dealer.salesTarget} units</p>
+                    <h4 className="text-lg font-medium text-white mb-2">Annual Target in Units</h4>
+                    <p className="text-3xl font-bold text-white">100</p>
                   </div>
                   <div>
-                    <h4 className="text-lg font-medium text-white mb-2">Q3 2025 Performance</h4>
-                    <p className="text-2xl font-bold text-green-400">32 units sold</p>
-                    <p className="text-blue-200">68 units remaining</p>
+                    <h4 className="text-lg font-medium text-white mb-2">Delivered in Units</h4>
+                    <p className="text-3xl font-bold text-green-400">32</p>
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-white mb-2">Completion Rate</h4>
-                    <p className="text-xl font-bold text-white">32%</p>
+                    <h4 className="text-lg font-bold text-white mb-2">Remaining in Units</h4>
+                    <p className="text-3xl font-bold text-red-400">68</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Sales Performance Bar Chart (только Revenue и AfterSales) */}
+          {/* Stock & Buyout by Segments */}
           <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <h3 className="text-xl font-semibold text-white mb-4">Sales Performance Overview</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="white"
-                  fontSize={12}
-                  tick={{ fill: 'white' }}
-                />
-                <YAxis 
-                  stroke="white"
-                  fontSize={12}
-                  tick={{ fill: 'white' }}
-                  tickFormatter={(value) => `${value / 1000}k`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(0,0,0,0.9)', 
-                    border: 'none', 
-                    borderRadius: '8px',
-                    color: 'white',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                  labelStyle={{ color: 'white' }}
-                  itemStyle={{ color: 'white' }}
-                />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {salesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Stock & Inventory Pie Charts */}
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <h3 className="text-xl font-semibold text-white mb-4">Stock & Inventory Distribution</h3>
+            <h3 className="text-xl font-semibold text-white mb-4">Stock & Buyout by Segments</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Stock Distribution */}
               <div className="text-center">
-                <h4 className="text-lg font-medium text-white mb-4">Stock Distribution</h4>
+                <h4 className="text-lg font-medium text-white mb-4">Stock</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -298,7 +292,7 @@ const DealerCard: React.FC = () => {
 
               {/* Buyout Distribution */}
               <div className="text-center">
-                <h4 className="text-lg font-medium text-white mb-4">Buyout Distribution</h4>
+                <h4 className="text-lg font-medium text-white mb-4">Buyout</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -360,12 +354,154 @@ const DealerCard: React.FC = () => {
             </div>
           </div>
 
+          {/* Sales Performance Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Sales Revenue */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">Sales Revenue</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.srRub}
+                </div>
+                <div className="text-white text-sm">
+                  Total sales revenue
+                </div>
+              </div>
+            </div>
 
+            {/* Sales Profit */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">Sales Profit</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.salesProfit} M Rub
+                </div>
+                <div className="text-white text-sm">
+                  Absolute profit value
+                </div>
+              </div>
+            </div>
+
+            {/* Sales Margin */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">Sales Margin</h3>
+              <div className="text-center">
+                <div className={`text-3xl font-bold mb-2 ${dealer.salesMargin > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {dealer.salesMargin}%
+                </div>
+                <div className="text-white text-sm">
+                  Gross margin percentage
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* After Sales Analytics */}
+          <h2 className="text-2xl font-bold text-white text-center mb-8">
+            After Sales
+          </h2>
+
+          {/* Stock and Labor Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Recommended Stock */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">Recommended Stock</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.recommendedStock}%
+                </div>
+                <div className="text-white text-sm">
+                  Recommended stock level
+                </div>
+              </div>
+            </div>
+
+            {/* Warranty Stock */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">Warranty Stock</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.warrantyStock}%
+                </div>
+                <div className="text-white text-sm">
+                  Warranty stock level
+                </div>
+              </div>
+            </div>
+
+            {/* Foton Labor Hours */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">Foton Labor Hours</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.fotonLaborHours}%
+                </div>
+                <div className="text-white text-sm">
+                  Foton labor utilization
+                </div>
+              </div>
+            </div>
+
+            {/* CSI */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">CSI</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.csi}%
+                </div>
+                <div className="text-white text-sm">
+                  Customer satisfaction index
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* After Sales Performance Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* After Sales Revenue */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">After Sales Revenue</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.afterSalesRevenue}
+                </div>
+                <div className="text-white text-sm">
+                  After-sales service revenue
+                </div>
+              </div>
+            </div>
+
+            {/* After Sales Profit */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">After Sales Profit</h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {dealer.afterSalesProfitsRap}
+                </div>
+                <div className="text-white text-sm">
+                  After-sales profit value
+                </div>
+              </div>
+            </div>
+
+            {/* After Sales Margin */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+              <h3 className="text-lg font-semibold text-white mb-3">After Sales Margin</h3>
+              <div className="text-center">
+                <div className={`text-3xl font-bold mb-2 ${dealer.afterSalesMargin > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {dealer.afterSalesMargin}%
+                </div>
+                <div className="text-white text-sm">
+                  After-sales margin percentage
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Training & Contract Status */}
           <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <h3 className="text-xl font-semibold text-white mb-4">Training & Contract Status</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <h3 className="text-xl font-semibold text-white mb-4">Sales and AfterSales Trainings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="text-center">
                 <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-3 ${
                   dealer.salesTrainings ? 'bg-green-500' : 'bg-red-500'
@@ -393,148 +529,22 @@ const DealerCard: React.FC = () => {
                   {dealer.asTrainings ? 'Completed' : 'Not Completed'}
                 </div>
               </div>
-              
-              <div className="text-center">
-                <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-3 ${
-                  dealer.serviceContract ? 'bg-green-500' : 'bg-red-500'
-                }`}>
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div className="text-white font-medium">Service Contract</div>
-                <div className={`text-sm ${dealer.serviceContract ? 'text-green-200' : 'text-red-200'}`}>
-                  {dealer.serviceContract ? 'Active' : 'Inactive'}
-                </div>
+            </div>
+          </div>
+
+          {/* Marketing Investment */}
+          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+            <h3 className="text-xl font-semibold text-white mb-4">Marketing Investment</h3>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">
+                3,200,000 Rub
+              </div>
+              <div className="text-white text-sm">
+                Marketing investment value
               </div>
             </div>
           </div>
 
-          {/* Brands Portfolio Visualization */}
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <h3 className="text-xl font-semibold text-white mb-4">Brands Portfolio</h3>
-            <BrandLogos brands={dealer.brandsInPortfolio} className="justify-center" />
-          </div>
-
-          {/* CSI Score Pie Chart */}
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-            <h3 className="text-xl font-semibold text-white mb-4">Customer Satisfaction Index (CSI)</h3>
-            <div className="flex justify-center">
-              <ResponsiveContainer width={200} height={200}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'CSI Score', value: dealer.csi, color: '#10B981' },
-                      { name: 'Remaining', value: 100 - dealer.csi, color: '#6B7280' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={0}
-                    dataKey="value"
-                  >
-                    <Cell fill="#10B981" />
-                    <Cell fill="#6B7280" />
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.9)', 
-                      border: 'none', 
-                      borderRadius: '8px',
-                      color: 'white',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}
-                    labelStyle={{ color: 'white' }}
-                    itemStyle={{ color: 'white' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="text-center mt-4">
-              <div className="text-white text-3xl font-bold">{dealer.csi}%</div>
-              <div className="text-white text-sm">Excellent Performance</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Data Table */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold text-white text-center mb-8">Complete Performance Data</h2>
-          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white border-opacity-20">
-                  <th className="text-left text-white font-semibold py-3">Metric</th>
-                  <th className="text-center text-white font-semibold py-3">Value</th>
-                  <th className="text-left text-white font-semibold py-3">Description</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white divide-opacity-20">
-                <tr>
-                  <td className="text-blue-200 py-3">Sales Target</td>
-                  <td className="text-center text-white py-3">{dealer.salesTarget}</td>
-                  <td className="text-gray-300 py-3">Target sales volume for the period</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Sales Revenue (Rub)</td>
-                  <td className="text-center text-white py-3">{dealer.srRub}</td>
-                  <td className="text-gray-300 py-3">Total sales revenue in Russian Rubles</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Sales Profit %</td>
-                  <td className="text-center text-white py-3">{dealer.salesProfit}%</td>
-                  <td className="text-gray-300 py-3">Profit percentage from sales</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Sales Margin %</td>
-                  <td className="text-center text-white py-3">{dealer.salesMargin}%</td>
-                  <td className="text-gray-300 py-3">Sales margin percentage</td>
-                </tr>
-                                  <tr>
-                    <td className="text-blue-200 py-3">AfterSales Revenue</td>
-                    <td className="text-center text-white py-3">{dealer.afterSalesRevenue}</td>
-                    <td className="text-gray-300 py-3">Revenue from after sales service</td>
-                  </tr>
-                  <tr>
-                    <td className="text-blue-200 py-3">AfterSales Profits</td>
-                    <td className="text-center text-white py-3">{dealer.afterSalesProfitsRap}</td>
-                    <td className="text-gray-300 py-3">Profits from after sales service</td>
-                  </tr>
-                  <tr>
-                    <td className="text-blue-200 py-3">AfterSales Margin %</td>
-                    <td className="text-center text-white py-3">{dealer.afterSalesMargin}%</td>
-                    <td className="text-gray-300 py-3">Margin percentage from after sales service</td>
-                  </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Ranking</td>
-                  <td className="text-center text-white py-3">#{dealer.ranking}</td>
-                  <td className="text-gray-300 py-3">Current ranking position</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Recommended Stock %</td>
-                  <td className="text-center text-white py-3">{dealer.recommendedStock}%</td>
-                  <td className="text-gray-300 py-3">Recommended stock level percentage</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Warranty Stock %</td>
-                  <td className="text-center text-white py-3">{dealer.warrantyStock}%</td>
-                  <td className="text-gray-300 py-3">Warranty stock level percentage</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">Foton Labor Hours %</td>
-                  <td className="text-center text-white py-3">{dealer.fotonLaborHours}%</td>
-                  <td className="text-gray-300 py-3">Foton labor hours utilization</td>
-                </tr>
-                <tr>
-                  <td className="text-blue-200 py-3">CSI Score</td>
-                  <td className="text-center text-white py-3">{dealer.csi}%</td>
-                  <td className="text-gray-300 py-3">Customer Satisfaction Index</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </div>

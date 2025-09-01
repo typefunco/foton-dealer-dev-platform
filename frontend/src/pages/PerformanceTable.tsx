@@ -12,6 +12,7 @@ interface PerformanceDealer {
   rap: string
   autoSalesProfitsRap: string
   autoSalesMargin: number
+  marketingInvestment: number
   ranking: number
   autoSalesDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
 }
@@ -42,6 +43,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 2.5,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -56,6 +58,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 3.2,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -70,6 +73,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 1.8,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -84,6 +88,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 4.1,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -98,6 +103,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 2.9,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -112,6 +118,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 3.7,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -126,6 +133,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 2.3,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -140,6 +148,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 1.5,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -154,6 +163,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 2.1,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -168,6 +178,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 1.9,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -182,6 +193,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 1.2,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     },
@@ -196,6 +208,7 @@ const PerformanceTable: React.FC = () => {
       rap: 'Gold',
       autoSalesProfitsRap: '5 555 555',
       autoSalesMargin: 5,
+      marketingInvestment: 2.8,
       ranking: 5,
       autoSalesDecision: 'Needs development'
     }
@@ -247,7 +260,7 @@ const PerformanceTable: React.FC = () => {
             PERFORMANCE
           </h1>
           <h2 className="text-3xl md:text-4xl font-bold text-blue-200">
-            DEVELOPMENT PLATFORM
+            ANALYSIS
           </h2>
         </div>
       </div>
@@ -301,7 +314,10 @@ const PerformanceTable: React.FC = () => {
                 After Sales Margin %
               </th>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Ranking
+                Marketing Investments (M Rub)
+              </th>
+              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
+                Foton Rank
               </th>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                 After Sales Decision
@@ -339,6 +355,9 @@ const PerformanceTable: React.FC = () => {
                  </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.autoSalesMargin}%</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <div className="text-sm text-white">{dealer.marketingInvestment} M Rub</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.ranking}</div>

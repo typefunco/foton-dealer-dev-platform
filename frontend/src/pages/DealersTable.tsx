@@ -9,7 +9,6 @@ interface Dealer {
   checklist: number
   brandsInPortfolio: string[]
   branding: boolean
-  marketingInvestments: number // в миллионах рублей
   buySideBusiness: string[]
   dealerDevRecommendation: 'Planned Result' | 'Needs Development' | 'Find New Candidate' | 'Close Down'
 }
@@ -56,6 +55,34 @@ const DealersTable: React.FC = () => {
         }
       }
       
+      if (sortConfig.key === 'branding') {
+        const aBool = aValue as boolean
+        const bBool = bValue as boolean
+        
+        if (sortConfig.direction === 'asc') {
+          return aBool === bBool ? 0 : aBool ? -1 : 1 // true first
+        } else {
+          return aBool === bBool ? 0 : aBool ? 1 : -1 // false first
+        }
+      }
+      
+      if (sortConfig.key === 'dealerDevRecommendation') {
+        const recommendationOrder = { 
+          'Planned Result': 4, 
+          'Needs Development': 3, 
+          'Find New Candidate': 2, 
+          'Close Down': 1 
+        }
+        const aOrder = recommendationOrder[aValue as keyof typeof recommendationOrder]
+        const bOrder = recommendationOrder[bValue as keyof typeof recommendationOrder]
+        
+        if (sortConfig.direction === 'asc') {
+          return bOrder - aOrder // Planned Result first
+        } else {
+          return aOrder - bOrder // Close Down first
+        }
+      }
+      
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1
       }
@@ -86,7 +113,6 @@ const DealersTable: React.FC = () => {
       checklist: 80,
       brandsInPortfolio: ['FOTON'],
       branding: true,
-      marketingInvestments: 2.5,
       buySideBusiness: ['Logistics', 'Warehousing'],
       dealerDevRecommendation: 'Needs Development'
     },
@@ -98,7 +124,6 @@ const DealersTable: React.FC = () => {
       checklist: 85,
       brandsInPortfolio: ['FOTON'],
       branding: false,
-      marketingInvestments: 1.8,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Needs Development'
     },
@@ -110,7 +135,6 @@ const DealersTable: React.FC = () => {
       checklist: 82,
       brandsInPortfolio: ['FOTON'],
       branding: true,
-      marketingInvestments: 3.2,
       buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Needs Development'
     },
@@ -122,7 +146,6 @@ const DealersTable: React.FC = () => {
       checklist: 92,
       brandsInPortfolio: ['FOTON'],
       branding: true,
-      marketingInvestments: 5.0,
       buySideBusiness: ['Logistics', 'Warehousing', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
     },
@@ -134,7 +157,6 @@ const DealersTable: React.FC = () => {
       checklist: 95,
       brandsInPortfolio: ['FOTON'],
       branding: true,
-      marketingInvestments: 4.8,
       buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
     },
@@ -146,7 +168,6 @@ const DealersTable: React.FC = () => {
       checklist: 96,
       brandsInPortfolio: ['FOTON'],
       branding: true,
-      marketingInvestments: 6.2,
       buySideBusiness: ['Logistics', 'Warehousing', 'Retail', 'Service'],
       dealerDevRecommendation: 'Planned Result'
     },
@@ -158,7 +179,6 @@ const DealersTable: React.FC = () => {
       checklist: 91,
       brandsInPortfolio: ['FOTON'],
       branding: true,
-      marketingInvestments: 4.5,
       buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
     },
@@ -170,7 +190,6 @@ const DealersTable: React.FC = () => {
       checklist: 76,
       brandsInPortfolio: ['FOTON'],
       branding: false,
-      marketingInvestments: 1.2,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
     },
@@ -182,7 +201,6 @@ const DealersTable: React.FC = () => {
       checklist: 73,
       brandsInPortfolio: ['FOTON'],
       branding: false,
-      marketingInvestments: 0.8,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
     },
@@ -194,7 +212,6 @@ const DealersTable: React.FC = () => {
       checklist: 72,
       brandsInPortfolio: ['FOTON'],
       branding: false,
-      marketingInvestments: 0.6,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
     },
@@ -206,7 +223,6 @@ const DealersTable: React.FC = () => {
       checklist: 68,
       brandsInPortfolio: ['FOTON'],
       branding: false,
-      marketingInvestments: 0.3,
       buySideBusiness: [],
       dealerDevRecommendation: 'Close Down'
     },
@@ -218,7 +234,6 @@ const DealersTable: React.FC = () => {
       checklist: 66,
       brandsInPortfolio: ['FOTON'],
       branding: false,
-      marketingInvestments: 0.2,
       buySideBusiness: [],
       dealerDevRecommendation: 'Close Down'
     }
@@ -364,23 +379,38 @@ const DealersTable: React.FC = () => {
                     {getSortIcon('class')}
                   </div>
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                  Checklist
+                <th 
+                  className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                  onClick={() => handleSort('checklist')}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <span>Checklist</span>
+                    {getSortIcon('checklist')}
+                  </div>
                 </th>
                 <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                   Brands in Portfolio
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                  Branding
+                <th 
+                  className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                  onClick={() => handleSort('branding')}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <span>Branding</span>
+                    {getSortIcon('branding')}
+                  </div>
                 </th>
                 <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                  Marketing Investments (M RUB)
+                  Byside Business
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                  Buy Side Business
-                </th>
-                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                  Dealer Dev Recommendation
+                <th 
+                  className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                  onClick={() => handleSort('dealerDevRecommendation')}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <span>Dealer Dev Recommendation</span>
+                    {getSortIcon('dealerDevRecommendation')}
+                  </div>
                 </th>
               </tr>
             </thead>
@@ -424,11 +454,6 @@ const DealersTable: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className={`text-sm font-medium ${dealer.branding ? 'text-green-600' : 'text-red-600'}`}>
                       {dealer.branding ? 'Yes' : 'No'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="text-sm text-white font-medium">
-                      {dealer.marketingInvestments} M RUB
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">

@@ -16,6 +16,103 @@ interface Dealer {
 
 const SalesTeamTable: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('center')
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Dealer | null
+    direction: 'asc' | 'desc' | null
+  }>({ key: null, direction: null })
+
+  const handleSort = (key: keyof Dealer) => {
+    let direction: 'asc' | 'desc' | null = 'asc'
+    
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === 'asc') {
+        direction = 'desc'
+      } else if (sortConfig.direction === 'desc') {
+        direction = null
+      }
+    }
+    
+    setSortConfig({ key, direction })
+  }
+
+  const getSortedDealers = () => {
+    if (!sortConfig.key || !sortConfig.direction) {
+      return dealers
+    }
+
+    return [...dealers].sort((a, b) => {
+      const aValue = a[sortConfig.key!]
+      const bValue = b[sortConfig.key!]
+      
+      if (sortConfig.key === 'salesTrainings') {
+        const aBool = aValue as boolean
+        const bBool = bValue as boolean
+        
+        if (sortConfig.direction === 'asc') {
+          return aBool === bBool ? 0 : aBool ? -1 : 1 // true first
+        } else {
+          return aBool === bBool ? 0 : aBool ? 1 : -1 // false first
+        }
+      }
+      
+      if (sortConfig.key === 'salesDecision') {
+        const decisionOrder = { 
+          'Planned Result': 4, 
+          'Needs development': 3, 
+          'Find New Candidate': 2, 
+          'Close Down': 1 
+        }
+        const aOrder = decisionOrder[aValue as keyof typeof decisionOrder]
+        const bOrder = decisionOrder[bValue as keyof typeof decisionOrder]
+        
+        if (sortConfig.direction === 'asc') {
+          return bOrder - aOrder // Planned Result first
+        } else {
+          return aOrder - bOrder // Close Down first
+        }
+      }
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+  }
+
+  const getSortIcon = (key: keyof Dealer) => {
+    if (sortConfig.key !== key) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      )
+    }
+    
+    if (sortConfig.direction === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      )
+    }
+    
+    if (sortConfig.direction === 'desc') {
+      return (
+        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      )
+    }
+    
+    return (
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    )
+  }
 
   const regions = [
     { id: 'all-russia', name: 'All Russia' },
@@ -218,7 +315,7 @@ const SalesTeamTable: React.FC = () => {
         {/* Title */}
         <div className="text-center">
           <h1 className="text-5xl md:text-5xl font-bold text-white mb-3">
-             SALES TEAM
+             SALES
           </h1>
           <h2 className="text-3xl md:text-4xl font-bold text-blue-200">
             ANALYSIS
@@ -256,8 +353,14 @@ const SalesTeamTable: React.FC = () => {
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                 City
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Manager
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                onClick={() => handleSort('salesManager')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Sales Manager</span>
+                  {getSortIcon('salesManager')}
+                </div>
               </th>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                 Sales Target
@@ -270,19 +373,37 @@ const SalesTeamTable: React.FC = () => {
                 <div>Buyout</div>
                 <div className="text-xs font-normal text-blue-200">hdt/mdt/ldt</div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Foton Salesmen
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                onClick={() => handleSort('fotonSalesmen')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Foton Salesmen</span>
+                  {getSortIcon('fotonSalesmen')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Trainings
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                onClick={() => handleSort('salesTrainings')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Sales Trainings</span>
+                  {getSortIcon('salesTrainings')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Decision
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                onClick={() => handleSort('salesDecision')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Sales Decision</span>
+                  {getSortIcon('salesDecision')}
+                </div>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200 divide-opacity-30">
-            {dealers.map((dealer) => (
+            {getSortedDealers().map((dealer) => (
               <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <Link 

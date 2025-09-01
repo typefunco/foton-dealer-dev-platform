@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Link } from 'react-router-dom'
 import DealersTable from './pages/DealersTable'
 import SalesTeamTable from './pages/SalesTeamTable'
 import AfterSalesTable from './pages/AfterSalesTable'
 import PerformanceTable from './pages/PerformanceTable'
 import AllTable from './pages/AllTable'
+import QuarterComparison from './pages/QuarterComparison'
 import DealerCard from './pages/DealerCard'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
@@ -15,15 +16,13 @@ const App: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('')
   const [selectedDealers, setSelectedDealers] = useState<string[]>([])
   const [selectedParameters, setSelectedParameters] = useState<string>('')
-  const [selectedPeriodFrom, setSelectedPeriodFrom] = useState<string>('')
-  const [selectedPeriodTo, setSelectedPeriodTo] = useState<string>('')
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState<string>('2025')
   
   // Состояния для выпадающих меню
   const [showRegionDropdown, setShowRegionDropdown] = useState(false)
   const [showParametersDropdown, setShowParametersDropdown] = useState(false)
-  const [showPeriodFromDropdown, setShowPeriodFromDropdown] = useState(false)
-  const [showPeriodToDropdown, setShowPeriodToDropdown] = useState(false)
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false)
   const [showYearDropdown, setShowYearDropdown] = useState(false)
 
   // Состояние для поиска дилеров
@@ -101,14 +100,9 @@ const App: React.FC = () => {
     setShowParametersDropdown(false)
   }
 
-  const handlePeriodFromSelect = (quarterId: string) => {
-    setSelectedPeriodFrom(quarterId)
-    setShowPeriodFromDropdown(false)
-  }
-
-  const handlePeriodToSelect = (quarterId: string) => {
-    setSelectedPeriodTo(quarterId)
-    setShowPeriodToDropdown(false)
+  const handlePeriodSelect = (quarterId: string) => {
+    setSelectedPeriod(quarterId)
+    setShowPeriodDropdown(false)
   }
 
   const handleYearSelect = (yearId: string) => {
@@ -119,8 +113,7 @@ const App: React.FC = () => {
   const closeAllDropdowns = () => {
     setShowRegionDropdown(false)
     setShowParametersDropdown(false)
-    setShowPeriodFromDropdown(false)
-    setShowPeriodToDropdown(false)
+    setShowPeriodDropdown(false)
     setShowYearDropdown(false)
   }
 
@@ -129,8 +122,7 @@ const App: React.FC = () => {
       region: selectedRegion,
       dealers: selectedDealers,
       parameters: selectedParameters,
-      periodFrom: selectedPeriodFrom,
-      periodTo: selectedPeriodTo,
+      period: selectedPeriod,
       year: selectedYear
     })
     // Логика поиска будет здесь
@@ -348,87 +340,42 @@ const App: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Period From Dropdown */}
+                  {/* Period Dropdown */}
                   <div className="relative flex-1 min-w-0">
                     <button 
-                      onClick={() => setShowPeriodFromDropdown(!showPeriodFromDropdown)}
+                      onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
                       className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-4 text-left hover:border-blue-300 focus:border-blue-500 focus:outline-none transition-colors duration-200 flex items-center justify-between"
                     >
-                      <span className={selectedPeriodFrom ? 'text-gray-900' : 'text-gray-500'}>
-                        {selectedPeriodFrom ? quarters.find(q => q.id === selectedPeriodFrom)?.name : 'From'}
+                      <span className={selectedPeriod ? 'text-gray-900' : 'text-gray-500'}>
+                        {selectedPeriod ? quarters.find(q => q.id === selectedPeriod)?.name : 'Period'}
                       </span>
                       <div className="flex items-center space-x-2">
-                        {selectedPeriodFrom && (
+                        {selectedPeriod && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
-                              setSelectedPeriodFrom('')
+                              setSelectedPeriod('')
                             }}
                             className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
-                            title="Clear period from selection"
+                            title="Clear period selection"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
                         )}
-                        <svg className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showPeriodFromDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showPeriodDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
                     </button>
                     
-                    {showPeriodFromDropdown && (
+                    {showPeriodDropdown && (
                       <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
                         {quarters.map((quarter) => (
                           <button
                             key={quarter.id}
-                            onClick={() => handlePeriodFromSelect(quarter.id)}
-                            className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-200 first:rounded-t-xl last:rounded-b-xl"
-                          >
-                            <div className="font-medium text-gray-900">{quarter.name}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Period To Dropdown */}
-                  <div className="relative flex-1 min-w-0">
-                    <button 
-                      onClick={() => setShowPeriodToDropdown(!showPeriodToDropdown)}
-                      className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-4 text-left hover:border-blue-300 focus:border-blue-500 focus:outline-none transition-colors duration-200 flex items-center justify-between"
-                    >
-                      <span className={selectedPeriodTo ? 'text-gray-900' : 'text-gray-500'}>
-                        {selectedPeriodTo ? quarters.find(q => q.id === selectedPeriodTo)?.name : 'To'}
-                      </span>
-                      <div className="flex items-center space-x-2">
-                        {selectedPeriodTo && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedPeriodTo('')
-                            }}
-                            className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
-                            title="Clear period to selection"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        )}
-                        <svg className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showPeriodToDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </button>
-                    
-                    {showPeriodToDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
-                        {quarters.map((quarter) => (
-                          <button
-                            key={quarter.id}
-                            onClick={() => handlePeriodToSelect(quarter.id)}
+                            onClick={() => handlePeriodSelect(quarter.id)}
                             className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-200 first:rounded-t-xl last:rounded-b-xl"
                           >
                             <div className="font-medium text-gray-900">{quarter.name}</div>
@@ -444,8 +391,7 @@ const App: React.FC = () => {
                       setSelectedRegion('')
                       setSelectedDealers([])
                       setSelectedParameters('')
-                      setSelectedPeriodFrom('')
-                      setSelectedPeriodTo('')
+                      setSelectedPeriod('')
                       setSelectedYear('2025')
                       setDealerSearchQuery('')
                       // Закрываем модальное окно если оно открыто
@@ -482,6 +428,7 @@ const App: React.FC = () => {
         <Route path="/after-sales" element={<AfterSalesTable />} />
         <Route path="/performance" element={<PerformanceTable />} />
         <Route path="/all" element={<AllTable />} />
+        <Route path="/quarter-comparison" element={<QuarterComparison />} />
         <Route path="/dealer/:dealerId" element={<DealerCard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -658,7 +605,7 @@ const App: React.FC = () => {
       )}
 
       {/* Close dropdowns when clicking outside */}
-      {(showRegionDropdown || showParametersDropdown || showPeriodFromDropdown || showPeriodToDropdown || showYearDropdown) && (
+      {(showRegionDropdown || showParametersDropdown || showPeriodDropdown || showYearDropdown) && (
         <div 
           className="fixed inset-0 z-40" 
           onClick={closeAllDropdowns}
