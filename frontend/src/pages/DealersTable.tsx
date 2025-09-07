@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import BrandLogo from '../components/BrandLogo'
 
 interface Dealer {
   id: string
@@ -8,6 +9,7 @@ interface Dealer {
   class: 'A' | 'B' | 'C' | 'D'
   checklist: number
   brandsInPortfolio: string[]
+  brandsCount: number
   branding: boolean
   buySideBusiness: string[]
   dealerDevRecommendation: 'Planned Result' | 'Needs Development' | 'Find New Candidate' | 'Close Down'
@@ -66,6 +68,17 @@ const DealersTable: React.FC = () => {
         }
       }
       
+      if (sortConfig.key === 'brandsCount') {
+        const aCount = aValue as number
+        const bCount = bValue as number
+        
+        if (sortConfig.direction === 'asc') {
+          return bCount - aCount // больше брендов сначала
+        } else {
+          return aCount - bCount // меньше брендов сначала
+        }
+      }
+      
       if (sortConfig.key === 'dealerDevRecommendation') {
         const recommendationOrder = { 
           'Planned Result': 4, 
@@ -111,7 +124,8 @@ const DealersTable: React.FC = () => {
       city: 'Moscow',
       class: 'B',
       checklist: 80,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ', 'KAMAZ', 'SHACMAN'],
+      brandsCount: 5,
       branding: true,
       buySideBusiness: ['Logistics', 'Warehousing'],
       dealerDevRecommendation: 'Needs Development'
@@ -122,7 +136,8 @@ const DealersTable: React.FC = () => {
       city: 'Moscow',
       class: 'B',
       checklist: 85,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'FAW'],
+      brandsCount: 2,
       branding: false,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Needs Development'
@@ -133,7 +148,8 @@ const DealersTable: React.FC = () => {
       city: 'Moscow',
       class: 'B',
       checklist: 82,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'JAC', 'MAZ'],
+      brandsCount: 3,
       branding: true,
       buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Needs Development'
@@ -144,7 +160,8 @@ const DealersTable: React.FC = () => {
       city: 'Moscow',
       class: 'A',
       checklist: 92,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'SANY', 'SITRAK', 'SOLLERS', 'VALDAI', 'ISUZU', 'CHENLONG', 'AMBERTRUCK'],
+      brandsCount: 8,
       branding: true,
       buySideBusiness: ['Logistics', 'Warehousing', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
@@ -155,7 +172,8 @@ const DealersTable: React.FC = () => {
       city: 'Noginsk',
       class: 'A',
       checklist: 95,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'FAW'],
+      brandsCount: 2,
       branding: true,
       buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
@@ -166,7 +184,8 @@ const DealersTable: React.FC = () => {
       city: 'Solnechnogorsk',
       class: 'A',
       checklist: 96,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ'],
+      brandsCount: 3,
       branding: true,
       buySideBusiness: ['Logistics', 'Warehousing', 'Retail', 'Service'],
       dealerDevRecommendation: 'Planned Result'
@@ -177,7 +196,8 @@ const DealersTable: React.FC = () => {
       city: 'Ecomtekh',
       class: 'A',
       checklist: 91,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ'],
+      brandsCount: 3,
       branding: true,
       buySideBusiness: ['Logistics', 'Retail'],
       dealerDevRecommendation: 'Planned Result'
@@ -188,7 +208,8 @@ const DealersTable: React.FC = () => {
       city: 'Yaroslavl',
       class: 'C',
       checklist: 76,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ'],
+      brandsCount: 3,
       branding: false,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
@@ -199,7 +220,8 @@ const DealersTable: React.FC = () => {
       city: 'Ryazan',
       class: 'C',
       checklist: 73,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ'],
+      brandsCount: 3,
       branding: false,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
@@ -210,7 +232,8 @@ const DealersTable: React.FC = () => {
       city: 'Tambov',
       class: 'C',
       checklist: 72,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ'],
+      brandsCount: 3,
       branding: false,
       buySideBusiness: ['Transport'],
       dealerDevRecommendation: 'Find New Candidate'
@@ -221,7 +244,8 @@ const DealersTable: React.FC = () => {
       city: 'Tula',
       class: 'D',
       checklist: 68,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ'],
+      brandsCount: 3,
       branding: false,
       buySideBusiness: [],
       dealerDevRecommendation: 'Close Down'
@@ -232,7 +256,8 @@ const DealersTable: React.FC = () => {
       city: 'Lipeck',
       class: 'D',
       checklist: 66,
-      brandsInPortfolio: ['FOTON'],
+      brandsInPortfolio: ['FOTON', 'DONGFENG', 'GAZ'],
+      brandsCount: 3,
       branding: false,
       buySideBusiness: [],
       dealerDevRecommendation: 'Close Down'
@@ -388,8 +413,14 @@ const DealersTable: React.FC = () => {
                     {getSortIcon('checklist')}
                   </div>
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                  Brands in Portfolio
+                <th 
+                  className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                  onClick={() => handleSort('brandsCount')}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <span>Brands in Portfolio</span>
+                    {getSortIcon('brandsCount')}
+                  </div>
                 </th>
                 <th 
                   className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
@@ -439,17 +470,15 @@ const DealersTable: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <div className="flex justify-center space-x-2">
-                          {dealer.brandsInPortfolio.map((brand, index) => (
-                            <div
-                              key={index}
-                              className="w-8 h-8 bg-blue-400 bg-opacity-80 rounded-full flex items-center justify-center border border-blue-300"
-                              title={brand}
-                            >
-                              <span className="text-xs font-bold text-white">F</span>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="flex justify-center space-x-2">
+                      {dealer.brandsInPortfolio.map((brand, index) => (
+                        <BrandLogo
+                          key={index}
+                          brand={brand}
+                          size="sm"
+                        />
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className={`text-sm font-medium ${dealer.branding ? 'text-green-600' : 'text-red-600'}`}>

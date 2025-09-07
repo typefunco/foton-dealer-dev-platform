@@ -12,87 +12,97 @@ interface BrandLogosProps {
 }
 
 const BrandLogos: React.FC<BrandLogosProps> = ({ brands, className = '' }) => {
+  // Определяем размер логотипов в зависимости от количества брендов
+  const getLogoSize = (brandCount: number) => {
+    if (brandCount <= 2) return 'w-28 h-28' // 112px для 1-2 брендов (было 80px)
+    if (brandCount <= 4) return 'w-24 h-24' // 96px для 3-4 брендов (было 64px)
+    if (brandCount <= 6) return 'w-20 h-20' // 80px для 5-6 брендов (было 56px)
+    return 'w-18 h-18' // 72px для 7+ брендов (было 48px)
+  }
+
+  const logoSize = getLogoSize(brands.length)
+
   // Список всех доступных брендов с их логотипами
   const allBrands: Record<string, BrandLogo> = {
-    'Shacman': {
-      name: 'Shacman',
-      logo: '/brands/shacman.svg',
-      alt: 'Shacman Logo'
+    'FOTON': {
+      name: 'FOTON',
+      logo: '/brands/Foton.png',
+      alt: 'FOTON Logo'
     },
-    'Dongfeng': {
-      name: 'Dongfeng',
-      logo: '/brands/dongfeng.svg',
-      alt: 'Dongfeng Logo'
-    },
-    'Sitrak': {
-      name: 'Sitrak',
-      logo: '/brands/sitrak.svg',
-      alt: 'Sitrak Logo'
-    },
-    'FAW': {
-      name: 'FAW',
-      logo: '/brands/faw.svg',
-      alt: 'FAW Logo'
-    },
-    'JAC': {
-      name: 'JAC',
-      logo: '/brands/jac.svg',
-      alt: 'JAC Logo'
-    },
-    'Isuzu': {
-      name: 'Isuzu',
-      logo: '/brands/isuzu.svg',
-      alt: 'Isuzu Logo'
-    },
-    'Kamaz': {
-      name: 'Kamaz',
-      logo: '/brands/kamaz.svg',
-      alt: 'Kamaz Logo'
-    },
-    'MAZ': {
-      name: 'MAZ',
-      logo: '/brands/maz.svg',
-      alt: 'MAZ Logo'
+    'DONGFENG': {
+      name: 'DONGFENG',
+      logo: '/brands/Dongfeng.png',
+      alt: 'DONGFENG Logo'
     },
     'GAZ': {
       name: 'GAZ',
-      logo: '/brands/gaz.svg',
+      logo: '/brands/GAZ.png',
       alt: 'GAZ Logo'
     },
-    'Valdai': {
-      name: 'Valdai',
-      logo: '/brands/valdai.svg',
-      alt: 'Valdai Logo'
+    'KAMAZ': {
+      name: 'KAMAZ',
+      logo: '/brands/KAMAZ.png',
+      alt: 'KAMAZ Logo'
     },
-    'Foton': {
-      name: 'Foton',
-      logo: '/brands/foton.svg',
-      alt: 'Foton Logo'
+    'SHACMAN': {
+      name: 'SHACMAN',
+      logo: '/brands/Shacman.png',
+      alt: 'SHACMAN Logo'
     },
-    'SDAC': {
-      name: 'SDAC',
-      logo: '/brands/sdac.svg',
-      alt: 'SDAC Logo'
+    'ISUZU': {
+      name: 'ISUZU',
+      logo: '/brands/ISUZU.png',
+      alt: 'ISUZU Logo'
     },
-    'Ambertruck': {
-      name: 'Ambertruck',
-      logo: '/brands/ambertruck.svg',
-      alt: 'Ambertruck Logo'
+    'JAC': {
+      name: 'JAC',
+      logo: '/brands/Jac.png',
+      alt: 'JAC Logo'
     },
-    'Sollers': {
-      name: 'Sollers',
-      logo: '/brands/sollers.svg',
-      alt: 'Sollers Logo'
+    'MAZ': {
+      name: 'MAZ',
+      logo: '/brands/MAZ.png',
+      alt: 'MAZ Logo'
     },
-    'Chenglong': {
-      name: 'Chenglong',
-      logo: '/brands/chenglong.svg',
-      alt: 'Chenglong Logo'
+    'SANY': {
+      name: 'SANY',
+      logo: '/brands/SANY.png',
+      alt: 'SANY Logo'
     },
-    'Sany': {
-      name: 'Sany',
-      logo: '/brands/sany.svg',
-      alt: 'Sany Logo'
+    'SITRAK': {
+      name: 'SITRAK',
+      logo: '/brands/Sitrak.png',
+      alt: 'SITRAK Logo'
+    },
+    'SOLLERS': {
+      name: 'SOLLERS',
+      logo: '/brands/SOLLERS.png',
+      alt: 'SOLLERS Logo'
+    },
+    'VALDAI': {
+      name: 'VALDAI',
+      logo: '/brands/VALDAI.png',
+      alt: 'VALDAI Logo'
+    },
+    'VALDAI-1': {
+      name: 'VALDAI-1',
+      logo: '/brands/VALDAI-1.png',
+      alt: 'VALDAI-1 Logo'
+    },
+    'FAW': {
+      name: 'FAW',
+      logo: '/brands/Faw.png',
+      alt: 'FAW Logo'
+    },
+    'CHENLONG': {
+      name: 'CHENLONG',
+      logo: '/brands/CHENLONG.png',
+      alt: 'CHENLONG Logo'
+    },
+    'AMBERTRUCK': {
+      name: 'AMBERTRUCK',
+      logo: '/brands/AMBERTRUCK.png',
+      alt: 'AMBERTRUCK Logo'
     }
   }
 
@@ -117,7 +127,7 @@ const BrandLogos: React.FC<BrandLogosProps> = ({ brands, className = '' }) => {
           className="relative group cursor-pointer"
           title={brand.name}
         >
-          <div className="w-12 h-12 bg-white rounded-lg shadow-md flex items-center justify-center p-2 hover:shadow-lg transition-shadow duration-200">
+          <div className={`${logoSize} bg-white bg-opacity-20 backdrop-blur-sm rounded-lg border border-white border-opacity-30 flex items-center justify-center p-2 hover:bg-opacity-30 transition-all duration-200`}>
             <img
               src={brand.logo}
               alt={brand.alt}
@@ -130,7 +140,7 @@ const BrandLogos: React.FC<BrandLogosProps> = ({ brands, className = '' }) => {
               }}
             />
             {/* Fallback текст если логотип не загрузился */}
-            <span className="hidden text-xs font-bold text-gray-600 text-center leading-tight">
+            <span className="hidden text-xs font-bold text-white text-center leading-tight">
               {brand.name}
             </span>
           </div>

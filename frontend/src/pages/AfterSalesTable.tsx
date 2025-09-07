@@ -8,7 +8,7 @@ interface AfterSalesDealer {
   rStockPercent: number
   wStockPercent: number
   flhPercent: number
-  serviceContract: string
+  serviceContract: number
   asTrainings: boolean
   csi: boolean
   asDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
@@ -16,6 +16,24 @@ interface AfterSalesDealer {
 
 const AfterSalesTable: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('center')
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof AfterSalesDealer | null
+    direction: 'asc' | 'desc' | null
+  }>({ key: null, direction: null })
+
+  const handleSort = (key: keyof AfterSalesDealer) => {
+    let direction: 'asc' | 'desc' | null = 'asc'
+    
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === 'asc') {
+        direction = 'desc'
+      } else if (sortConfig.direction === 'desc') {
+        direction = null
+      }
+    }
+    
+    setSortConfig({ key, direction })
+  }
 
   const regions = [
     { id: 'all-russia', name: 'All Russia' },
@@ -36,7 +54,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: true,
       csi: true,
       asDecision: 'Needs development'
@@ -48,7 +66,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: false,
       csi: false,
       asDecision: 'Needs development'
@@ -60,7 +78,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: true,
       csi: true,
       asDecision: 'Needs development'
@@ -72,7 +90,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: false,
       csi: false,
       asDecision: 'Needs development'
@@ -84,7 +102,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: true,
       csi: true,
       asDecision: 'Needs development'
@@ -96,7 +114,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: false,
       csi: false,
       asDecision: 'Needs development'
@@ -108,7 +126,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: true,
       csi: true,
       asDecision: 'Needs development'
@@ -120,7 +138,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: false,
       csi: false,
       asDecision: 'Needs development'
@@ -132,7 +150,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: true,
       csi: true,
       asDecision: 'Needs development'
@@ -144,7 +162,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: false,
       csi: false,
       asDecision: 'Needs development'
@@ -156,7 +174,7 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: true,
       csi: true,
       asDecision: 'Needs development'
@@ -168,12 +186,91 @@ const AfterSalesTable: React.FC = () => {
       rStockPercent: 5,
       wStockPercent: 5,
       flhPercent: 5,
-      serviceContract: 'Gold',
+      serviceContract: 95,
       asTrainings: false,
       csi: false,
       asDecision: 'Needs development'
     }
   ]
+
+  const getSortedDealers = () => {
+    if (!sortConfig.key || !sortConfig.direction) {
+      return dealers
+    }
+
+    return [...dealers].sort((a, b) => {
+      const aValue = a[sortConfig.key!]
+      const bValue = b[sortConfig.key!]
+      
+      if (sortConfig.key === 'asTrainings' || sortConfig.key === 'csi') {
+        const aBool = aValue as boolean
+        const bBool = bValue as boolean
+        
+        if (sortConfig.direction === 'asc') {
+          return aBool === bBool ? 0 : aBool ? -1 : 1 // true first
+        } else {
+          return aBool === bBool ? 0 : aBool ? 1 : -1 // false first
+        }
+      }
+      
+      if (sortConfig.key === 'asDecision') {
+        const decisionOrder = { 
+          'Planned Result': 4, 
+          'Needs development': 3, 
+          'Find New Candidate': 2, 
+          'Close Down': 1 
+        }
+        const aOrder = decisionOrder[aValue as keyof typeof decisionOrder]
+        const bOrder = decisionOrder[bValue as keyof typeof decisionOrder]
+        
+        if (sortConfig.direction === 'asc') {
+          return bOrder - aOrder // Planned Result first
+        } else {
+          return aOrder - bOrder // Close Down first
+        }
+      }
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+  }
+
+  const getSortIcon = (key: keyof AfterSalesDealer) => {
+    if (sortConfig.key !== key) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      )
+    }
+    
+    if (sortConfig.direction === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      )
+    }
+    
+    if (sortConfig.direction === 'desc') {
+      return (
+        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      )
+    }
+    
+    return (
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    )
+  }
 
   const getAsDecisionColor = (decision: string) => {
     switch (decision) {
@@ -256,31 +353,73 @@ const AfterSalesTable: React.FC = () => {
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                 City
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Recommended Stock %
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('rStockPercent')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Recommended Stock %</span>
+                  {getSortIcon('rStockPercent')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Warranty Stock %
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('wStockPercent')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Warranty Stock %</span>
+                  {getSortIcon('wStockPercent')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Foton Labor Hours %
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('flhPercent')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Foton Labor Hours %</span>
+                  {getSortIcon('flhPercent')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Service Contract
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('serviceContract')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Service Contract</span>
+                  {getSortIcon('serviceContract')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                AS Trainings
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('asTrainings')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>AS Trainings</span>
+                  {getSortIcon('asTrainings')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                CSI
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('csi')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>CSI</span>
+                  {getSortIcon('csi')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                AS Decision
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('asDecision')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>AS Decision</span>
+                  {getSortIcon('asDecision')}
+                </div>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200 divide-opacity-30">
-            {dealers.map((dealer) => (
+            {getSortedDealers().map((dealer) => (
               <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <Link 

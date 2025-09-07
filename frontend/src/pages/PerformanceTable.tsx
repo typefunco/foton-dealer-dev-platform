@@ -19,6 +19,24 @@ interface PerformanceDealer {
 
 const PerformanceTable: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('center')
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof PerformanceDealer | null
+    direction: 'asc' | 'desc' | null
+  }>({ key: null, direction: null })
+
+  const handleSort = (key: keyof PerformanceDealer) => {
+    let direction: 'asc' | 'desc' | null = 'asc'
+    
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === 'asc') {
+        direction = 'desc'
+      } else if (sortConfig.direction === 'desc') {
+        direction = null
+      }
+    }
+    
+    setSortConfig({ key, direction })
+  }
 
   const regions = [
     { id: 'all-russia', name: 'All Russia' },
@@ -214,6 +232,86 @@ const PerformanceTable: React.FC = () => {
     }
   ]
 
+  const getSortedDealers = () => {
+    if (!sortConfig.key || !sortConfig.direction) {
+      return dealers
+    }
+
+    return [...dealers].sort((a, b) => {
+      const aValue = a[sortConfig.key!]
+      const bValue = b[sortConfig.key!]
+      
+      if (sortConfig.key === 'autoSalesDecision') {
+        const decisionOrder = { 
+          'Planned Result': 4, 
+          'Needs development': 3, 
+          'Find New Candidate': 2, 
+          'Close Down': 1 
+        }
+        const aOrder = decisionOrder[aValue as keyof typeof decisionOrder]
+        const bOrder = decisionOrder[bValue as keyof typeof decisionOrder]
+        
+        if (sortConfig.direction === 'asc') {
+          return bOrder - aOrder // Planned Result first
+        } else {
+          return aOrder - bOrder // Close Down first
+        }
+      }
+      
+      // Для строковых значений с числами (srRub, autoSalesRevenue, autoSalesProfitsRap)
+      if (sortConfig.key === 'srRub' || sortConfig.key === 'autoSalesRevenue' || sortConfig.key === 'autoSalesProfitsRap') {
+        const aNum = parseFloat((aValue as string).replace(/[^\d.-]/g, ''))
+        const bNum = parseFloat((bValue as string).replace(/[^\d.-]/g, ''))
+        
+        if (sortConfig.direction === 'asc') {
+          return aNum - bNum
+        } else {
+          return bNum - aNum
+        }
+      }
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+  }
+
+  const getSortIcon = (key: keyof PerformanceDealer) => {
+    if (sortConfig.key !== key) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      )
+    }
+    
+    if (sortConfig.direction === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      )
+    }
+    
+    if (sortConfig.direction === 'desc') {
+      return (
+        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      )
+    }
+    
+    return (
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    )
+  }
+
   const getAutoSalesDecisionColor = (decision: string) => {
     switch (decision) {
       case 'Planned Result': return 'text-green-600'
@@ -295,37 +393,91 @@ const PerformanceTable: React.FC = () => {
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
                 City
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Revenue Rub
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('srRub')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Sales Revenue Rub</span>
+                  {getSortIcon('srRub')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Profit %
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('salesProfit')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Sales Profit %</span>
+                  {getSortIcon('salesProfit')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Margin %
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('salesMargin')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Sales Margin %</span>
+                  {getSortIcon('salesMargin')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                 After Sales Revenue Rub
-               </th>
-               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                 After Sales Profits Rub
-               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                After Sales Margin %
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('autoSalesRevenue')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>After Sales Revenue Rub</span>
+                  {getSortIcon('autoSalesRevenue')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Marketing Investments (M Rub)
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('autoSalesProfitsRap')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>After Sales Profits Rub</span>
+                  {getSortIcon('autoSalesProfitsRap')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Foton Rank
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('autoSalesMargin')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>After Sales Margin %</span>
+                  {getSortIcon('autoSalesMargin')}
+                </div>
               </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                After Sales Decision
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('marketingInvestment')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Marketing Investments (M Rub)</span>
+                  {getSortIcon('marketingInvestment')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('ranking')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Foton Rank</span>
+                  {getSortIcon('ranking')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('autoSalesDecision')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Performance Decision</span>
+                  {getSortIcon('autoSalesDecision')}
+                </div>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200 divide-opacity-30">
-            {dealers.map((dealer) => (
+            {getSortedDealers().map((dealer) => (
               <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <Link 

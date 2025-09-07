@@ -11,6 +11,7 @@ interface DealerData {
   class: string
   checklist: number
   brandsInPortfolio: string[]
+  brandsCount: number
   salesTarget: string
   stockHdtMdtLdt: string
   buyoutHdtMdtLdt: string
@@ -47,7 +48,8 @@ const DealerCard: React.FC = () => {
       salesManager: 'Ivan Petrov',
       class: 'A',
       checklist: 92,
-      brandsInPortfolio: ['Foton', 'Shacman', 'Dongfeng', 'Kamaz', 'GAZ'],
+      brandsInPortfolio: ['FOTON', 'SHACMAN', 'DONGFENG', 'KAMAZ', 'GAZ'],
+      brandsCount: 5,
       salesTarget: '100',
       stockHdtMdtLdt: 'HDT: 50, MDT: 30, LDT: 20',
       buyoutHdtMdtLdt: 'HDT: 45, MDT: 25, LDT: 15',
