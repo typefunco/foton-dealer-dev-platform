@@ -4,21 +4,24 @@ import (
 	"errors"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/typefunco/dealer_dev_platform/internal/service/auth"
 	"log/slog"
 	"net/http"
 )
 
 // Server структура сервера.
 type Server struct {
-	srv    *echo.Echo
-	logger *slog.Logger
+	authService *auth.Service
+	srv         *echo.Echo
+	logger      *slog.Logger
 }
 
 // NewServer - конструктор сервера.
-func NewServer(logger *slog.Logger) *Server {
+func NewServer(authService *auth.Service, logger *slog.Logger) *Server {
 	return &Server{
-		srv:    echo.New(),
-		logger: logger,
+		authService: authService,
+		srv:         echo.New(),
+		logger:      logger,
 	}
 }
 
@@ -33,6 +36,8 @@ func (s *Server) RunServer() {
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
 	}))
+
+	s.srv.POST("/auth/login", s.Login)
 
 	if err := s.srv.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.logger.Error("failed to start server", "error", err)
