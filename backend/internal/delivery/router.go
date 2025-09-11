@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/typefunco/dealer_dev_platform/internal/service/auth"
+	"github.com/typefunco/dealer_dev_platform/internal/service/performance"
 	"log/slog"
 	"net/http"
 )
@@ -12,14 +13,16 @@ import (
 // Server структура сервера.
 type Server struct {
 	authService *auth.Service
+	perfService *performance.Service
 	srv         *echo.Echo
 	logger      *slog.Logger
 }
 
 // NewServer - конструктор сервера.
-func NewServer(authService *auth.Service, logger *slog.Logger) *Server {
+func NewServer(authService *auth.Service, perfService *performance.Service, logger *slog.Logger) *Server {
 	return &Server{
 		authService: authService,
+		perfService: perfService,
 		srv:         echo.New(),
 		logger:      logger,
 	}
@@ -38,6 +41,7 @@ func (s *Server) RunServer() {
 	}))
 
 	s.srv.POST("/auth/login", s.Login)
+	s.srv.GET("/performance/:region", s.GetPerformance)
 
 	if err := s.srv.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.logger.Error("failed to start server", "error", err)

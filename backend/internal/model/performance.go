@@ -12,6 +12,6 @@ type Performance struct {
 	ASRevenues     int32  `json:"as_revenues"`    // in rub absolute
 	ASProfits      int32  `json:"as_profits"`     // in rub absolute
 	ASMargin       int32  `json:"as_margin"`      // in %
-	FotonRank      int8   `json:"foton_rank"`     // from 1 to 10
+	FotonRank      int16  `json:"foton_rank"`     // from 1 to 10
 	Recommendation string `json:"dealer_dev_recommendation"`
 }
