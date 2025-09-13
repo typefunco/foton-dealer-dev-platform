@@ -18,7 +18,7 @@ interface DealerData {
   fotonSalesmen: string
   salesTrainings: boolean
   srRub: string
-  salesProfit: number
+  salesProfit: string
   salesMargin: number
   afterSalesRevenue: string
   afterSalesProfitsRap: string
@@ -29,7 +29,7 @@ interface DealerData {
   fotonLaborHours: number
   serviceContract: boolean
   asTrainings: boolean
-  csi: number
+  csi: string
   branding: boolean
   buySideBusiness: string[]
   marketingInvestment: number
@@ -56,7 +56,7 @@ const DealerCard: React.FC = () => {
       fotonSalesmen: '15',
       salesTrainings: true,
       srRub: '15,000,000',
-      salesProfit: 25,
+      salesProfit: '25 000 000',
       salesMargin: 18,
       afterSalesRevenue: '8,000,000',
       afterSalesProfitsRap: '2,400,000',
@@ -67,7 +67,7 @@ const DealerCard: React.FC = () => {
       fotonLaborHours: 92,
       serviceContract: true,
       asTrainings: true,
-      csi: 95,
+      csi: '1 500',
       branding: true,
       buySideBusiness: ['Logistics', 'Warehousing', 'Retail'],
       marketingInvestment: 3200
@@ -370,7 +370,7 @@ const DealerCard: React.FC = () => {
               <h3 className="text-lg font-semibold text-white mb-3">Sales Profit</h3>
               <div className="text-center">
                 <div className="text-3xl font-bold text-white mb-2">
-                  {dealer.salesProfit} M Rub
+                  {dealer.salesProfit}
                 </div>
                 <div className="text-white text-sm">
                   Absolute profit value
@@ -438,15 +438,15 @@ const DealerCard: React.FC = () => {
               </div>
             </div>
 
-            {/* CSI */}
+            {/* Foton Warranty Hours */}
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
-              <h3 className="text-lg font-semibold text-white mb-3">CSI</h3>
+              <h3 className="text-lg font-semibold text-white mb-3">Foton Warranty Hours</h3>
               <div className="text-center">
                 <div className="text-3xl font-bold text-white mb-2">
-                  {dealer.csi}%
+                  {dealer.csi}
                 </div>
                 <div className="text-white text-sm">
-                  Customer satisfaction index
+                  Foton warranty hours
                 </div>
               </div>
             </div>

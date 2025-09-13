@@ -16,6 +16,10 @@ interface QuarterData {
     salesTrainingsPercentage: number
     salesTrainingsDistribution: { [key: string]: number }
     
+    // Stocks and Buyout data
+    stocksData: { HDT: number, MDT: number, LDT: number }
+    buyoutData: { HDT: number, MDT: number, LDT: number }
+    
     // Performance
     averageSalesRevenue: string
     averageSalesProfit: number
@@ -33,6 +37,7 @@ interface QuarterData {
     asTrainingsPercentage: number
     asTrainingsDistribution: { [key: string]: number }
     csiPercentage: number
+    fotonWarrantyHours: number
     
     // Decisions
     decisionDistribution: { [key: string]: number }
@@ -76,6 +81,8 @@ const QuarterComparison: React.FC = () => {
       averageFotonSalesmen: 4.8,
       salesTrainingsPercentage: 65,
       salesTrainingsDistribution: { 'Yes': 65, 'No': 35 },
+      stocksData: { HDT: 50, MDT: 30, LDT: 20 },
+      buyoutData: { HDT: 45, MDT: 25, LDT: 15 },
       averageSalesRevenue: '5,200,000',
       averageSalesProfit: 2.8,
       averageSalesMargin: 4.2,
@@ -90,6 +97,7 @@ const QuarterComparison: React.FC = () => {
       asTrainingsPercentage: 70,
       asTrainingsDistribution: { 'Yes': 70, 'No': 30 },
       csiPercentage: 68,
+      fotonWarrantyHours: 1500,
       decisionDistribution: { 'Planned Result': 30, 'Needs Development': 45, 'Find New Candidate': 20, 'Close Down': 5 }
     }
   }
@@ -105,6 +113,8 @@ const QuarterComparison: React.FC = () => {
       averageFotonSalesmen: 5.2,
       salesTrainingsPercentage: 78,
       salesTrainingsDistribution: { 'Yes': 78, 'No': 22 },
+      stocksData: { HDT: 55, MDT: 35, LDT: 25 },
+      buyoutData: { HDT: 50, MDT: 30, LDT: 20 },
       averageSalesRevenue: '6,100,000',
       averageSalesProfit: 3.5,
       averageSalesMargin: 4.8,
@@ -119,6 +129,7 @@ const QuarterComparison: React.FC = () => {
       asTrainingsPercentage: 75,
       asTrainingsDistribution: { 'Yes': 75, 'No': 25 },
       csiPercentage: 72,
+      fotonWarrantyHours: 1800,
       decisionDistribution: { 'Planned Result': 40, 'Needs Development': 40, 'Find New Candidate': 15, 'Close Down': 5 }
     }
   }
@@ -138,6 +149,8 @@ const QuarterComparison: React.FC = () => {
           averageFotonSalesmen: 5.8,
           salesTrainingsPercentage: 85,
           salesTrainingsDistribution: { 'Yes': 85, 'No': 15 },
+          stocksData: { HDT: 60, MDT: 40, LDT: 30 },
+          buyoutData: { HDT: 55, MDT: 35, LDT: 25 },
           averageSalesRevenue: '7,200,000',
           averageSalesProfit: 4.2,
           averageSalesMargin: 5.5,
@@ -152,6 +165,7 @@ const QuarterComparison: React.FC = () => {
           asTrainingsPercentage: 82,
           asTrainingsDistribution: { 'Yes': 82, 'No': 18 },
           csiPercentage: 78,
+          fotonWarrantyHours: 2200,
           decisionDistribution: { 'Planned Result': 50, 'Needs Development': 35, 'Find New Candidate': 10, 'Close Down': 5 }
         }
       }
@@ -445,7 +459,7 @@ const QuarterComparison: React.FC = () => {
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 border border-white border-opacity-20">
               <h4 className="text-xl font-bold text-white mb-4 flex items-center">
                 <div className="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
-                Sales Team
+                Sales
               </h4>
               
               <div className="space-y-4">
@@ -462,23 +476,48 @@ const QuarterComparison: React.FC = () => {
                   </div>
                 </div>
                 
+                {/* Stocks Block */}
                 <div className="space-y-2">
-                  <div className="text-sm font-medium text-white">Sales Trainings</div>
-                  <div className="flex justify-center">
-                    {renderPieChart(
-                      currentQuarter1Data.metrics.salesTrainingsDistribution,
-                      ['#10B981', '#EF4444'],
-                      'Dealers'
-                    )}
-                  </div>
-                  <div className="flex justify-center space-x-4 mt-3">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-gray-300">Yes: {currentQuarter1Data.metrics.salesTrainingsDistribution['Yes']}%</span>
+                  <div className="text-sm font-medium text-white">Stocks</div>
+                  <div className="flex justify-between items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-lg font-bold text-white">HDT: {currentQuarter1Data.metrics.stocksData.HDT}</span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-gray-300">No: {currentQuarter1Data.metrics.salesTrainingsDistribution['No']}%</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-lg font-bold text-white">MDT: {currentQuarter1Data.metrics.stocksData.MDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span className="text-lg font-bold text-white">LDT: {currentQuarter1Data.metrics.stocksData.LDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                      <span className="text-lg font-bold text-white">TOTAL: {currentQuarter1Data.metrics.stocksData.HDT + currentQuarter1Data.metrics.stocksData.MDT + currentQuarter1Data.metrics.stocksData.LDT}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Buyout Block */}
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-white">Buyout</div>
+                  <div className="flex justify-between items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-lg font-bold text-white">HDT: {currentQuarter1Data.metrics.buyoutData.HDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-lg font-bold text-white">MDT: {currentQuarter1Data.metrics.buyoutData.MDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span className="text-lg font-bold text-white">LDT: {currentQuarter1Data.metrics.buyoutData.LDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                      <span className="text-lg font-bold text-white">TOTAL: {currentQuarter1Data.metrics.buyoutData.HDT + currentQuarter1Data.metrics.buyoutData.MDT + currentQuarter1Data.metrics.buyoutData.LDT}</span>
                     </div>
                   </div>
                 </div>
@@ -533,36 +572,11 @@ const QuarterComparison: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="text-sm font-medium text-white">AS Trainings</div>
-                  <div className="flex justify-center">
-                    {renderPieChart(
-                      currentQuarter1Data.metrics.asTrainingsDistribution,
-                      ['#10B981', '#EF4444'],
-                      'Dealers'
-                    )}
-                  </div>
-                  <div className="flex justify-center space-x-4 mt-3">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-gray-300">Yes: {currentQuarter1Data.metrics.asTrainingsDistribution['Yes']}%</span>
+                  <div className="flex items-center">
+                    <div className="text-sm font-medium text-white">Foton Warranty Hours</div>
+                    <div className="flex-1 text-center text-sm text-white ml-24">
+                      {currentQuarter1Data.metrics.fotonWarrantyHours}
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-gray-300">No: {currentQuarter1Data.metrics.asTrainingsDistribution['No']}%</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-white">CSI (%)</div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 bg-gray-700 rounded-full h-3">
-                      <div 
-                        className="bg-blue-500 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${currentQuarter1Data.metrics.csiPercentage}%` }}
-                      />
-                    </div>
-                    <div className="w-12 text-xs text-white">{currentQuarter1Data.metrics.csiPercentage}%</div>
                   </div>
                 </div>
               </div>
@@ -711,7 +725,7 @@ const QuarterComparison: React.FC = () => {
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 border border-white border-opacity-20">
               <h4 className="text-xl font-bold text-white mb-4 flex items-center">
                 <div className="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
-                Sales Team
+                Sales
               </h4>
               
               <div className="space-y-4">
@@ -720,7 +734,7 @@ const QuarterComparison: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 bg-gray-700 rounded-full h-3">
                       <div 
-                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                        className="bg-blue-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${parseFloat(quarter2Data.metrics.averageSalesTarget.split('/')[0])}%` }}
                       />
                     </div>
@@ -728,23 +742,48 @@ const QuarterComparison: React.FC = () => {
                   </div>
                 </div>
                 
+                {/* Stocks Block */}
                 <div className="space-y-2">
-                  <div className="text-sm font-medium text-white">Sales Trainings</div>
-                  <div className="flex justify-center">
-                    {renderPieChart(
-                      quarter2Data.metrics.salesTrainingsDistribution,
-                      ['#10B981', '#EF4444'],
-                      'Dealers'
-                    )}
-                  </div>
-                  <div className="flex justify-center space-x-4 mt-3">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-gray-300">Yes: {quarter2Data.metrics.salesTrainingsDistribution['Yes']}%</span>
+                  <div className="text-sm font-medium text-white">Stocks</div>
+                  <div className="flex justify-between items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-lg font-bold text-white">HDT: {currentQuarter2Data.metrics.stocksData.HDT}</span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-gray-300">No: {quarter2Data.metrics.salesTrainingsDistribution['No']}%</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-lg font-bold text-white">MDT: {currentQuarter2Data.metrics.stocksData.MDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span className="text-lg font-bold text-white">LDT: {currentQuarter2Data.metrics.stocksData.LDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                      <span className="text-lg font-bold text-white">TOTAL: {currentQuarter2Data.metrics.stocksData.HDT + currentQuarter2Data.metrics.stocksData.MDT + currentQuarter2Data.metrics.stocksData.LDT}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Buyout Block */}
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-white">Buyout</div>
+                  <div className="flex justify-between items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-lg font-bold text-white">HDT: {currentQuarter2Data.metrics.buyoutData.HDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-lg font-bold text-white">MDT: {currentQuarter2Data.metrics.buyoutData.MDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span className="text-lg font-bold text-white">LDT: {currentQuarter2Data.metrics.buyoutData.LDT}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                      <span className="text-lg font-bold text-white">TOTAL: {currentQuarter2Data.metrics.buyoutData.HDT + currentQuarter2Data.metrics.buyoutData.MDT + currentQuarter2Data.metrics.buyoutData.LDT}</span>
                     </div>
                   </div>
                 </div>
@@ -764,7 +803,7 @@ const QuarterComparison: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 bg-gray-700 rounded-full h-3">
                       <div 
-                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                        className="bg-blue-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${currentQuarter2Data.metrics.averageRStockPercent}%` }}
                       />
                     </div>
@@ -777,7 +816,7 @@ const QuarterComparison: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 bg-gray-700 rounded-full h-3">
                       <div 
-                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                        className="bg-blue-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${currentQuarter2Data.metrics.averageWStockPercent}%` }}
                       />
                     </div>
@@ -790,7 +829,7 @@ const QuarterComparison: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 bg-gray-700 rounded-full h-3">
                       <div 
-                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                        className="bg-blue-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${currentQuarter2Data.metrics.averageFlhPercent}%` }}
                       />
                     </div>
@@ -799,36 +838,11 @@ const QuarterComparison: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="text-sm font-medium text-white">AS Trainings</div>
-                  <div className="flex justify-center">
-                    {renderPieChart(
-                      currentQuarter2Data.metrics.asTrainingsDistribution,
-                      ['#10B981', '#EF4444'],
-                      'Dealers'
-                    )}
-                  </div>
-                  <div className="flex justify-center space-x-4 mt-3">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-gray-300">Yes: {currentQuarter2Data.metrics.asTrainingsDistribution['Yes']}%</span>
+                  <div className="flex items-center">
+                    <div className="text-sm font-medium text-white">Foton Warranty Hours</div>
+                    <div className="flex-1 text-center text-sm text-white ml-24">
+                      {currentQuarter2Data.metrics.fotonWarrantyHours}
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-gray-300">No: {currentQuarter2Data.metrics.asTrainingsDistribution['No']}%</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-white">CSI (%)</div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 bg-gray-700 rounded-full h-3">
-                      <div 
-                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${currentQuarter2Data.metrics.csiPercentage}%` }}
-                      />
-                    </div>
-                    <div className="w-12 text-xs text-white">{currentQuarter2Data.metrics.csiPercentage}%</div>
                   </div>
                 </div>
               </div>

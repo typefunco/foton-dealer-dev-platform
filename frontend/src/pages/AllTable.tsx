@@ -24,7 +24,7 @@ interface AllDealer {
   
   // Performance fields
   srRub: string
-  salesProfit: number
+  salesProfit: string
   salesMargin: number
   autoSalesRevenue: string
   autoSalesProfitsRap: string
@@ -38,7 +38,7 @@ interface AllDealer {
   flhPercent: number
   serviceContract: string
   asTrainings: boolean
-  csi: boolean
+  csi: string
   asDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
 }
 
@@ -73,7 +73,7 @@ const AllTable: React.FC = () => {
       salesTrainings: true,
       salesDecision: 'Needs development',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -85,7 +85,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: true,
-      csi: true,
+      csi: '1 500',
       asDecision: 'Needs development'
     },
     {
@@ -104,7 +104,7 @@ const AllTable: React.FC = () => {
       salesTrainings: false,
       salesDecision: 'Needs development',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -116,7 +116,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: false,
-      csi: false,
+      csi: '800',
       asDecision: 'Needs development'
     },
     {
@@ -135,7 +135,7 @@ const AllTable: React.FC = () => {
       salesTrainings: true,
       salesDecision: 'Needs development',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -147,7 +147,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: true,
-      csi: true,
+      csi: '1 500',
       asDecision: 'Needs development'
     },
     {
@@ -166,7 +166,7 @@ const AllTable: React.FC = () => {
       salesTrainings: false,
       salesDecision: 'Planned Result',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -178,7 +178,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: false,
-      csi: false,
+      csi: '800',
       asDecision: 'Planned Result'
     },
     {
@@ -197,7 +197,7 @@ const AllTable: React.FC = () => {
       salesTrainings: true,
       salesDecision: 'Planned Result',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -209,7 +209,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: true,
-      csi: true,
+      csi: '1 500',
       asDecision: 'Planned Result'
     },
     {
@@ -228,7 +228,7 @@ const AllTable: React.FC = () => {
       salesTrainings: false,
       salesDecision: 'Planned Result',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -240,7 +240,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: false,
-      csi: false,
+      csi: '800',
       asDecision: 'Planned Result'
     },
     {
@@ -259,7 +259,7 @@ const AllTable: React.FC = () => {
       salesTrainings: true,
       salesDecision: 'Planned Result',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -271,7 +271,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: true,
-      csi: true,
+      csi: '1 500',
       asDecision: 'Planned Result'
     },
     {
@@ -290,7 +290,7 @@ const AllTable: React.FC = () => {
       salesTrainings: false,
       salesDecision: 'Find New Candidate',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -302,7 +302,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: false,
-      csi: false,
+      csi: '800',
       asDecision: 'Find New Candidate'
     },
     {
@@ -321,7 +321,7 @@ const AllTable: React.FC = () => {
       salesTrainings: true,
       salesDecision: 'Find New Candidate',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -333,7 +333,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: true,
-      csi: true,
+      csi: '1 500',
       asDecision: 'Find New Candidate'
     },
     {
@@ -352,7 +352,7 @@ const AllTable: React.FC = () => {
       salesTrainings: false,
       salesDecision: 'Find New Candidate',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -364,7 +364,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: false,
-      csi: false,
+      csi: '800',
       asDecision: 'Find New Candidate'
     },
     {
@@ -383,7 +383,7 @@ const AllTable: React.FC = () => {
       salesTrainings: true,
       salesDecision: 'Close Down',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -395,7 +395,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: true,
-      csi: true,
+      csi: '1 500',
       asDecision: 'Close Down'
     },
     {
@@ -414,7 +414,7 @@ const AllTable: React.FC = () => {
       salesTrainings: false,
       salesDecision: 'Close Down',
       srRub: '5 555 555',
-      salesProfit: 5,
+      salesProfit: '5 000 000',
       salesMargin: 5,
       autoSalesRevenue: '5 555 555',
       autoSalesProfitsRap: '5 555 555',
@@ -426,7 +426,7 @@ const AllTable: React.FC = () => {
       flhPercent: 5,
       serviceContract: 'Gold',
       asTrainings: false,
-      csi: false,
+      csi: '800',
       asDecision: 'Close Down'
     }
   ]
@@ -591,7 +591,7 @@ const AllTable: React.FC = () => {
                        Sales Revenue Rub
                      </th>
                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase tracking-wider bg-yellow-600 bg-opacity-30">
-                       Sales Profit %
+                       Sales Profit Rub
                      </th>
                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase tracking-wider bg-yellow-600 bg-opacity-30">
                        Sales Margin %
@@ -626,7 +626,7 @@ const AllTable: React.FC = () => {
                        AS Trainings
                      </th>
                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase tracking-wider bg-purple-600 bg-opacity-30">
-                       CSI
+                       Foton Warranty Hours
                      </th>
                      
                      {/* Joint Decision Field */}
@@ -703,7 +703,7 @@ const AllTable: React.FC = () => {
                          <div className="text-xs text-white">{dealer.srRub}</div>
                        </td>
                        <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.salesProfit}%</div>
+                         <div className="text-xs text-white">{dealer.salesProfit}</div>
                        </td>
                        <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
                          <div className="text-xs text-white">{dealer.salesMargin}%</div>
@@ -740,9 +740,7 @@ const AllTable: React.FC = () => {
                          </div>
                        </td>
                        <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
-                         <div className={`text-xs font-medium ${dealer.csi ? 'text-green-400' : 'text-white'}`}>
-                           {dealer.csi ? 'Yes' : 'No'}
-                         </div>
+                         <div className="text-xs text-white">{dealer.csi}</div>
                        </td>
                       
                        {/* Joint Decision Field */}
