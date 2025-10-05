@@ -2,35 +2,117 @@ package app
 
 import (
 	"context"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/typefunco/dealer_dev_platform/internal/config"
+	"github.com/typefunco/dealer_dev_platform/internal/database"
 	"github.com/typefunco/dealer_dev_platform/internal/delivery"
 	"github.com/typefunco/dealer_dev_platform/internal/repository"
 	"github.com/typefunco/dealer_dev_platform/internal/service/auth"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance"
 	"github.com/typefunco/dealer_dev_platform/internal/utils/jwt"
-	"log/slog"
-	"os"
-	"sync"
 )
 
+// RunApp запускает приложение.
 func RunApp() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	pool, err := pgxpool.New(context.Background(), "dsn")
+	// Инициализация логгера
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	logger.Info("Starting Dealer Development Platform")
+
+	// Загрузка конфигурации
+	cfg, err := config.Load()
 	if err != nil {
-		panic(err)
+		logger.Error("Failed to load configuration", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
-	authRepo := repository.NewAuthRepository(pool, logger)
+	logger.Info("Configuration loaded",
+		slog.String("server_port", cfg.ServerPort),
+		slog.String("database_url", config.MaskDSN(cfg.DatabaseURL)),
+	)
+
+	// Подключение к базе данных
+	ctx := context.Background()
+	pool, err := database.NewPostgresPool(ctx, cfg.DatabaseURL, database.DefaultPostgresConfig())
+	if err != nil {
+		logger.Error("Failed to connect to database", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	logger.Info("Database connection established")
+
+	// Инициализация компонентов
+	if err := run(ctx, pool, cfg, logger); err != nil {
+		logger.Error("Application error", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	logger.Info("Application stopped gracefully")
+}
+
+// run содержит основную логику приложения.
+func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *slog.Logger) error {
+	// Инициализация репозиториев
+	// TODO: Добавить использование остальных репозиториев по мере реализации сервисов
+	_ = repository.NewDealerRepository(pool)
+	_ = repository.NewDealerDevRepository(pool)
+	_ = repository.NewSalesRepository(pool)
 	performanceRepo := repository.NewPerformanceRepository(pool)
-	JWTService := jwt.NewService()
-	authService := auth.NewService(authRepo, JWTService, logger)
+	_ = repository.NewAfterSalesRepository(pool)
+	authRepo := repository.NewAuthRepository(pool, logger)
+
+	logger.Info("Repositories initialized")
+
+	// Инициализация сервисов
+	jwtService := jwt.NewService()
+	authService := auth.NewService(authRepo, jwtService, logger)
 	perfService := performance.NewService(performanceRepo, logger)
+
+	logger.Info("Services initialized")
+
+	// Инициализация HTTP сервера
 	server := delivery.NewServer(authService, perfService, logger)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	logger.Info("HTTP server initialized", slog.String("port", cfg.ServerPort))
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Запуск сервера в отдельной горутине
 	go func() {
-		defer wg.Done()
 		server.RunServer()
 	}()
-	wg.Wait()
+
+	logger.Info("Server started successfully")
+
+	// Ожидание сигнала завершения
+	sig := <-quit
+	logger.Info("Shutdown signal received", slog.String("signal", sig.String()))
+
+	// Graceful shutdown с таймаутом
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return shutdown(shutdownCtx, pool, logger)
+}
+
+// shutdown выполняет graceful shutdown приложения.
+func shutdown(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) error {
+	logger.Info("Starting graceful shutdown...")
+
+	// TODO: Добавить shutdown для HTTP сервера когда будет реализован
+
+	// Закрываем пул соединений БД
+	pool.Close()
+	logger.Info("Database connections closed")
+
+	return nil
 }
