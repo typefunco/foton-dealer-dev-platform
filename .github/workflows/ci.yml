@@ -5,15 +5,22 @@ on:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
+  schedule:
+    - cron: '0 0 * * 1' # Каждый понедельник для security scan
 
 env:
   GO_VERSION: '1.24'
   NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Job 1: Проверка и тесты фронтенда
-  frontend-checks:
-    name: Frontend Checks & Tests
+  # ==========================================
+  # STAGE 1: LINT & FORMAT (параллельно)
+  # ==========================================
+  
+  frontend-lint:
+    name: 📝 Frontend Lint
     runs-on: ubuntu-latest
     
     defaults:
@@ -41,39 +48,13 @@ jobs:
       - name: Check TypeScript
         run: npx tsc --noEmit
 
-      - name: Build frontend
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: frontend-build
-          path: frontend/dist
-          retention-days: 7
-
-  # Job 2: Проверка и тесты бэкенда
-  backend-checks:
-    name: Backend Checks & Tests
+  backend-lint:
+    name: 📝 Backend Lint
     runs-on: ubuntu-latest
     
     defaults:
       run:
         working-directory: ./backend
-    
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: dealer_platform_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     
     steps:
       - name: Checkout code
@@ -107,6 +88,80 @@ jobs:
           working-directory: backend
           args: --timeout=5m
 
+  # ==========================================
+  # STAGE 2: TESTS (параллельно, после lint)
+  # ==========================================
+
+  frontend-test:
+    name: 🧪 Frontend Tests
+    runs-on: ubuntu-latest
+    needs: [frontend-lint]
+    
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/dist
+          retention-days: 7
+
+  backend-test:
+    name: 🧪 Backend Tests
+    runs-on: ubuntu-latest
+    needs: [backend-lint]
+    
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dealer_platform_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
       - name: Apply migrations
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/dealer_platform_test?sslmode=disable
@@ -127,6 +182,90 @@ jobs:
           flags: backend
           name: backend-coverage
 
+  # ==========================================
+  # STAGE 3: SECURITY SCAN (параллельно)
+  # ==========================================
+
+  codeql-scan:
+    name: 🔒 CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    needs: [frontend-lint, backend-lint]
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go', 'javascript' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{matrix.language}}"
+
+  gosec-scan:
+    name: 🔒 Gosec Security Scan
+    runs-on: ubuntu-latest
+    needs: [backend-lint]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: '-fmt sarif -out gosec-results.sarif ./backend/...'
+        continue-on-error: true
+
+      - name: Upload Gosec results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'gosec-results.sarif'
+
+      - name: Dependency check
+        run: |
+          cd backend
+          go list -json -m all | docker run --rm -i sonatypecommunity/nancy:latest sleuth
+
+  # ==========================================
+  # STAGE 4: BUILD (параллельно, после тестов)
+  # ==========================================
+
+  build-backend-binary:
+    name: 🔨 Build Backend Binary
+    runs-on: ubuntu-latest
+    needs: [backend-test]
+    
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
       - name: Build binary
         run: go build -o bin/dealer-platform ./cmd/app/main.go
 
@@ -137,11 +276,13 @@ jobs:
           path: backend/bin/dealer-platform
           retention-days: 7
 
-  # Job 3: Проверка сборки Docker образов
+  # ==========================================
+  # STAGE 5: DOCKER BUILD (после тестов)
+  # ==========================================
   docker-build:
-    name: Docker Build Check
+    name: 🐳 Docker Build & Scan
     runs-on: ubuntu-latest
-    needs: [frontend-checks, backend-checks]
+    needs: [backend-test, frontend-test]
     
     strategy:
       matrix:
@@ -177,11 +318,14 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-  # Job 4: Интеграционные тесты
+  # ==========================================
+  # STAGE 6: INTEGRATION TESTS (после Docker build)
+  # ==========================================
+
   integration-tests:
-    name: Integration Tests
+    name: 🔗 Integration Tests
     runs-on: ubuntu-latest
-    needs: [backend-checks]
+    needs: [docker-build]
     
     steps:
       - name: Checkout code
@@ -212,48 +356,130 @@ jobs:
         if: always()
         run: docker-compose down -v
 
-  # Job 5: Security checks
-  security-scan:
-    name: Security Scan
+  # ==========================================
+  # STAGE 7: DEPLOY (только для main/master, после всех проверок)
+  # ==========================================
+
+  docker-push:
+    name: 📦 Push Docker Images
     runs-on: ubuntu-latest
+    needs: [integration-tests, codeql-scan, gosec-scan]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        service: [backend]
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
         with:
-          args: '-fmt sarif -out gosec-results.sarif ./backend/...'
-        continue-on-error: true
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Gosec results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          sarif_file: 'gosec-results.sarif'
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Dependency check
-        run: |
-          cd backend
-          go list -json -m all | docker run --rm -i sonatypecommunity/nancy:latest sleuth
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
 
-  # Job 6: Build status check
-  ci-success:
-    name: CI Success
+  deploy-production:
+    name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
-    needs: [frontend-checks, backend-checks, docker-build, integration-tests, security-scan]
+    needs: [docker-push]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: https://your-domain.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy notification
+        run: |
+          echo "🚀 Deploying version ${{ github.sha }} to production"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Triggered by: ${{ github.actor }}"
+
+      # Здесь можно добавить реальный деплой:
+      # - SSH на сервер
+      # - kubectl apply для Kubernetes
+      # - Terraform apply и т.д.
+
+  # ==========================================
+  # FINAL STAGE: STATUS CHECK
+  # ==========================================
+
+  ci-success:
+    name: ✅ CI/CD Complete
+    runs-on: ubuntu-latest
+    needs: 
+      - frontend-lint
+      - backend-lint
+      - frontend-test
+      - backend-test
+      - codeql-scan
+      - gosec-scan
+      - build-backend-binary
+      - docker-build
+      - integration-tests
     if: always()
     
     steps:
       - name: Check all jobs status
         run: |
-          if [ "${{ needs.frontend-checks.result }}" != "success" ] || \
-             [ "${{ needs.backend-checks.result }}" != "success" ] || \
+          echo "📊 Pipeline Status Report"
+          echo "=========================="
+          echo "Frontend Lint: ${{ needs.frontend-lint.result }}"
+          echo "Backend Lint: ${{ needs.backend-lint.result }}"
+          echo "Frontend Test: ${{ needs.frontend-test.result }}"
+          echo "Backend Test: ${{ needs.backend-test.result }}"
+          echo "CodeQL Scan: ${{ needs.codeql-scan.result }}"
+          echo "Gosec Scan: ${{ needs.gosec-scan.result }}"
+          echo "Backend Binary: ${{ needs.build-backend-binary.result }}"
+          echo "Docker Build: ${{ needs.docker-build.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "=========================="
+          
+          if [ "${{ needs.frontend-lint.result }}" != "success" ] || \
+             [ "${{ needs.backend-lint.result }}" != "success" ] || \
+             [ "${{ needs.frontend-test.result }}" != "success" ] || \
+             [ "${{ needs.backend-test.result }}" != "success" ] || \
              [ "${{ needs.docker-build.result }}" != "success" ] || \
              [ "${{ needs.integration-tests.result }}" != "success" ]; then
-            echo "One or more jobs failed"
+            echo "❌ One or more critical jobs failed"
             exit 1
           fi
-          echo "All checks passed!"
+          
+          echo "✅ All checks passed!"
+          echo "🎉 Pipeline completed successfully!"
 
