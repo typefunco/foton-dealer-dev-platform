@@ -302,7 +302,8 @@ jobs:
        github.event.inputs.environment == 'production' || 
        github.event.inputs.environment == 'both') &&
       needs.build-binary.result == 'success' &&
-      (needs.deploy-stage.result == 'success' || needs.deploy-stage.result == 'skipped')
+      (needs.deploy-stage.result == 'success' || 
+       needs.deploy-stage.result == 'skipped')
     
     steps:
       - name: Checkout code
@@ -347,8 +348,8 @@ jobs:
        github.event.inputs.environment == 'production' || 
        github.event.inputs.environment == 'both') &&
       needs.build-binary.result == 'success' &&
-      (needs.deploy-stage.result == 'success' || needs.deploy-stage.result == 'skipped') &&
-      (needs.run-migrations.result == 'success' || needs.run-migrations.result == 'skipped')
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     environment:
       name: production
       url: https://your-domain.com
