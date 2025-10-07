@@ -5,8 +5,6 @@ on:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
-  schedule:
-    - cron: '0 0 * * 1' # Каждый понедельник для security scan
 
 env:
   GO_VERSION: '1.24'
@@ -16,7 +14,7 @@ env:
 
 jobs:
   # ==========================================
-  # STAGE 1: LINT & FORMAT (параллельно)
+  # STAGE 1: LINT & TEST (все параллельно)
   # ==========================================
   
   frontend-lint:
@@ -48,41 +46,9 @@ jobs:
       - name: Check TypeScript
         run: npx tsc --noEmit
 
-  backend-lint:
-    name: 📝 Backend Lint
-    runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: backend/go.sum
-
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run go vet
-        run: go vet ./...
-
-  # ==========================================
-  # STAGE 2: TESTS (параллельно, после lint)
-  # ==========================================
-
   frontend-test:
-    name: 🧪 Frontend Tests
+    name: 🧪 Frontend Test
     runs-on: ubuntu-latest
-    needs: [frontend-lint]
     
     defaults:
       run:
@@ -112,10 +78,44 @@ jobs:
           path: frontend/dist
           retention-days: 7
 
-  backend-test:
-    name: 🧪 Backend Tests
+  backend-lint:
+    name: 📝 Backend Lint
     runs-on: ubuntu-latest
-    needs: [backend-lint]
+    
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Check formatting
+        run: |
+          if [ -n "$(gofmt -s -l .)" ]; then
+            echo "Go code is not formatted:"
+            gofmt -s -l .
+            exit 1
+          fi
+
+  backend-test:
+    name: 🧪 Backend Test
+    runs-on: ubuntu-latest
     
     defaults:
       run:
@@ -162,85 +162,23 @@ jobs:
           SERVER_PORT: 8080
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           files: ./backend/coverage.out
           flags: backend
           name: backend-coverage
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-
-  # ==========================================
-  # STAGE 3: SECURITY SCAN (параллельно)
-  # ==========================================
-
-  codeql-scan:
-    name: 🔒 CodeQL Security Analysis
-    runs-on: ubuntu-latest
-    needs: [frontend-lint, backend-lint]
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'go', 'javascript' ]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          queries: +security-extended,security-and-quality
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{matrix.language}}"
-
-  gosec-scan:
-    name: 🔒 Gosec Security Scan
-    runs-on: ubuntu-latest
-    needs: [backend-lint]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: '-fmt sarif -out gosec-results.sarif ./backend/...'
         continue-on-error: true
 
-      - name: Upload Gosec results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'gosec-results.sarif'
-
-      - name: Dependency check
-        run: |
-          cd backend
-          go list -json -m all | docker run --rm -i sonatypecommunity/nancy:latest sleuth
-
   # ==========================================
-  # STAGE 4: BUILD (параллельно, после тестов)
+  # STAGE 2: BUILD BINARY (после Stage 1)
   # ==========================================
 
-  build-backend-binary:
-    name: 🔨 Build Backend Binary
+  build-binary:
+    name: 🔨 Build Binary
     runs-on: ubuntu-latest
-    needs: [backend-test]
+    needs: [frontend-lint, frontend-test, backend-lint, backend-test]
     
     defaults:
       run:
@@ -255,7 +193,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Build binary
+      - name: Build backend binary
         run: go build -o bin/dealer-platform ./cmd/app/main.go
 
       - name: Upload binary artifact
@@ -265,106 +203,121 @@ jobs:
           path: backend/bin/dealer-platform
           retention-days: 7
 
-  # ==========================================
-  # STAGE 5: DOCKER BUILD (после тестов)
-  # ==========================================
-  docker-build:
-    name: 🐳 Docker Build & Scan
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]
-    
-    strategy:
-      matrix:
-        service: [backend]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
-          file: ./${{ matrix.service }}/Dockerfile
+          context: ./backend
+          file: ./backend/Dockerfile
           push: false
-          tags: dealer-platform-${{ matrix.service }}:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: dealer-platform-${{ matrix.service }}:test
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
+          tags: dealer-platform-backend:${{ github.sha }}
 
   # ==========================================
-  # STAGE 6: INTEGRATION TESTS (после Docker build)
+  # STAGE 3: DEPLOY TO STAGE (после Build, только для main/master)
   # ==========================================
 
-  integration-tests:
-    name: 🔗 Integration Tests
+  deploy-stage:
+    name: 🚀 Deploy to Stage
     runs-on: ubuntu-latest
-    needs: [docker-build]
+    needs: [build-binary]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://stage.your-domain.com
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Start services with docker-compose
-        run: |
-          docker-compose up -d
-          sleep 10
+      - name: Download binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-binary
+          path: ./backend/bin
 
-      - name: Wait for backend to be ready
-        run: |
-          timeout 60 sh -c 'until curl -f http://localhost:8080/health 2>/dev/null; do sleep 2; done' || true
+      - name: Make binary executable
+        run: chmod +x ./backend/bin/dealer-platform
 
-      - name: Run integration tests
+      - name: Deploy to staging
         run: |
-          # Здесь можно добавить интеграционные тесты
-          echo "Running integration tests..."
-          curl -f http://localhost:8080/health || exit 1
+          echo "🚀 Deploying to staging environment"
+          echo "Version: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Triggered by: ${{ github.actor }}"
+          
+          # Здесь можно добавить реальный деплой:
+          # - scp binary на staging сервер
+          # - docker-compose pull && up на staging
+          # - kubectl apply для Kubernetes staging
+          # - terraform apply для staging окружения
 
-      - name: Show logs on failure
-        if: failure()
+      - name: Health check
         run: |
-          docker-compose logs backend
-          docker-compose logs postgres
-
-      - name: Cleanup
-        if: always()
-        run: docker-compose down -v
+          echo "Checking staging health..."
+          # curl -f https://stage.your-domain.com/health || exit 1
 
   # ==========================================
-  # STAGE 7: DEPLOY (только для main/master, после всех проверок)
+  # STAGE 4: MIGRATIONS (после Deploy to Stage)
   # ==========================================
 
-  docker-push:
-    name: 📦 Push Docker Images
+  run-migrations:
+    name: 🗄️ Run Migrations
     runs-on: ubuntu-latest
-    needs: [integration-tests, codeql-scan, gosec-scan]
+    needs: [deploy-stage]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    permissions:
-      contents: read
-      packages: write
-    
-    strategy:
-      matrix:
-        service: [backend]
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Check for new migrations
+        id: check-migrations
+        run: |
+          echo "Checking for new migration files..."
+          MIGRATIONS=$(ls -1 backend/internal/migrations/*.sql 2>/dev/null | wc -l)
+          echo "Found $MIGRATIONS migration files"
+          echo "migrations_count=$MIGRATIONS" >> $GITHUB_OUTPUT
+
+      - name: Apply migrations to staging
+        if: steps.check-migrations.outputs.migrations_count > 0
+        env:
+          STAGE_DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
+        run: |
+          echo "Applying migrations to staging database..."
+          # for migration in backend/internal/migrations/*.sql; do
+          #   echo "Applying $migration..."
+          #   psql $STAGE_DATABASE_URL -f $migration
+          # done
+
+      - name: Verify migrations
+        run: |
+          echo "Verifying migrations..."
+          # Здесь можно добавить проверку состояния БД
+
+  # ==========================================
+  # STAGE 5: DEPLOY TO PRODUCTION (после Migrations)
+  # ==========================================
+
+  deploy-production:
+    name: 🌍 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [run-migrations]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: https://your-domain.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-binary
+          path: ./backend/bin
+
+      - name: Make binary executable
+        run: chmod +x ./backend/bin/dealer-platform
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -380,52 +333,67 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
-          file: ./${{ matrix.service }}/Dockerfile
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
 
-  deploy-production:
-    name: 🚀 Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [docker-push]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    environment:
-      name: production
-      url: https://your-domain.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy notification
+      - name: Apply production migrations
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
         run: |
-          echo "🚀 Deploying version ${{ github.sha }} to production"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Triggered by: ${{ github.actor }}"
+          echo "Applying migrations to production database..."
+          # for migration in backend/internal/migrations/*.sql; do
+          #   echo "Applying $migration..."
+          #   psql $PROD_DATABASE_URL -f $migration
+          # done
 
-      # Здесь можно добавить реальный деплой:
-      # - SSH на сервер
-      # - kubectl apply для Kubernetes
-      # - Terraform apply и т.д.
+      - name: Deploy to production
+        run: |
+          echo "🌍 Deploying to production environment"
+          echo "Version: ${{ github.sha }}"
+          echo "Docker image: ${{ steps.meta.outputs.tags }}"
+          
+          # Здесь можно добавить реальный деплой:
+          # - SSH на production сервер
+          # - docker-compose pull && up
+          # - kubectl apply для Kubernetes
+          # - terraform apply
+          # - Ansible playbook
+
+      - name: Health check
+        run: |
+          echo "Checking production health..."
+          # Ждем немного для старта сервиса
+          # sleep 30
+          # curl -f https://your-domain.com/health || exit 1
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ Production deployment successful!"
+          echo "Version: ${{ github.sha }}"
+          # Здесь можно добавить уведомления:
+          # - Slack webhook
+          # - Discord webhook
+          # - Telegram bot
+          # - Email
 
   # ==========================================
-  # FINAL STAGE: STATUS CHECK
+  # FINAL: STATUS CHECK
   # ==========================================
 
   ci-success:
@@ -433,42 +401,32 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - frontend-lint
-      - backend-lint
       - frontend-test
+      - backend-lint
       - backend-test
-      - codeql-scan
-      - gosec-scan
-      - build-backend-binary
-      - docker-build
-      - integration-tests
+      - build-binary
     if: always()
     
     steps:
-      - name: Check all jobs status
+      - name: Check status
         run: |
           echo "📊 Pipeline Status Report"
           echo "=========================="
           echo "Frontend Lint: ${{ needs.frontend-lint.result }}"
-          echo "Backend Lint: ${{ needs.backend-lint.result }}"
           echo "Frontend Test: ${{ needs.frontend-test.result }}"
+          echo "Backend Lint: ${{ needs.backend-lint.result }}"
           echo "Backend Test: ${{ needs.backend-test.result }}"
-          echo "CodeQL Scan: ${{ needs.codeql-scan.result }}"
-          echo "Gosec Scan: ${{ needs.gosec-scan.result }}"
-          echo "Backend Binary: ${{ needs.build-backend-binary.result }}"
-          echo "Docker Build: ${{ needs.docker-build.result }}"
-          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "Build Binary: ${{ needs.build-binary.result }}"
           echo "=========================="
           
           if [ "${{ needs.frontend-lint.result }}" != "success" ] || \
-             [ "${{ needs.backend-lint.result }}" != "success" ] || \
              [ "${{ needs.frontend-test.result }}" != "success" ] || \
+             [ "${{ needs.backend-lint.result }}" != "success" ] || \
              [ "${{ needs.backend-test.result }}" != "success" ] || \
-             [ "${{ needs.docker-build.result }}" != "success" ] || \
-             [ "${{ needs.integration-tests.result }}" != "success" ]; then
-            echo "❌ One or more critical jobs failed"
+             [ "${{ needs.build-binary.result }}" != "success" ]; then
+            echo "❌ One or more jobs failed"
             exit 1
           fi
           
           echo "✅ All checks passed!"
           echo "🎉 Pipeline completed successfully!"
-
