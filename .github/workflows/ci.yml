@@ -248,7 +248,9 @@ jobs:
     needs: [build-binary]
     if: |
       github.event_name == 'workflow_dispatch' && 
-      (inputs.deploy_stage == true || inputs.environment == 'staging' || inputs.environment == 'both')
+      (github.event.inputs.deploy_stage == 'true' || 
+       github.event.inputs.environment == 'staging' || 
+       github.event.inputs.environment == 'both')
     environment:
       name: staging
       url: https://stage.your-domain.com
@@ -292,11 +294,14 @@ jobs:
   run-migrations:
     name: 🗄️ Run Migrations
     runs-on: ubuntu-latest
-    needs: [deploy-stage]
+    needs: [build-binary, deploy-stage]
     if: |
       always() &&
       github.event_name == 'workflow_dispatch' && 
-      (inputs.run_migrations == true || inputs.environment == 'production' || inputs.environment == 'both') &&
+      (github.event.inputs.run_migrations == 'true' || 
+       github.event.inputs.environment == 'production' || 
+       github.event.inputs.environment == 'both') &&
+      needs.build-binary.result == 'success' &&
       (needs.deploy-stage.result == 'success' || needs.deploy-stage.result == 'skipped')
     
     steps:
@@ -334,11 +339,15 @@ jobs:
   deploy-production:
     name: 🌍 Deploy to Production
     runs-on: ubuntu-latest
-    needs: [run-migrations]
+    needs: [build-binary, deploy-stage, run-migrations]
     if: |
       always() &&
       github.event_name == 'workflow_dispatch' && 
-      (inputs.deploy_production == true || inputs.environment == 'production' || inputs.environment == 'both') &&
+      (github.event.inputs.deploy_production == 'true' || 
+       github.event.inputs.environment == 'production' || 
+       github.event.inputs.environment == 'both') &&
+      needs.build-binary.result == 'success' &&
+      (needs.deploy-stage.result == 'success' || needs.deploy-stage.result == 'skipped') &&
       (needs.run-migrations.result == 'success' || needs.run-migrations.result == 'skipped')
     environment:
       name: production
