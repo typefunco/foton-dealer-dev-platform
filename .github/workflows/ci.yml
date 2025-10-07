@@ -5,6 +5,33 @@ on:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
+  workflow_dispatch:
+    inputs:
+      deploy_stage:
+        description: 'Deploy to Staging'
+        required: false
+        type: boolean
+        default: false
+      run_migrations:
+        description: 'Run Migrations'
+        required: false
+        type: boolean
+        default: false
+      deploy_production:
+        description: 'Deploy to Production'
+        required: false
+        type: boolean
+        default: false
+      environment:
+        description: 'Target environment'
+        required: false
+        type: choice
+        options:
+          - none
+          - staging
+          - production
+          - both
+        default: 'none'
 
 env:
   GO_VERSION: '1.24'
@@ -212,14 +239,16 @@ jobs:
           tags: dealer-platform-backend:${{ github.sha }}
 
   # ==========================================
-  # STAGE 3: DEPLOY TO STAGE (после Build, только для main/master)
+  # STAGE 3: DEPLOY TO STAGE (только вручную)
   # ==========================================
 
   deploy-stage:
     name: 🚀 Deploy to Stage
     runs-on: ubuntu-latest
     needs: [build-binary]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      (inputs.deploy_stage == true || inputs.environment == 'staging' || inputs.environment == 'both')
     environment:
       name: staging
       url: https://stage.your-domain.com
@@ -243,6 +272,7 @@ jobs:
           echo "Version: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
           echo "Triggered by: ${{ github.actor }}"
+          echo "Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}"
           
           # Здесь можно добавить реальный деплой:
           # - scp binary на staging сервер
@@ -256,14 +286,18 @@ jobs:
           # curl -f https://stage.your-domain.com/health || exit 1
 
   # ==========================================
-  # STAGE 4: MIGRATIONS (после Deploy to Stage)
+  # STAGE 4: MIGRATIONS (только вручную)
   # ==========================================
 
   run-migrations:
     name: 🗄️ Run Migrations
     runs-on: ubuntu-latest
     needs: [deploy-stage]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: |
+      always() &&
+      github.event_name == 'workflow_dispatch' && 
+      (inputs.run_migrations == true || inputs.environment == 'production' || inputs.environment == 'both') &&
+      (needs.deploy-stage.result == 'success' || needs.deploy-stage.result == 'skipped')
     
     steps:
       - name: Checkout code
@@ -294,14 +328,18 @@ jobs:
           # Здесь можно добавить проверку состояния БД
 
   # ==========================================
-  # STAGE 5: DEPLOY TO PRODUCTION (после Migrations)
+  # STAGE 5: DEPLOY TO PRODUCTION (только вручную)
   # ==========================================
 
   deploy-production:
     name: 🌍 Deploy to Production
     runs-on: ubuntu-latest
     needs: [run-migrations]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: |
+      always() &&
+      github.event_name == 'workflow_dispatch' && 
+      (inputs.deploy_production == true || inputs.environment == 'production' || inputs.environment == 'both') &&
+      (needs.run-migrations.result == 'success' || needs.run-migrations.result == 'skipped')
     environment:
       name: production
       url: https://your-domain.com
@@ -366,6 +404,8 @@ jobs:
           echo "🌍 Deploying to production environment"
           echo "Version: ${{ github.sha }}"
           echo "Docker image: ${{ steps.meta.outputs.tags }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}"
           
           # Здесь можно добавить реальный деплой:
           # - SSH на production сервер
