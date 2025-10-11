@@ -82,3 +82,7 @@ func (repo *AuthRepository) GetUser(ctx context.Context, login string) (*model.U
 
 	return &user, rows.Err()
 }
+
+func (repo *AuthRepository) Ping(ctx context.Context) error {
+	return repo.pool.Ping(ctx)
+}

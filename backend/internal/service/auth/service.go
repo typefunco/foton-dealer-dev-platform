@@ -11,6 +11,7 @@ type Repository interface {
 	CreateUser(ctx context.Context, user model.User) error
 	DeleteUser(ctx context.Context, login string) error
 	GetUser(ctx context.Context, login string) (*model.User, error)
+	Ping(ctx context.Context) error
 }
 
 type JWTRepository interface {
@@ -67,4 +68,8 @@ func (s *Service) Signup(ctx context.Context, user model.User) (string, error) {
 	}
 
 	return jwt, nil
+}
+
+func (s *Service) PingDatabase(ctx context.Context) error {
+	return s.repo.Ping(ctx)
 }

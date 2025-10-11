@@ -348,3 +348,133 @@ func (r *DealerRepository) GetBusinesses(ctx context.Context, dealerID int64) ([
 
 	return businesses, nil
 }
+
+// GetDealerCardData возвращает полную информацию о дилере для карточки.
+// Объединяет данные из всех связанных таблиц (dealer_dev, sales, performance, after_sales).
+func (r *DealerRepository) GetDealerCardData(ctx context.Context, dealerID int64, quarter string, year int) (*model.DealerCardData, error) {
+	// Сначала получаем базовую информацию о дилере
+	dealer, err := r.GetByID(ctx, dealerID)
+	if err != nil {
+		return nil, fmt.Errorf("DealerRepository.GetDealerCardData: failed to get dealer: %w", err)
+	}
+
+	// Получаем бренды
+	brands, err := r.GetBrands(ctx, dealerID)
+	if err != nil {
+		return nil, fmt.Errorf("DealerRepository.GetDealerCardData: failed to get brands: %w", err)
+	}
+
+	// Получаем побочный бизнес
+	businesses, err := r.GetBusinesses(ctx, dealerID)
+	if err != nil {
+		return nil, fmt.Errorf("DealerRepository.GetDealerCardData: failed to get businesses: %w", err)
+	}
+
+	// Создаем карточку дилера с базовой информацией
+	cardData := &model.DealerCardData{
+		ID:                dealerID,
+		Name:              dealer.Name,
+		City:              dealer.City,
+		Region:            dealer.Region,
+		SalesManager:      dealer.Manager,
+		BrandsInPortfolio: brands,
+		BrandsCount:       len(brands),
+		BuySideBusiness:   businesses,
+	}
+
+	// Получаем данные Dealer Development
+	dealerDevQuery := `
+		SELECT check_list_score, dealer_ship_class, branding, marketing_investments
+		FROM dealer_dev
+		WHERE dealer_id = $1 AND quarter = $2 AND year = $3
+	`
+	var checkList int16
+	var class string
+	var branding bool
+	var marketing int64
+
+	err = r.pool.QueryRow(ctx, dealerDevQuery, dealerID, quarter, year).Scan(
+		&checkList, &class, &branding, &marketing,
+	)
+	if err == nil {
+		cardData.Class = class
+		cardData.Checklist = int(checkList)
+		cardData.Branding = branding
+		cardData.MarketingInvestment = int(marketing)
+	}
+
+	// Получаем данные Sales
+	salesQuery := `
+		SELECT sales_target, stock_hdt, stock_mdt, stock_ldt, 
+		       buyout_hdt, buyout_mdt, buyout_ldt, foton_salesmen, sales_trainings
+		FROM sales
+		WHERE dealer_id = $1 AND quarter = $2 AND year = $3
+	`
+	var stockHDT, stockMDT, stockLDT, buyoutHDT, buyoutMDT, buyoutLDT, salesmen int16
+	var salesTarget string
+	var salesTrainings bool
+
+	err = r.pool.QueryRow(ctx, salesQuery, dealerID, quarter, year).Scan(
+		&salesTarget, &stockHDT, &stockMDT, &stockLDT,
+		&buyoutHDT, &buyoutMDT, &buyoutLDT, &salesmen, &salesTrainings,
+	)
+	if err == nil {
+		cardData.SalesTarget = salesTarget
+		cardData.StockHdtMdtLdt = fmt.Sprintf("%d/%d/%d", stockHDT, stockMDT, stockLDT)
+		cardData.BuyoutHdtMdtLdt = fmt.Sprintf("%d/%d/%d", buyoutHDT, buyoutMDT, buyoutLDT)
+		cardData.FotonSalesmen = fmt.Sprintf("%d", salesmen)
+		cardData.SalesTrainings = salesTrainings
+	}
+
+	// Получаем данные Performance
+	perfQuery := `
+		SELECT sales_revenue_rub, sales_profit_rub, sales_margin_percent,
+		       after_sales_revenue_rub, after_sales_profit_rub, after_sales_margin_percent,
+		       foton_rank
+		FROM performance
+		WHERE dealer_id = $1 AND quarter = $2 AND year = $3
+	`
+	var salesRev, salesProfit, asRev, asProfit int64
+	var salesMargin, asMargin float64
+	var ranking int16
+
+	err = r.pool.QueryRow(ctx, perfQuery, dealerID, quarter, year).Scan(
+		&salesRev, &salesProfit, &salesMargin,
+		&asRev, &asProfit, &asMargin, &ranking,
+	)
+	if err == nil {
+		cardData.SrRub = fmt.Sprintf("%d", salesRev)
+		cardData.SalesProfit = fmt.Sprintf("%d", salesProfit)
+		cardData.SalesMargin = int(salesMargin)
+		cardData.AfterSalesRevenue = fmt.Sprintf("%d", asRev)
+		cardData.AfterSalesProfitsRap = fmt.Sprintf("%d", asProfit)
+		cardData.AfterSalesMargin = int(asMargin)
+		cardData.Ranking = int(ranking)
+	}
+
+	// Получаем данные After Sales
+	asQuery := `
+		SELECT recommended_stock, warranty_stock, foton_labor_hours,
+		       service_contracts, as_trainings, csi
+		FROM after_sales
+		WHERE dealer_id = $1 AND quarter = $2 AND year = $3
+	`
+	var recStock, warStock, laborHours int16
+	var serviceContracts int16
+	var asTrainings bool
+	var csi string
+
+	err = r.pool.QueryRow(ctx, asQuery, dealerID, quarter, year).Scan(
+		&recStock, &warStock, &laborHours, &serviceContracts, &asTrainings, &csi,
+	)
+	if err == nil {
+		cardData.RecommendedStock = int(recStock)
+		cardData.WarrantyStock = int(warStock)
+		cardData.FotonLaborHours = int(laborHours)
+		cardData.ServiceContract = serviceContracts > 0
+		cardData.AsTrainings = asTrainings
+		cardData.Csi = csi
+	}
+
+	return cardData, nil
+}

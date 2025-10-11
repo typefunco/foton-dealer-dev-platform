@@ -13,8 +13,13 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/database"
 	"github.com/typefunco/dealer_dev_platform/internal/delivery"
 	"github.com/typefunco/dealer_dev_platform/internal/repository"
+	"github.com/typefunco/dealer_dev_platform/internal/service/aftersales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/auth"
+	"github.com/typefunco/dealer_dev_platform/internal/service/dealer"
+	"github.com/typefunco/dealer_dev_platform/internal/service/dealerdev"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance"
+	"github.com/typefunco/dealer_dev_platform/internal/service/sales"
+	"github.com/typefunco/dealer_dev_platform/internal/service/user"
 	"github.com/typefunco/dealer_dev_platform/internal/utils/jwt"
 )
 
@@ -61,13 +66,13 @@ func RunApp() {
 // run содержит основную логику приложения.
 func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *slog.Logger) error {
 	// Инициализация репозиториев
-	// TODO: Добавить использование остальных репозиториев по мере реализации сервисов
-	_ = repository.NewDealerRepository(pool)
-	_ = repository.NewDealerDevRepository(pool)
-	_ = repository.NewSalesRepository(pool)
+	dealerRepo := repository.NewDealerRepository(pool)
+	dealerDevRepo := repository.NewDealerDevRepository(pool)
+	salesRepo := repository.NewSalesRepository(pool)
 	performanceRepo := repository.NewPerformanceRepository(pool)
-	_ = repository.NewAfterSalesRepository(pool)
+	afterSalesRepo := repository.NewAfterSalesRepository(pool)
 	authRepo := repository.NewAuthRepository(pool, logger)
+	userRepo := repository.NewUserRepository(pool, logger)
 
 	logger.Info("Repositories initialized")
 
@@ -75,11 +80,16 @@ func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *sl
 	jwtService := jwt.NewService()
 	authService := auth.NewService(authRepo, jwtService, logger)
 	perfService := performance.NewService(performanceRepo, logger)
+	userService := user.NewService(userRepo, logger)
+	afterSalesService := aftersales.NewService(afterSalesRepo, logger)
+	dealerService := dealer.NewService(dealerRepo, logger)
+	salesService := sales.NewService(salesRepo, logger)
+	dealerDevService := dealerdev.NewService(dealerDevRepo, logger)
 
 	logger.Info("Services initialized")
 
 	// Инициализация HTTP сервера
-	server := delivery.NewServer(authService, perfService, logger)
+	server := delivery.NewServer(authService, perfService, userService, afterSalesService, dealerService, salesService, dealerDevService, logger)
 	logger.Info("HTTP server initialized", slog.String("port", cfg.ServerPort))
 
 	// Graceful shutdown

@@ -29,7 +29,6 @@ type User struct {
 }
 
 // UserResponse представляет данные пользователя для API ответов.
-// Не содержит пароль и другие чувствительные данные.
 type UserResponse struct {
 	ID        int64     `json:"id"`
 	Login     string    `json:"login"`
@@ -40,4 +39,43 @@ type UserResponse struct {
 	LastName  string    `json:"last_name"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// UserFilter представляет фильтры для поиска пользователей.
+// Все поля являются опциональными и могут быть nil.
+// Если поле nil, то оно не участвует в фильтрации.
+type UserFilter struct {
+	ID        *int64    `json:"id,omitempty"`
+	Login     *string   `json:"login,omitempty"`
+	Email     *string   `json:"email,omitempty"`
+	IsAdmin   *bool     `json:"is_admin,omitempty"`
+	Role      *UserRole `json:"role,omitempty"`
+	Region    *string   `json:"region,omitempty"`
+	FirstName *string   `json:"first_name,omitempty"`
+	LastName  *string   `json:"last_name,omitempty"`
+}
+
+// UserUpdate представляет поля для обновления пользователя.
+// Только не-nil поля будут обновлены в базе данных.
+type UserUpdate struct {
+	Login     *string   `json:"login,omitempty"`
+	Password  *string   `json:"password,omitempty"`
+	IsAdmin   *bool     `json:"is_admin,omitempty"`
+	Role      *UserRole `json:"role,omitempty"`
+	Region    *string   `json:"region,omitempty"`
+	FirstName *string   `json:"first_name,omitempty"`
+	LastName  *string   `json:"last_name,omitempty"`
+	Email     *string   `json:"email,omitempty"`
+}
+
+// UserCreateRequest представляет запрос на создание нового пользователя.
+type UserCreateRequest struct {
+	Login     string   `json:"login" binding:"required"`
+	Password  string   `json:"password" binding:"required"`
+	IsAdmin   bool     `json:"is_admin"`
+	Role      UserRole `json:"role" binding:"required"`
+	Region    string   `json:"region,omitempty"`
+	FirstName string   `json:"first_name,omitempty"`
+	LastName  string   `json:"last_name,omitempty"`
+	Email     string   `json:"email,omitempty"`
 }

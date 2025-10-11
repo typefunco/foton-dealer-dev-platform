@@ -1,3 +1,4 @@
+-- Создание таблицы производительности дилеров (отдельная таблица для аналитики)
 CREATE TABLE IF NOT EXISTS dealer_performance
 (
     id                        serial,
@@ -14,3 +15,4 @@ CREATE TABLE IF NOT EXISTS dealer_performance
     foton_rank                smallint,
     dealer_dev_recommendation varchar(20)
 );
+
