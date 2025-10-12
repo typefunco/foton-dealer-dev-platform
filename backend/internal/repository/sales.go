@@ -244,9 +244,13 @@ func (r *SalesRepository) UpdateFull(ctx context.Context, sales *model.Sales) er
 		return fmt.Errorf("SalesRepository.UpdateFull: error building query: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, sql, args...)
+	result, err := r.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("SalesRepository.UpdateFull: error updating: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("SalesRepository.UpdateFull: no rows affected, record with id %d not found", sales.ID)
 	}
 
 	return nil
@@ -261,9 +265,13 @@ func (r *SalesRepository) Delete(ctx context.Context, id int64) error {
 		return fmt.Errorf("SalesRepository.Delete: error building query: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, sql, args...)
+	result, err := r.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("SalesRepository.Delete: error deleting: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("SalesRepository.Delete: no rows affected, record with id %d not found", id)
 	}
 
 	return nil
@@ -283,9 +291,13 @@ func (r *SalesRepository) Update(ctx context.Context, id int64, updates map[stri
 		return fmt.Errorf("SalesRepository.Update: error building query: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, sql, args...)
+	result, err := r.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("SalesRepository.Update: error updating: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("SalesRepository.Update: no rows affected, record with id %d not found", id)
 	}
 
 	return nil

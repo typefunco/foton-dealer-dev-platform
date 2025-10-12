@@ -28,9 +28,45 @@ func NewPerformanceSalesRepository(pool *pgxpool.Pool, logger *slog.Logger) *Per
 func (r *PerformanceSalesRepository) GetAllByPeriod(ctx context.Context, period time.Time) ([]*model.PerformanceSales, error) {
 	r.logger.Info("Getting performance sales by period", "period", period)
 
-	// Здесь нужно будет реализовать SQL запрос для получения данных
-	// Пока возвращаем пустой список
-	return []*model.PerformanceSales{}, nil
+	query := `
+		SELECT id, dealer_id, period, quantity_sold, sales_revenue, sales_revenue_no_vat, sales_cost, 
+		       sales_margin, sales_margin_pct, sales_profit_pct, created_at, updated_at
+		FROM performance_sales 
+		WHERE period = $1
+		ORDER BY dealer_id`
+
+	rows, err := r.pool.Query(ctx, query, period)
+	if err != nil {
+		r.logger.Error("Failed to get performance sales by period", "error", err, "period", period)
+		return nil, fmt.Errorf("PerformanceSalesRepository.GetAllByPeriod: %w", err)
+	}
+	defer rows.Close()
+
+	var performances []*model.PerformanceSales
+	for rows.Next() {
+		var ps model.PerformanceSales
+		err := rows.Scan(
+			&ps.ID,
+			&ps.DealerID,
+			&ps.Period,
+			&ps.QuantitySold,
+			&ps.SalesRevenue,
+			&ps.SalesRevenueNoVat,
+			&ps.SalesCost,
+			&ps.SalesMargin,
+			&ps.SalesMarginPct,
+			&ps.SalesProfitPct,
+			&ps.CreatedAt,
+			&ps.UpdatedAt,
+		)
+		if err != nil {
+			r.logger.Error("Failed to scan performance sales", "error", err)
+			return nil, fmt.Errorf("PerformanceSalesRepository.GetAllByPeriod: %w", err)
+		}
+		performances = append(performances, &ps)
+	}
+
+	return performances, nil
 }
 
 // GetByDealerID - получение производительности продаж по ID дилера.
@@ -46,9 +82,34 @@ func (r *PerformanceSalesRepository) GetByDealerID(ctx context.Context, dealerID
 func (r *PerformanceSalesRepository) GetByDealerIDAndPeriod(ctx context.Context, dealerID int, period time.Time) (*model.PerformanceSales, error) {
 	r.logger.Info("Getting performance sales by dealer ID and period", "dealerID", dealerID, "period", period)
 
-	// Здесь нужно будет реализовать SQL запрос для получения данных
-	// Пока возвращаем заглушку
-	return nil, nil
+	query := `
+		SELECT id, dealer_id, period, quantity_sold, sales_revenue, sales_revenue_no_vat, sales_cost, 
+		       sales_margin, sales_margin_pct, sales_profit_pct, created_at, updated_at
+		FROM performance_sales 
+		WHERE dealer_id = $1 AND period = $2`
+
+	var ps model.PerformanceSales
+	err := r.pool.QueryRow(ctx, query, dealerID, period).Scan(
+		&ps.ID,
+		&ps.DealerID,
+		&ps.Period,
+		&ps.QuantitySold,
+		&ps.SalesRevenue,
+		&ps.SalesRevenueNoVat,
+		&ps.SalesCost,
+		&ps.SalesMargin,
+		&ps.SalesMarginPct,
+		&ps.SalesProfitPct,
+		&ps.CreatedAt,
+		&ps.UpdatedAt,
+	)
+
+	if err != nil {
+		r.logger.Error("Failed to get performance sales by dealer ID and period", "error", err, "dealerID", dealerID, "period", period)
+		return nil, fmt.Errorf("PerformanceSalesRepository.GetByDealerIDAndPeriod: %w", err)
+	}
+
+	return &ps, nil
 }
 
 // GetByID - получение производительности продаж по ID.
@@ -123,7 +184,35 @@ func (r *PerformanceSalesRepository) Create(ctx context.Context, perf *model.Per
 func (r *PerformanceSalesRepository) Update(ctx context.Context, perf *model.PerformanceSales) error {
 	r.logger.Info("Updating performance sales", "id", perf.ID)
 
-	// Здесь нужно будет реализовать SQL запрос для обновления записи
+	query := `
+		UPDATE performance_sales 
+		SET dealer_id = $1, period = $2, quantity_sold = $3, sales_revenue = $4, sales_revenue_no_vat = $5, 
+		    sales_cost = $6, sales_margin = $7, sales_margin_pct = $8, sales_profit_pct = $9, updated_at = $10
+		WHERE id = $11`
+
+	result, err := r.pool.Exec(ctx, query,
+		perf.DealerID,
+		perf.Period,
+		perf.QuantitySold,
+		perf.SalesRevenue,
+		perf.SalesRevenueNoVat,
+		perf.SalesCost,
+		perf.SalesMargin,
+		perf.SalesMarginPct,
+		perf.SalesProfitPct,
+		perf.UpdatedAt,
+		perf.ID,
+	)
+
+	if err != nil {
+		r.logger.Error("Failed to update performance sales", "error", err, "id", perf.ID)
+		return fmt.Errorf("PerformanceSalesRepository.Update: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("PerformanceSalesRepository.Update: no rows affected, record with id %d not found", perf.ID)
+	}
+
 	return nil
 }
 
@@ -131,6 +220,17 @@ func (r *PerformanceSalesRepository) Update(ctx context.Context, perf *model.Per
 func (r *PerformanceSalesRepository) Delete(ctx context.Context, id int) error {
 	r.logger.Info("Deleting performance sales", "id", id)
 
-	// Здесь нужно будет реализовать SQL запрос для удаления записи
+	query := `DELETE FROM performance_sales WHERE id = $1`
+
+	result, err := r.pool.Exec(ctx, query, id)
+	if err != nil {
+		r.logger.Error("Failed to delete performance sales", "error", err, "id", id)
+		return fmt.Errorf("PerformanceSalesRepository.Delete: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("PerformanceSalesRepository.Delete: no rows affected, record with id %d not found", id)
+	}
+
 	return nil
 }

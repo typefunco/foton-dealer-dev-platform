@@ -138,7 +138,7 @@ jobs:
         id: check-migrations
         run: |
           echo "Checking for new migration files..."
-          MIGRATIONS=$(ls -1 backend/internal/migrations/*.sql 2>/dev/null | wc -l)
+          MIGRATIONS=$(ls -1 backend/migrations/*.sql 2>/dev/null | wc -l)
           echo "Found $MIGRATIONS migration files"
           echo "migrations_count=$MIGRATIONS" >> $GITHUB_OUTPUT
 
@@ -148,7 +148,7 @@ jobs:
           STAGE_DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
         run: |
           echo "Applying migrations to staging database..."
-          # for migration in backend/internal/migrations/*.sql; do
+          # for migration in backend/migrations/*.sql; do
           #   echo "Applying $migration..."
           #   psql $STAGE_DATABASE_URL -f $migration
           # done
@@ -216,7 +216,7 @@ jobs:
           PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
         run: |
           echo "Applying migrations to production database..."
-          # for migration in backend/internal/migrations/*.sql; do
+          # for migration in backend/migrations/*.sql; do
           #   echo "Applying $migration..."
           #   psql $PROD_DATABASE_URL -f $migration
           # done

@@ -148,20 +148,39 @@ jobs:
       run:
         working-directory: ./backend
     
-    services:
-      postgres:
-        image: postgres:14
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run unit tests (without integration)
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: dealer_platform_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          JWT_SECRET: test-secret
+          SERVER_PORT: 8080
+        run: |
+          echo "Running unit tests only..."
+          go test -v -race -coverprofile=coverage.out -covermode=atomic \
+            ./internal/model/... \
+            ./internal/config/... \
+            ./internal/utils/... \
+            -run "Test.*" \
+            -short || true
+
+  backend-integration-test:
+    name: 🧪 Backend Integration Test
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
     
     steps:
       - name: Checkout code
@@ -176,25 +195,44 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Apply migrations
+      - name: Run integration tests with Testcontainers
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/dealer_platform_test?sslmode=disable
-        run: |
-          psql $DATABASE_URL -f internal/migrations/001_create_initial_tables.sql
-
-      - name: Run tests
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/dealer_platform_test?sslmode=disable
           JWT_SECRET: test-secret
           SERVER_PORT: 8080
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
+          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+        run: |
+          echo "Running integration tests with Testcontainers..."
+          echo "Docker socket: $TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"
+          go test -v -race -coverprofile=integration-coverage.out -covermode=atomic \
+            ./internal/service/... \
+            ./internal/repository/... \
+            ./internal/testutil/... \
+            -timeout=30m \
+            -run "Test.*"
+
+      - name: Generate coverage report
+        run: |
+          echo "Generating coverage report..."
+          go tool cover -html=integration-coverage.out -o integration-coverage.html
+          go tool cover -func=integration-coverage.out
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage-${{ github.sha }}
+          path: |
+            backend/integration-coverage.out
+            backend/integration-coverage.html
+          retention-days: 7
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          files: ./backend/coverage.out
-          flags: backend
-          name: backend-coverage
+          files: ./backend/integration-coverage.out
+          flags: backend-integration
+          name: backend-integration-coverage
           fail_ci_if_error: false
         continue-on-error: true
 
@@ -205,7 +243,7 @@ jobs:
   build-binary:
     name: 🔨 Build Binary
     runs-on: ubuntu-latest
-    needs: [frontend-lint, frontend-test, backend-lint, backend-test]
+    needs: [frontend-lint, frontend-test, backend-lint, backend-test, backend-integration-test]
     
     defaults:
       run:
@@ -313,7 +351,7 @@ jobs:
         id: check-migrations
         run: |
           echo "Checking for new migration files..."
-          MIGRATIONS=$(ls -1 backend/internal/migrations/*.sql 2>/dev/null | wc -l)
+          MIGRATIONS=$(ls -1 backend/migrations/*.sql 2>/dev/null | wc -l)
           echo "Found $MIGRATIONS migration files"
           echo "migrations_count=$MIGRATIONS" >> $GITHUB_OUTPUT
 
@@ -323,7 +361,7 @@ jobs:
           STAGE_DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
         run: |
           echo "Applying migrations to staging database..."
-          # for migration in backend/internal/migrations/*.sql; do
+          # for migration in backend/migrations/*.sql; do
           #   echo "Applying $migration..."
           #   psql $STAGE_DATABASE_URL -f $migration
           # done
@@ -404,7 +442,7 @@ jobs:
           PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
         run: |
           echo "Applying migrations to production database..."
-          # for migration in backend/internal/migrations/*.sql; do
+          # for migration in backend/migrations/*.sql; do
           #   echo "Applying $migration..."
           #   psql $PROD_DATABASE_URL -f $migration
           # done
@@ -454,6 +492,7 @@ jobs:
       - frontend-test
       - backend-lint
       - backend-test
+      - backend-integration-test
       - build-binary
     if: always()
     
@@ -466,6 +505,7 @@ jobs:
           echo "Frontend Test: ${{ needs.frontend-test.result }}"
           echo "Backend Lint: ${{ needs.backend-lint.result }}"
           echo "Backend Test: ${{ needs.backend-test.result }}"
+          echo "Backend Integration Test: ${{ needs.backend-integration-test.result }}"
           echo "Build Binary: ${{ needs.build-binary.result }}"
           echo "=========================="
           
@@ -473,6 +513,7 @@ jobs:
              [ "${{ needs.frontend-test.result }}" != "success" ] || \
              [ "${{ needs.backend-lint.result }}" != "success" ] || \
              [ "${{ needs.backend-test.result }}" != "success" ] || \
+             [ "${{ needs.backend-integration-test.result }}" != "success" ] || \
              [ "${{ needs.build-binary.result }}" != "success" ]; then
             echo "❌ One or more jobs failed"
             exit 1

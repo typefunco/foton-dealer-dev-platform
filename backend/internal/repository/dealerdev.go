@@ -245,9 +245,13 @@ func (r *DealerDevRepository) Delete(ctx context.Context, id int) error {
 		return fmt.Errorf("DealerDevRepository.Delete: error building query: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, sql, args...)
+	result, err := r.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("DealerDevRepository.Delete: error deleting: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("DealerDevRepository.Delete: no rows affected, record with id %d not found", id)
 	}
 
 	return nil
@@ -267,9 +271,13 @@ func (r *DealerDevRepository) Update(ctx context.Context, id int, updates map[st
 		return fmt.Errorf("DealerDevRepository.Update: error building query: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, sql, args...)
+	result, err := r.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("DealerDevRepository.Update: error updating: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("DealerDevRepository.Update: no rows affected, record with id %d not found", id)
 	}
 
 	return nil

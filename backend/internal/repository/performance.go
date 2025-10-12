@@ -240,11 +240,9 @@ func (r *PerformanceRepository) GetWithDetailsByPeriod(ctx context.Context, quar
 	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 
 	queryBuilder := r.sq.Select(
-		"ps.id", "ps.dealer_id", "ps.period",
-		"ps.quantity_sold", "ps.sales_revenue", "ps.sales_revenue_no_vat", "ps.sales_cost",
-		"ps.sales_margin", "ps.sales_margin_pct", "ps.sales_profit_pct",
-		"ps.created_at", "ps.updated_at",
-		"d.dealer_name_ru", "d.city", "d.region", "d.manager",
+		"ps.dealer_id", "d.dealer_name_ru", "d.city", "d.region", "d.manager",
+		"0 as foton_rank", "ps.sales_revenue", "ps.sales_margin", "ps.sales_margin",
+		"0 as as_revenue", "0 as as_profit", "0 as as_margin", "0 as marketing", "'' as decision",
 	).
 		From(performanceTableName + " ps").
 		Join("dealers d ON ps.dealer_id = d.dealer_id").
@@ -291,9 +289,13 @@ func (r *PerformanceRepository) Delete(ctx context.Context, id int64) error {
 		return fmt.Errorf("PerformanceRepository.Delete: error building query: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, sql, args...)
+	result, err := r.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("PerformanceRepository.Delete: error deleting: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("PerformanceRepository.Delete: no rows affected, record with id %d not found", id)
 	}
 
 	return nil
@@ -313,9 +315,13 @@ func (r *PerformanceRepository) Update(ctx context.Context, id int64, updates ma
 		return fmt.Errorf("PerformanceRepository.Update: error building query: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, sql, args...)
+	result, err := r.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("PerformanceRepository.Update: error updating: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("PerformanceRepository.Update: no rows affected, record with id %d not found", id)
 	}
 
 	return nil

@@ -278,7 +278,7 @@ func TestSalesService_GetSalesByID(t *testing.T) {
 		// Получаем данные по ID
 		retrieved, err := service.GetSalesByID(ctx, id)
 		require.NoError(t, err)
-		assert.Equal(t, id, retrieved.ID)
+		assert.Equal(t, int(id), retrieved.ID)
 		assert.Equal(t, dealerID, retrieved.DealerID)
 		assert.Equal(t, salesData.Period, retrieved.Period)
 	})

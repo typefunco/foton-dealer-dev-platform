@@ -257,7 +257,7 @@ func TestPerformanceService_GetPerformanceByID(t *testing.T) {
 		// Получаем данные по ID
 		retrieved, err := service.GetPerformanceByID(ctx, id)
 		require.NoError(t, err)
-		assert.Equal(t, id, retrieved.ID)
+		assert.Equal(t, int(id), retrieved.ID)
 		assert.Equal(t, dealerID, retrieved.DealerID)
 		assert.Equal(t, perfData.Period, retrieved.Period)
 	})
@@ -295,8 +295,9 @@ func TestPerformanceService_FindPerformances(t *testing.T) {
 		dealerID, err := dealerRepo.Create(ctx, dealer)
 		require.NoError(t, err)
 
-		// Создаем тестовые данные
+		// Создаем тестовые данные за q1 2025 (как ожидает FindPerformances)
 		perfData := testutil.CreateTestPerformanceSales(dealerID)
+		perfData.Period = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC) // q1 2025
 		_, err = service.CreatePerformance(ctx, perfData)
 		require.NoError(t, err)
 
