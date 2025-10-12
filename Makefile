@@ -12,7 +12,7 @@ help:
 	@echo "  clean            Clean build artifacts"
 	@echo ""
 	@echo "Testing:"
-	@echo "  test             Run all tests (unit + integration)"
+	@echo "  test             Run all backend tests with Testcontainers"
 	@echo "  test-unit        Run unit tests only"
 	@echo "  test-integration Run integration tests with Testcontainers"
 	@echo "  test-all         Run all tests with coverage"
@@ -51,10 +51,12 @@ clean:
 	rm -rf backend/*.html
 
 # Testing
-test: test-unit test-integration
+test:
+	@echo "Running all backend tests with Testcontainers..."
+	cd backend && go test -v -race -timeout=30m ./...
 
 test-unit:
-	@echo "Running unit tests..."
+	@echo "Running unit tests only..."
 	cd backend && go test -v -race -short ./internal/model/... ./internal/config/... ./internal/utils/...
 
 test-integration:
@@ -96,11 +98,7 @@ db-reset:
 # CI/CD helpers
 ci-test:
 	@echo "Running CI tests..."
-	cd backend && go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
-
-ci-integration-test:
-	@echo "Running CI integration tests..."
-	cd backend && TESTCONTAINERS_RYUK_DISABLED=true go test -v -race -timeout=30m ./internal/service/... ./internal/repository/... ./internal/testutil/...
+	cd backend && TESTCONTAINERS_RYUK_DISABLED=true go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=30m ./...
 
 # Development helpers
 dev-setup: install
