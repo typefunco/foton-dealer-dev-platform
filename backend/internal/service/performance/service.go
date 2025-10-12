@@ -11,6 +11,7 @@ import (
 type Repository interface {
 	FindPerformances(ctx context.Context, region string) ([]*model.PerformanceSales, error)
 	GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.PerformanceWithDetails, error)
+	GetWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.PerformanceWithDetails, error)
 	GetByID(ctx context.Context, id int64) (*model.PerformanceSales, error)
 	Create(ctx context.Context, perf *model.PerformanceSales) (int64, error)
 	Update(ctx context.Context, id int64, updates map[string]interface{}) error
@@ -68,6 +69,30 @@ func (s *Service) GetPerformanceByPeriod(ctx context.Context, quarter string, ye
 	return perfList, nil
 }
 
+// GetPerformanceWithFilters возвращает данные производительности с применением фильтров.
+func (s *Service) GetPerformanceWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.PerformanceWithDetails, error) {
+	// Валидация фильтров
+	if err := filters.Validate(); err != nil {
+		return nil, fmt.Errorf("PerformanceService.GetPerformanceWithFilters: validation failed: %w", err)
+	}
+
+	perfList, err := s.repository.GetWithFilters(ctx, filters)
+	if err != nil {
+		s.logger.Error("PerformanceService.GetPerformanceWithFilters: failed to get performance data",
+			"filters", filters,
+			"error", err,
+		)
+		return nil, fmt.Errorf("PerformanceService.GetPerformanceWithFilters: %w", err)
+	}
+
+	s.logger.Info("PerformanceService.GetPerformanceWithFilters: successfully retrieved data",
+		"filters", filters,
+		"count", len(perfList),
+	)
+
+	return perfList, nil
+}
+
 // GetPerformanceByID возвращает данные производительности по ID.
 func (s *Service) GetPerformanceByID(ctx context.Context, id int64) (*model.PerformanceSales, error) {
 	if id <= 0 {
@@ -97,7 +122,7 @@ func (s *Service) CreatePerformance(ctx context.Context, perf *model.Performance
 	if err != nil {
 		s.logger.Error("PerformanceService.CreatePerformance: failed to create",
 			"dealer_id", perf.DealerID,
-			"period", perf.Period,
+			"period", perf.Quarter, perf.Year,
 			"error", err,
 		)
 		return 0, fmt.Errorf("PerformanceService.CreatePerformance: %w", err)
@@ -106,7 +131,7 @@ func (s *Service) CreatePerformance(ctx context.Context, perf *model.Performance
 	s.logger.Info("PerformanceService.CreatePerformance: successfully created",
 		"id", id,
 		"dealer_id", perf.DealerID,
-		"period", perf.Period,
+		"period", perf.Quarter, perf.Year,
 	)
 
 	return id, nil
@@ -167,8 +192,8 @@ func (s *Service) validatePerformance(perf *model.PerformanceSales) error {
 	}
 
 	// Валидация периода
-	if perf.Period.IsZero() {
-		return fmt.Errorf("period is required")
+	if perf.Quarter == "" || perf.Year == 0 {
+		return fmt.Errorf("quarter and year are required")
 	}
 
 	// Валидация финансовых показателей (если не nil)
@@ -190,10 +215,10 @@ func (s *Service) validatePerformance(perf *model.PerformanceSales) error {
 // isValidQuarter проверяет валидность квартала.
 func isValidQuarter(quarter string) bool {
 	validQuarters := map[string]bool{
-		"q1": true,
-		"q2": true,
-		"q3": true,
-		"q4": true,
+		"Q1": true,
+		"Q2": true,
+		"Q3": true,
+		"Q4": true,
 	}
 	return validQuarters[quarter]
 }

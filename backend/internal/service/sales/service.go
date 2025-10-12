@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/typefunco/dealer_dev_platform/internal/model"
+	"github.com/typefunco/dealer_dev_platform/internal/utils"
 )
 
 // Repository интерфейс репозитория Sales.
@@ -36,14 +37,9 @@ func NewService(repo Repository, logger *slog.Logger) *Service {
 
 // GetSalesByPeriod возвращает список данных продаж за период.
 func (s *Service) GetSalesByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.SalesWithDetails, error) {
-	// Валидация квартала
-	if !isValidQuarter(quarter) {
-		return nil, fmt.Errorf("SalesService.GetSalesByPeriod: invalid quarter: %s", quarter)
-	}
-
-	// Валидация года
-	if year < 2020 || year > 2030 {
-		return nil, fmt.Errorf("SalesService.GetSalesByPeriod: invalid year: %d", year)
+	// Валидация параметров
+	if err := utils.ValidateFilters(quarter, year, region); err != nil {
+		return nil, fmt.Errorf("SalesService.GetSalesByPeriod: %w", err)
 	}
 
 	salesList, err := s.repo.GetWithDetailsByPeriod(ctx, quarter, year, region)
@@ -96,7 +92,8 @@ func (s *Service) CreateSales(ctx context.Context, sales *model.Sales) (int64, e
 	if err != nil {
 		s.logger.Error("SalesService.CreateSales: failed to create",
 			"dealer_id", sales.DealerID,
-			"period", sales.Period,
+			"quarter", sales.Quarter,
+			"year", sales.Year,
 			"error", err,
 		)
 		return 0, fmt.Errorf("SalesService.CreateSales: %w", err)
@@ -105,7 +102,8 @@ func (s *Service) CreateSales(ctx context.Context, sales *model.Sales) (int64, e
 	s.logger.Info("SalesService.CreateSales: successfully created",
 		"id", id,
 		"dealer_id", sales.DealerID,
-		"period", sales.Period,
+		"quarter", sales.Quarter,
+		"year", sales.Year,
 	)
 
 	return id, nil
@@ -166,35 +164,27 @@ func (s *Service) validateSales(sales *model.Sales) error {
 	}
 
 	// Валидация периода
-	if sales.Period.IsZero() {
-		return fmt.Errorf("period is required")
+	if sales.Quarter == "" {
+		return fmt.Errorf("quarter is required")
+	}
+	if sales.Year == 0 {
+		return fmt.Errorf("year is required")
 	}
 
-	// Валидация решения (если не nil)
-	if sales.SalesRecommendation != nil {
+	// Валидация решения
+	if sales.SalesDecision != "" {
 		validDecisions := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
 		isValid := false
 		for _, decision := range validDecisions {
-			if *sales.SalesRecommendation == decision {
+			if sales.SalesDecision == decision {
 				isValid = true
 				break
 			}
 		}
 		if !isValid {
-			return fmt.Errorf("invalid sales_recommendation: %s", *sales.SalesRecommendation)
+			return fmt.Errorf("invalid sales_decision: %s", sales.SalesDecision)
 		}
 	}
 
 	return nil
-}
-
-// isValidQuarter проверяет валидность квартала.
-func isValidQuarter(quarter string) bool {
-	validQuarters := map[string]bool{
-		"q1": true,
-		"q2": true,
-		"q3": true,
-		"q4": true,
-	}
-	return validQuarters[quarter]
 }

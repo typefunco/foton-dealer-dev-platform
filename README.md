@@ -1,117 +1,232 @@
-# Dealer Dev Platform
+# Dealer Development Platform
 
-Platform for managing dealer network with modern web interface and API.
+Платформа для анализа и управления дилерами с интеграцией frontend и backend через Docker.
 
-## 🏗️ Project Structure
+## Архитектура
+
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: Go + Echo + PostgreSQL
+- **Database**: PostgreSQL
+- **Containerization**: Docker + Docker Compose
+
+## Быстрый старт
+
+### Предварительные требования
+
+- Docker и Docker Compose
+- Go 1.21+ (для локальной разработки)
+- Node.js 18+ (для локальной разработки)
+
+### Запуск через Docker Compose
+
+1. Клонируйте репозиторий:
+```bash
+git clone <repository-url>
+cd dealer_dev_platform
+```
+
+2. Запустите все сервисы:
+```bash
+docker-compose up --build
+```
+
+3. Откройте приложение:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- Database: localhost:5432
+
+### Структура сервисов
+
+- **postgres**: База данных PostgreSQL
+- **backend**: Go API сервер
+- **frontend**: React приложение с Nginx
+
+### Переменные окружения
+
+#### Backend
+- `DATABASE_URL`: Строка подключения к PostgreSQL
+- `JWT_SECRET`: Секретный ключ для JWT токенов
+- `SERVER_PORT`: Порт сервера (по умолчанию 8080)
+
+#### Frontend
+- `VITE_API_BASE_URL`: URL API бэкенда (по умолчанию http://backend:8080/api)
+
+### API Endpoints
+
+#### Пользователи
+- `GET /api/users` - Получить список пользователей
+- `GET /api/users/:id` - Получить пользователя по ID
+- `POST /api/users` - Создать пользователя
+- `PUT /api/users/:id` - Обновить пользователя
+- `DELETE /api/users/:id` - Удалить пользователя
+- `GET /api/users/stats` - Статистика пользователей
+
+#### Дилеры
+- `GET /api/dealers` - Получить список дилеров
+- `GET /api/dealers/:id` - Получить дилера по ID
+- `GET /api/dealers/:id/card` - Получить карточку дилера
+
+#### Производительность
+- `GET /api/performance` - Данные производительности дилеров
+
+#### After Sales
+- `GET /api/aftersales` - Данные After Sales
+
+#### Команда продаж
+- `GET /api/sales` - Данные команды продаж
+
+#### Сравнение кварталов
+- `GET /api/quarter-comparison` - Сравнение кварталов
+
+#### Все данные
+- `GET /api/all-data` - Комплексные данные всех таблиц
+
+### Разработка
+
+#### Локальная разработка Frontend
+
+1. Перейдите в папку frontend:
+```bash
+cd frontend
+```
+
+2. Установите зависимости:
+```bash
+npm install
+# или
+yarn install
+```
+
+3. Создайте файл `.env`:
+```bash
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+4. Запустите dev сервер:
+```bash
+npm run dev
+# или
+yarn dev
+```
+
+#### Локальная разработка Backend
+
+1. Перейдите в папку backend:
+```bash
+cd backend
+```
+
+2. Установите зависимости:
+```bash
+go mod download
+```
+
+3. Запустите PostgreSQL локально или через Docker:
+```bash
+docker run --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=dealer_platform -p 5432:5432 -d postgres:14
+```
+
+4. Запустите миграции:
+```bash
+make migrate-up
+```
+
+5. Запустите сервер:
+```bash
+make run
+```
+
+### Структура проекта
 
 ```
 dealer_dev_platform/
-├── backend/          # Backend API (Node.js/Express)
-└── frontend/         # Frontend application (React + TypeScript)
+├── backend/                 # Go backend
+│   ├── cmd/app/            # Точка входа
+│   ├── internal/           # Внутренние пакеты
+│   │   ├── app/           # Инициализация приложения
+│   │   ├── config/       # Конфигурация
+│   │   ├── database/     # Подключение к БД
+│   │   ├── delivery/     # HTTP handlers
+│   │   ├── model/        # Модели данных
+│   │   ├── repository/    # Слой данных
+│   │   ├── service/      # Бизнес-логика
+│   │   └── utils/        # Утилиты
+│   ├── migrations/        # SQL миграции
+│   └── Dockerfile        # Docker образ для backend
+├── frontend/              # React frontend
+│   ├── src/              # Исходный код
+│   │   ├── api/          # API клиенты
+│   │   ├── components/   # React компоненты
+│   │   ├── hooks/        # React hooks
+│   │   ├── pages/        # Страницы
+│   │   └── types/        # TypeScript типы
+│   ├── Dockerfile        # Docker образ для frontend
+│   └── nginx.conf        # Конфигурация Nginx
+├── docker-compose.yml    # Docker Compose конфигурация
+└── README.md            # Документация
 ```
 
-## 🚀 Quick Start
-
-### Frontend
+### Команды Docker Compose
 
 ```bash
-cd frontend
-yarn install
-yarn dev
+# Запуск всех сервисов
+docker-compose up
+
+# Запуск в фоновом режиме
+docker-compose up -d
+
+# Пересборка и запуск
+docker-compose up --build
+
+# Остановка сервисов
+docker-compose down
+
+# Просмотр логов
+docker-compose logs -f
+
+# Просмотр логов конкретного сервиса
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f postgres
 ```
 
-The application will be available at: http://localhost:3000
+### Тестирование
 
-### Backend
-
+#### Backend тесты
 ```bash
 cd backend
-# Backend setup will be added later
+make test
 ```
 
-## 🎯 Features
-
-- **Frontend**: Modern React application with TypeScript
-- **UI/UX**: Beautiful design with Tailwind CSS and animations
-- **Responsiveness**: Full mobile device support
-- **Performance**: Fast build with Vite
-- **Type Safety**: Strict typing with TypeScript
-
-## 🛠️ Technologies
-
-### Frontend
-- React 18.2.0
-- TypeScript 5.1.6
-- Tailwind CSS 3.3.3
-- Framer Motion 10.16.4
-- Vite 4.4.5
-
-### Backend
-- Node.js (planned)
-- Express (planned)
-- MongoDB/PostgreSQL (planned)
-
-## 📱 Screenshots
-
-### Home Page
-- Modern landing page with feature descriptions
-- Responsive design for all devices
-
-## 🔧 Development
-
-### Requirements
-- Node.js 18+
-- Yarn 1.22+
-
-### Install Dependencies
+#### Frontend тесты
 ```bash
-# Frontend
 cd frontend
-yarn install
-
-# Backend (when ready)
-cd backend
-yarn install
+npm test
+# или
+yarn test
 ```
 
-### Development Mode
-```bash
-# Frontend
-cd frontend
-yarn dev
+### Мониторинг
 
-# Backend (when ready)
-cd backend
-yarn dev
-```
+- Health check endpoints:
+  - Backend: http://localhost:8080/health
+  - Frontend: http://localhost:3000/health
 
-### Production Build
-```bash
-# Frontend
-cd frontend
-yarn build
+### Troubleshooting
 
-# Backend (when ready)
-cd backend
-yarn build
-```
+#### Проблемы с подключением к базе данных
+1. Убедитесь, что PostgreSQL запущен
+2. Проверьте переменные окружения DATABASE_URL
+3. Проверьте логи: `docker-compose logs postgres`
 
-## 📚 Documentation
+#### Проблемы с CORS
+1. Проверьте настройки CORS в backend
+2. Убедитесь, что frontend обращается к правильному URL API
 
-- [Frontend README](./frontend/README.md) - Detailed frontend documentation
-- [Backend README](./backend/README.md) - Detailed backend documentation (when ready)
+#### Проблемы с сетью Docker
+1. Проверьте, что все сервисы в одной сети `dealer_network`
+2. Убедитесь, что сервисы могут обращаться друг к другу по именам
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a branch for new feature
-3. Make changes
-4. Create Pull Request
-
-## 📄 License
+### Лицензия
 
 MIT License
-
-## 📞 Contacts
-
-For questions and suggestions, create Issues in the repository.

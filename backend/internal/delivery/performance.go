@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/typefunco/dealer_dev_platform/internal/utils"
 )
 
 // PerformanceDealerResponse представляет дилера с данными Performance для API.
@@ -24,47 +25,41 @@ type PerformanceDealerResponse struct {
 	AutoSalesDecision   string  `json:"autoSalesDecision"`   // Performance Decision
 }
 
-// GetPerformanceData возвращает данные производительности по региону и периоду.
+// GetPerformanceData возвращает данные производительности с поддержкой фильтров.
 // @Summary Get Performance data
-// @Description Получение данных производительности с фильтрацией по региону
+// @Description Получение данных производительности с фильтрацией по региону, году, кварталу и дилерам
 // @Tags performance
 // @Accept json
 // @Produce json
-// @Param region query string false "Region filter" default("all-russia")
-// @Param quarter query string false "Quarter" default("q1")
-// @Param year query int false "Year" default(2024)
+// @Param region query string false "Region filter"
+// @Param quarter query string false "Quarter filter (Q1, Q2, Q3, Q4)"
+// @Param year query int false "Year filter"
+// @Param dealer_ids query string false "Comma-separated dealer IDs"
+// @Param limit query int false "Limit for pagination"
+// @Param offset query int false "Offset for pagination"
+// @Param sort_by query string false "Sort field"
+// @Param sort_order query string false "Sort order (asc, desc)"
 // @Success 200 {array} PerformanceDealerResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/performance [get]
 func (s *Server) GetPerformanceData(c echo.Context) error {
-	// Получение параметров из query string
-	region := c.QueryParam("region")
-	if region == "" {
-		region = "all-russia"
-	}
+	// Парсим параметры фильтрации с помощью универсальной функции
+	filters := utils.ParseFilterParamsFromContext(c)
 
-	quarter := c.QueryParam("quarter")
-	if quarter == "" {
-		quarter = "q1"
+	// Устанавливаем значения по умолчанию для обратной совместимости
+	defaults := map[string]interface{}{
+		"region":  "all-russia",
+		"quarter": "Q1",
+		"year":    2024,
 	}
+	utils.SetDefaultFilters(filters, defaults)
 
-	yearStr := c.QueryParam("year")
-	year := 2024
-	if yearStr != "" {
-		parsedYear, err := strconv.Atoi(yearStr)
-		if err == nil {
-			year = parsedYear
-		}
-	}
-
-	// Получение данных из сервиса
-	perfList, err := s.perfService.GetPerformanceByPeriod(c.Request().Context(), quarter, year, region)
+	// Получение данных из сервиса с фильтрами
+	perfList, err := s.perfService.GetPerformanceWithFilters(c.Request().Context(), filters)
 	if err != nil {
 		s.logger.Error("GetPerformanceData: failed to get performance data",
-			"region", region,
-			"quarter", quarter,
-			"year", year,
+			"filters", filters,
 			"error", err,
 		)
 		return c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -80,18 +75,18 @@ func (s *Server) GetPerformanceData(c echo.Context) error {
 
 		response = append(response, PerformanceDealerResponse{
 			ID:                  strconv.FormatInt(int64(perf.DealerID), 10),
-			Name:                perf.DealerName,
+			Name:                perf.DealerNameRu,
 			City:                perf.City,
-			SrRub:               formatMoney(int64(perf.SalesRevenue)),
-			SalesProfit:         perf.SalesProfit,
-			SalesMargin:         perf.SalesMargin,
-			AutoSalesRevenue:    formatMoney(int64(perf.AsRevenue)),
+			SrRub:               formatMoney(int64(perf.SalesRevenueRub)),
+			SalesProfit:         perf.SalesProfitRub,
+			SalesMargin:         perf.SalesMarginPercent,
+			AutoSalesRevenue:    formatMoney(int64(perf.AfterSalesRevenueRub)),
 			Rap:                 rap,
-			AutoSalesProfitsRap: formatMoney(int64(perf.AsProfit)),
-			AutoSalesMargin:     perf.AsMargin,
-			MarketingInvestment: perf.Marketing,
+			AutoSalesProfitsRap: formatMoney(int64(perf.AfterSalesProfitRub)),
+			AutoSalesMargin:     perf.AfterSalesMarginPercent,
+			MarketingInvestment: perf.MarketingInvestment,
 			Ranking:             perf.FotonRank,
-			AutoSalesDecision:   perf.Decision,
+			AutoSalesDecision:   perf.PerformanceDecision,
 		})
 	}
 

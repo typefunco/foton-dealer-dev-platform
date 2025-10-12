@@ -15,6 +15,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id int) (*model.Dealer, error)
 	GetAll(ctx context.Context) ([]*model.Dealer, error)
 	GetByRegion(ctx context.Context, region string) ([]*model.Dealer, error)
+	GetWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.Dealer, error)
 	Update(ctx context.Context, id int, updates map[string]interface{}) error
 	UpdateFull(ctx context.Context, dealer *model.Dealer) error
 	Delete(ctx context.Context, id int) error
@@ -128,6 +129,30 @@ func (s *Service) GetDealersByRegion(ctx context.Context, region string) ([]*mod
 
 	s.logger.Info("DealerService.GetDealersByRegion: successfully retrieved dealers",
 		"region", region,
+		"count", len(dealers),
+	)
+
+	return dealers, nil
+}
+
+// GetDealersWithFilters возвращает дилеров с применением фильтров.
+func (s *Service) GetDealersWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.Dealer, error) {
+	// Валидация фильтров
+	if err := filters.Validate(); err != nil {
+		return nil, fmt.Errorf("DealerService.GetDealersWithFilters: validation failed: %w", err)
+	}
+
+	dealers, err := s.repo.GetWithFilters(ctx, filters)
+	if err != nil {
+		s.logger.Error("DealerService.GetDealersWithFilters: failed to get dealers",
+			"filters", filters,
+			"error", err,
+		)
+		return nil, fmt.Errorf("DealerService.GetDealersWithFilters: %w", err)
+	}
+
+	s.logger.Info("DealerService.GetDealersWithFilters: successfully retrieved dealers",
+		"filters", filters,
 		"count", len(dealers),
 	)
 
@@ -253,10 +278,10 @@ func parseQuarterToPeriod(quarter string, year int) (time.Time, error) {
 // isValidQuarter проверяет валидность квартала.
 func isValidQuarter(quarter string) bool {
 	validQuarters := map[string]bool{
-		"q1": true,
-		"q2": true,
-		"q3": true,
-		"q4": true,
+		"Q1": true,
+		"Q2": true,
+		"Q3": true,
+		"Q4": true,
 	}
 	return validQuarters[quarter]
 }

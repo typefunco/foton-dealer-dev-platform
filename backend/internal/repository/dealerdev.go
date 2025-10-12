@@ -10,7 +10,7 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 )
 
-const dealerDevTableName = "dealer_development"
+const dealerDevTableName = "dealer_dev"
 
 // DealerDevRepository репозиторий для работы с данными развития дилеров.
 type DealerDevRepository struct {
@@ -34,15 +34,15 @@ func (r *DealerDevRepository) Create(ctx context.Context, dd *model.DealerDevelo
 
 	query := r.sq.Insert(dealerDevTableName).
 		Columns(
-			"dealer_id", "period",
-			"check_list_score", "dealership_class", "brands", "branding",
-			"marketing_investments", "by_side_businesses", "dd_recommendation",
+			"dealer_id", "quarter", "year",
+			"check_list_score", "dealer_ship_class", "branding",
+			"marketing_investments", "dealer_dev_recommendation",
 			"created_at", "updated_at",
 		).
 		Values(
-			dd.DealerID, dd.Period,
-			dd.CheckListScore, dd.DealershipClass, dd.Brands, dd.Branding,
-			dd.MarketingInvestments, dd.BySideBusinesses, dd.DDRecommendation,
+			dd.DealerID, dd.Quarter, dd.Year,
+			dd.CheckListScore, dd.DealershipClass, dd.Branding,
+			dd.MarketingInvestments, dd.DDRecommendation,
 			dd.CreatedAt, dd.UpdatedAt,
 		).
 		Suffix("RETURNING id")
@@ -65,9 +65,9 @@ func (r *DealerDevRepository) Create(ctx context.Context, dd *model.DealerDevelo
 // GetByID получает запись развития дилера по ID.
 func (r *DealerDevRepository) GetByID(ctx context.Context, id int) (*model.DealerDevelopment, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "period",
-		"check_list_score", "dealership_class", "brands", "branding",
-		"marketing_investments", "by_side_businesses", "dd_recommendation",
+		"id", "dealer_id", "quarter", "year",
+		"check_list_score", "dealer_ship_class", "branding",
+		"marketing_investments", "dealer_dev_recommendation",
 		"created_at", "updated_at",
 	).From(dealerDevTableName).Where(squirrel.Eq{"id": id})
 
@@ -78,9 +78,9 @@ func (r *DealerDevRepository) GetByID(ctx context.Context, id int) (*model.Deale
 
 	dd := &model.DealerDevelopment{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&dd.ID, &dd.DealerID, &dd.Period,
-		&dd.CheckListScore, &dd.DealershipClass, &dd.Brands, &dd.Branding,
-		&dd.MarketingInvestments, &dd.BySideBusinesses, &dd.DDRecommendation,
+		&dd.ID, &dd.DealerID, &dd.Quarter, &dd.Year,
+		&dd.CheckListScore, &dd.DealershipClass, &dd.Branding,
+		&dd.MarketingInvestments, &dd.DDRecommendation,
 		&dd.CreatedAt, &dd.UpdatedAt,
 	)
 	if err != nil {
@@ -93,9 +93,9 @@ func (r *DealerDevRepository) GetByID(ctx context.Context, id int) (*model.Deale
 // GetByDealerAndPeriod получает запись развития дилера по дилеру и периоду.
 func (r *DealerDevRepository) GetByDealerAndPeriod(ctx context.Context, dealerID int, period time.Time) (*model.DealerDevelopment, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "period",
-		"check_list_score", "dealership_class", "brands", "branding",
-		"marketing_investments", "by_side_businesses", "dd_recommendation",
+		"id", "dealer_id", "quarter", "year",
+		"check_list_score", "dealer_ship_class", "branding",
+		"marketing_investments", "dealer_dev_recommendation",
 		"created_at", "updated_at",
 	).From(dealerDevTableName).Where(squirrel.Eq{
 		"dealer_id": dealerID,
@@ -109,9 +109,9 @@ func (r *DealerDevRepository) GetByDealerAndPeriod(ctx context.Context, dealerID
 
 	dd := &model.DealerDevelopment{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&dd.ID, &dd.DealerID, &dd.Period,
-		&dd.CheckListScore, &dd.DealershipClass, &dd.Brands, &dd.Branding,
-		&dd.MarketingInvestments, &dd.BySideBusinesses, &dd.DDRecommendation,
+		&dd.ID, &dd.DealerID, &dd.Quarter, &dd.Year,
+		&dd.CheckListScore, &dd.DealershipClass, &dd.Branding,
+		&dd.MarketingInvestments, &dd.DDRecommendation,
 		&dd.CreatedAt, &dd.UpdatedAt,
 	)
 	if err != nil {
@@ -124,9 +124,9 @@ func (r *DealerDevRepository) GetByDealerAndPeriod(ctx context.Context, dealerID
 // GetAllByPeriod получает все записи развития дилеров за указанный период.
 func (r *DealerDevRepository) GetAllByPeriod(ctx context.Context, period time.Time) ([]*model.DealerDevelopment, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "period",
-		"check_list_score", "dealership_class", "brands", "branding",
-		"marketing_investments", "by_side_businesses", "dd_recommendation",
+		"id", "dealer_id", "quarter", "year",
+		"check_list_score", "dealer_ship_class", "branding",
+		"marketing_investments", "dealer_dev_recommendation",
 		"created_at", "updated_at",
 	).From(dealerDevTableName).Where(squirrel.Eq{"period": period})
 
@@ -145,9 +145,9 @@ func (r *DealerDevRepository) GetAllByPeriod(ctx context.Context, period time.Ti
 	for rows.Next() {
 		dd := &model.DealerDevelopment{}
 		err = rows.Scan(
-			&dd.ID, &dd.DealerID, &dd.Period,
-			&dd.CheckListScore, &dd.DealershipClass, &dd.Brands, &dd.Branding,
-			&dd.MarketingInvestments, &dd.BySideBusinesses, &dd.DDRecommendation,
+			&dd.ID, &dd.DealerID, &dd.Quarter, &dd.Year,
+			&dd.CheckListScore, &dd.DealershipClass, &dd.Branding,
+			&dd.MarketingInvestments, &dd.DDRecommendation,
 			&dd.CreatedAt, &dd.UpdatedAt,
 		)
 		if err != nil {
@@ -165,14 +165,13 @@ func (r *DealerDevRepository) UpdateFull(ctx context.Context, dd *model.DealerDe
 
 	query := r.sq.Update(dealerDevTableName).
 		Set("dealer_id", dd.DealerID).
-		Set("period", dd.Period).
+		Set("quarter", dd.Quarter).
+		Set("year", dd.Year).
 		Set("check_list_score", dd.CheckListScore).
-		Set("dealership_class", dd.DealershipClass).
-		Set("brands", dd.Brands).
+		Set("dealer_ship_class", dd.DealershipClass).
 		Set("branding", dd.Branding).
 		Set("marketing_investments", dd.MarketingInvestments).
-		Set("by_side_businesses", dd.BySideBusinesses).
-		Set("dd_recommendation", dd.DDRecommendation).
+		Set("dealer_dev_recommendation", dd.DDRecommendation).
 		Set("updated_at", dd.UpdatedAt).
 		Where(squirrel.Eq{"id": dd.ID})
 
@@ -190,17 +189,17 @@ func (r *DealerDevRepository) UpdateFull(ctx context.Context, dd *model.DealerDe
 }
 
 // GetWithDetailsByPeriod получает записи развития дилеров с деталями за период.
-func (r *DealerDevRepository) GetWithDetailsByPeriod(ctx context.Context, period time.Time, region string) ([]*model.DealerDevWithDetails, error) {
+func (r *DealerDevRepository) GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.DealerDevWithDetails, error) {
 	queryBuilder := r.sq.Select(
-		"dd.id", "dd.dealer_id", "dd.period",
-		"dd.check_list_score", "dd.dealership_class", "dd.brands", "dd.branding",
-		"dd.marketing_investments", "dd.by_side_businesses", "dd.dd_recommendation",
+		"dd.id", "dd.dealer_id", "dd.quarter", "dd.year",
+		"dd.check_list_score", "dd.dealer_ship_class", "dd.branding",
+		"dd.marketing_investments", "dd.dealer_dev_recommendation",
 		"dd.created_at", "dd.updated_at",
-		"d.dealer_name_ru", "d.dealer_name_en", "d.city", "d.region", "d.manager", "d.ruft",
+		"d.name", "d.city", "d.region", "d.manager",
 	).
 		From(dealerDevTableName + " dd").
-		Join("dealers d ON dd.dealer_id = d.dealer_id").
-		Where(squirrel.Eq{"dd.period": period})
+		Join("dealers d ON dd.dealer_id = d.id").
+		Where(squirrel.Eq{"dd.quarter": quarter, "dd.year": year})
 
 	if region != "all-russia" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"d.region": region})
@@ -221,11 +220,11 @@ func (r *DealerDevRepository) GetWithDetailsByPeriod(ctx context.Context, period
 	for rows.Next() {
 		ddwd := &model.DealerDevWithDetails{}
 		err = rows.Scan(
-			&ddwd.ID, &ddwd.DealerID, &ddwd.Period,
-			&ddwd.CheckListScore, &ddwd.DealershipClass, &ddwd.Brands, &ddwd.Branding,
-			&ddwd.MarketingInvestments, &ddwd.BySideBusinesses, &ddwd.DDRecommendation,
+			&ddwd.ID, &ddwd.DealerID, &ddwd.Quarter, &ddwd.Year,
+			&ddwd.CheckListScore, &ddwd.DealershipClass, &ddwd.Branding,
+			&ddwd.MarketingInvestments, &ddwd.DDRecommendation,
 			&ddwd.CreatedAt, &ddwd.UpdatedAt,
-			&ddwd.DealerNameRu, &ddwd.DealerNameEn, &ddwd.City, &ddwd.Region, &ddwd.Manager, &ddwd.Ruft,
+			&ddwd.DealerNameRu, &ddwd.City, &ddwd.Region, &ddwd.Manager,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("DealerDevRepository.GetWithDetailsByPeriod: error scanning: %w", err)

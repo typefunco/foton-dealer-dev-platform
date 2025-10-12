@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import DealersTable from './pages/DealersTable'
 import SalesTeamTable from './pages/SalesTeamTable'
 import AfterSalesTable from './pages/AfterSalesTable'
@@ -11,14 +11,17 @@ import BrandDemo from './pages/BrandDemo'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import Admin from './pages/Admin'
+import { REGION_MAPPING, QUARTER_MAPPING, buildDynamicParams, getTableTypeFromKey } from './api/index'
 
 const App: React.FC = () => {
+  const navigate = useNavigate()
+  
   // Обновленная логика согласно требованиям заказчика
   const [selectedRegion, setSelectedRegion] = useState<string>('')
   const [selectedDealers, setSelectedDealers] = useState<string[]>([])
   const [selectedParameters, setSelectedParameters] = useState<string>('')
   const [selectedPeriod, setSelectedPeriod] = useState<string>('')
-  const [selectedYear, setSelectedYear] = useState<string>('2025')
+  const [selectedYear, setSelectedYear] = useState<string>('2024')
   
   // Состояния для выпадающих меню
   const [showRegionDropdown, setShowRegionDropdown] = useState(false)
@@ -47,11 +50,14 @@ const App: React.FC = () => {
 
   // Категории параметров согласно требованиям
   const parameters = [
-    { id: 'all', name: 'All' },
+    { id: 'all', name: 'All Data' },
     { id: 'total-performance', name: 'Total Performance' },
     { id: 'dealer-development', name: 'Dealer Development' },
     { id: 'sales', name: 'Sales' },
-    { id: 'after-sales', name: 'AfterSales' }
+    { id: 'after-sales', name: 'AfterSales' },
+    { id: 'performance', name: 'Performance' },
+    { id: 'sales-team', name: 'Sales Team' },
+    { id: 'quarter-comparison', name: 'Quarter Comparison' }
   ]
 
   const quarters = [
@@ -119,14 +125,57 @@ const App: React.FC = () => {
   }
 
   const handleFindResults = () => {
-    console.log('Searching with:', {
-      region: selectedRegion,
-      dealers: selectedDealers,
-      parameters: selectedParameters,
-      period: selectedPeriod,
-      year: selectedYear
+    // Проверяем обязательные параметры
+    if (!selectedParameters) {
+      alert('Please select parameters (Dealer Development, Sales, AfterSales, etc.)')
+      return
+    }
+
+    if (!selectedPeriod) {
+      alert('Please select period (Q1, Q2, Q3, Q4)')
+      return
+    }
+
+    // Формируем параметры для нового динамического API
+    const dynamicParams = buildDynamicParams({
+      region: selectedRegion ? REGION_MAPPING[selectedRegion as keyof typeof REGION_MAPPING] || selectedRegion : 'all-russia',
+      quarter: QUARTER_MAPPING[selectedPeriod as keyof typeof QUARTER_MAPPING] || selectedPeriod,
+      year: parseInt(selectedYear),
+      dealers: selectedDealers.length > 0 ? selectedDealers : undefined
     })
-    // Логика поиска будет здесь
+
+    console.log('Searching with dynamic API params:', dynamicParams)
+
+    // Определяем маршрут на основе выбранных параметров
+    const routeMapping: { [key: string]: string } = {
+      'all': '/all',
+      'total-performance': '/all',
+      'dealer-development': '/dealers',
+      'sales': '/sales-team',
+      'after-sales': '/after-sales',
+      'performance': '/performance',
+      'sales-team': '/sales-team',
+      'quarter-comparison': '/quarter-comparison'
+    }
+
+    const targetRoute = routeMapping[selectedParameters] || '/all'
+    
+    // Получаем тип таблицы для нового API
+    const tableType = getTableTypeFromKey(selectedParameters)
+    
+    // Переходим на соответствующую страницу с параметрами
+    navigate(targetRoute, { 
+      state: { 
+        filters: dynamicParams,
+        tableType: tableType,
+        searchParams: {
+          region: dynamicParams.region,
+          quarter: dynamicParams.quarter,
+          year: dynamicParams.year?.toString(),
+          dealers: dynamicParams.dealer_ids
+        }
+      }
+    })
   }
 
   // Получаем доступных дилеров для выбранного региона
@@ -306,11 +355,11 @@ const App: React.FC = () => {
                         {selectedYear ? years.find(year => year.id === selectedYear)?.name : 'Year'}
                       </span>
                       <div className="flex items-center space-x-2">
-                        {selectedYear !== '2025' && (
+                        {selectedYear !== '2024' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
-                              setSelectedYear('2025')
+                              setSelectedYear('2024')
                             }}
                             className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
                             title="Reset to default year"
@@ -393,7 +442,7 @@ const App: React.FC = () => {
                       setSelectedDealers([])
                       setSelectedParameters('')
                       setSelectedPeriod('')
-                      setSelectedYear('2025')
+                      setSelectedYear('2024')
                       setDealerSearchQuery('')
                       // Закрываем модальное окно если оно открыто
                       if (showDealersModal) {

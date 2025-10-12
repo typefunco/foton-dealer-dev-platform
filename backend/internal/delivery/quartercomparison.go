@@ -28,7 +28,7 @@ func (s *Server) GetQuarterComparison(c echo.Context) error {
 	// Получение параметров квартала 1
 	quarter1 := c.QueryParam("quarter1")
 	if quarter1 == "" {
-		quarter1 = "q1"
+		quarter1 = "Q1"
 	}
 
 	year1Str := c.QueryParam("year1")
@@ -88,11 +88,6 @@ func (s *Server) GetQuarterComparison(c echo.Context) error {
 
 // calculateQuarterMetrics вычисляет агрегированные метрики за квартал.
 func (s *Server) calculateQuarterMetrics(ctx context.Context, quarter string, year int) (*model.QuarterMetrics, error) {
-	// Преобразуем quarter/year в period
-	period, err := parseQuarterToPeriod(quarter, year)
-	if err != nil {
-		return nil, err
-	}
 
 	metrics := &model.QuarterMetrics{
 		Quarter: quarter,
@@ -107,12 +102,8 @@ func (s *Server) calculateQuarterMetrics(ctx context.Context, quarter string, ye
 		classCount := make(map[string]int)
 
 		for _, dd := range dealerDevList {
-			if dd.CheckListScore != nil {
-				totalChecklist += *dd.CheckListScore
-			}
-			if dd.DealershipClass != nil {
-				classCount[string(*dd.DealershipClass)]++
-			}
+			totalChecklist += float64(dd.CheckListScore)
+			classCount[dd.DealershipClass]++
 		}
 
 		metrics.AverageChecklist = totalChecklist / float64(len(dealerDevList))
@@ -136,30 +127,16 @@ func (s *Server) calculateQuarterMetrics(ctx context.Context, quarter string, ye
 		var totalBuyoutHDT, totalBuyoutMDT, totalBuyoutLDT int
 
 		for _, sales := range salesList {
-			if sales.FotonSalesPersonnel != nil {
-				totalSalesmen += float64(*sales.FotonSalesPersonnel)
-			}
-			if sales.SalesTrainings != nil && *sales.SalesTrainings == "Yes" {
+			totalSalesmen += float64(sales.FotonSalesmen)
+			if sales.SalesTrainings {
 				trainingCount++
 			}
-			if sales.StockHDT != nil {
-				totalStockHDT += *sales.StockHDT
-			}
-			if sales.StockMDT != nil {
-				totalStockMDT += *sales.StockMDT
-			}
-			if sales.StockLDT != nil {
-				totalStockLDT += *sales.StockLDT
-			}
-			if sales.BuyoutHDT != nil {
-				totalBuyoutHDT += *sales.BuyoutHDT
-			}
-			if sales.BuyoutMDT != nil {
-				totalBuyoutMDT += *sales.BuyoutMDT
-			}
-			if sales.BuyoutLDT != nil {
-				totalBuyoutLDT += *sales.BuyoutLDT
-			}
+			totalStockHDT += sales.StockHDT
+			totalStockMDT += sales.StockMDT
+			totalStockLDT += sales.StockLDT
+			totalBuyoutHDT += sales.BuyoutHDT
+			totalBuyoutMDT += sales.BuyoutMDT
+			totalBuyoutLDT += sales.BuyoutLDT
 		}
 
 		metrics.AverageFotonSalesmen = totalSalesmen / float64(len(salesList))
@@ -184,53 +161,31 @@ func (s *Server) calculateQuarterMetrics(ctx context.Context, quarter string, ye
 		}
 
 		// Среднее sales target (упрощенно - берем первое значение)
-		if len(salesList) > 0 && salesList[0].SalesTargetPlan != nil && salesList[0].SalesTargetFact != nil {
-			metrics.AverageSalesTarget = fmt.Sprintf("%d/%d", *salesList[0].SalesTargetFact, *salesList[0].SalesTargetPlan)
+		if len(salesList) > 0 {
+			metrics.AverageSalesTarget = salesList[0].SalesTarget
 		}
 	}
 
-	// Получаем данные Performance Sales
-	perfSalesList, err := s.perfSalesService.GetAllByPeriod(ctx, period)
-	if err == nil && len(perfSalesList) > 0 {
-		var totalRevenue float64
-		var totalProfit, totalMargin float64
+	// Получаем данные Performance
+	perfList, err := s.perfService.GetPerformanceByPeriod(ctx, quarter, year, "all-russia")
+	if err == nil && len(perfList) > 0 {
+		var totalSalesRevenue, totalAfterSalesRevenue float64
+		var totalSalesMargin, totalAfterSalesMargin float64
 
-		for _, perf := range perfSalesList {
-			if perf.SalesRevenue != nil {
-				totalRevenue += *perf.SalesRevenue
-			}
-			if perf.SalesProfitPct != nil {
-				totalProfit += *perf.SalesProfitPct
-			}
-			if perf.SalesMarginPct != nil {
-				totalMargin += *perf.SalesMarginPct
-			}
+		for _, perf := range perfList {
+			totalSalesRevenue += perf.SalesRevenueRub
+			totalAfterSalesRevenue += perf.AfterSalesRevenueRub
+			totalSalesMargin += perf.SalesMarginPercent
+			totalAfterSalesMargin += perf.AfterSalesMarginPercent
 		}
 
-		count := float64(len(perfSalesList))
-		avgRevenue := totalRevenue / count
-		metrics.AverageSalesRevenue = formatMoneyFloat(avgRevenue)
-		metrics.AverageSalesProfit = totalProfit / count
-		metrics.AverageSalesMargin = totalMargin / count
-	}
-
-	// Получаем данные Performance AfterSales
-	perfASList, err := s.perfASService.GetAllByPeriod(ctx, period)
-	if err == nil && len(perfASList) > 0 {
-		var totalAsRevenue, totalAsMargin float64
-
-		for _, perf := range perfASList {
-			if perf.ASRevenue != nil {
-				totalAsRevenue += *perf.ASRevenue
-			}
-			if perf.ASMarginPct != nil {
-				totalAsMargin += *perf.ASMarginPct
-			}
-		}
-
-		count := float64(len(perfASList))
-		metrics.AutoSalesRevenue = totalAsRevenue / 1000000 // В миллионах
-		metrics.AutoSalesMargin = totalAsMargin / count
+		count := float64(len(perfList))
+		avgSalesRevenue := totalSalesRevenue / count
+		avgAfterSalesRevenue := totalAfterSalesRevenue / count
+		metrics.AverageSalesRevenue = formatMoneyFloat(avgSalesRevenue)
+		metrics.AverageSalesMargin = totalSalesMargin / count
+		metrics.AutoSalesRevenue = avgAfterSalesRevenue / 1000000 // В миллионах
+		metrics.AutoSalesMargin = totalAfterSalesMargin / count
 	}
 
 	// Получаем данные After Sales
@@ -241,21 +196,13 @@ func (s *Server) calculateQuarterMetrics(ctx context.Context, quarter string, ye
 		var totalWarrantyHours float64
 
 		for _, as := range asList {
-			if as.RecommendedStockPct != nil {
-				totalRStock += *as.RecommendedStockPct
-			}
-			if as.WarrantyStockPct != nil {
-				totalWStock += *as.WarrantyStockPct
-			}
-			if as.FotonLaborHoursPct != nil {
-				totalFlh += *as.FotonLaborHoursPct
-			}
-			if as.ASTrainings != nil && *as.ASTrainings == "Yes" {
+			totalRStock += float64(as.RecommendedStock)
+			totalWStock += float64(as.WarrantyStock)
+			totalFlh += float64(as.FotonLaborHours)
+			if as.ASTrainings {
 				asTrainingCount++
 			}
-			if as.WarrantyHours != nil {
-				totalWarrantyHours += *as.WarrantyHours
-			}
+			totalWarrantyHours += float64(as.FotonWarrantyHours)
 		}
 
 		count := float64(len(asList))
@@ -277,8 +224,8 @@ func (s *Server) calculateQuarterMetrics(ctx context.Context, quarter string, ye
 	if dealerDevList != nil && len(dealerDevList) > 0 {
 		decisionCount := make(map[string]int)
 		for _, dd := range dealerDevList {
-			if dd.DDRecommendation != nil {
-				decisionCount[*dd.DDRecommendation]++
+			if dd.DDRecommendation != "" {
+				decisionCount[dd.DDRecommendation]++
 			}
 		}
 

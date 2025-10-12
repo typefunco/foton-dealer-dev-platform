@@ -6,6 +6,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
+    "axios": "^1.12.2",
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.4",
     "react": "^18.2.0",

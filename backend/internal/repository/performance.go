@@ -10,7 +10,7 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 )
 
-const performanceTableName = "performance_sales"
+const performanceTableName = "performance"
 
 // PerformanceRepository репозиторий для работы с данными производительности.
 type PerformanceRepository struct {
@@ -34,15 +34,17 @@ func (r *PerformanceRepository) Create(ctx context.Context, perf *model.Performa
 
 	query := r.sq.Insert(performanceTableName).
 		Columns(
-			"dealer_id", "period",
-			"quantity_sold", "sales_revenue", "sales_revenue_no_vat", "sales_cost",
-			"sales_margin", "sales_margin_pct", "sales_profit_pct",
+			"dealer_id", "quarter", "year",
+			"sales_revenue_rub", "sales_profit_rub", "sales_profit_percent", "sales_margin_percent",
+			"after_sales_revenue_rub", "after_sales_profit_rub", "after_sales_margin_percent",
+			"marketing_investment", "foton_rank", "performance_decision",
 			"created_at", "updated_at",
 		).
 		Values(
-			perf.DealerID, perf.Period,
-			perf.QuantitySold, perf.SalesRevenue, perf.SalesRevenueNoVat, perf.SalesCost,
-			perf.SalesMargin, perf.SalesMarginPct, perf.SalesProfitPct,
+			perf.DealerID, perf.Quarter, perf.Year,
+			nil, nil, nil, nil, // sales fields - пока nil, так как структура изменилась
+			nil, nil, nil, // after sales fields - пока nil
+			nil, nil, nil, // marketing, rank, decision - пока nil
 			perf.CreatedAt, perf.UpdatedAt,
 		).
 		Suffix("RETURNING id")
@@ -78,7 +80,7 @@ func (r *PerformanceRepository) GetByID(ctx context.Context, id int64) (*model.P
 
 	perf := &model.PerformanceSales{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&perf.ID, &perf.DealerID, &perf.Period,
+		&perf.ID, &perf.DealerID, &perf.Quarter, &perf.Year,
 		&perf.QuantitySold, &perf.SalesRevenue, &perf.SalesRevenueNoVat, &perf.SalesCost,
 		&perf.SalesMargin, &perf.SalesMarginPct, &perf.SalesProfitPct,
 		&perf.CreatedAt, &perf.UpdatedAt,
@@ -125,7 +127,7 @@ func (r *PerformanceRepository) GetByDealerAndPeriod(ctx context.Context, dealer
 
 	perf := &model.PerformanceSales{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&perf.ID, &perf.DealerID, &perf.Period,
+		&perf.ID, &perf.DealerID, &perf.Quarter, &perf.Year,
 		&perf.QuantitySold, &perf.SalesRevenue, &perf.SalesRevenueNoVat, &perf.SalesCost,
 		&perf.SalesMargin, &perf.SalesMarginPct, &perf.SalesProfitPct,
 		&perf.CreatedAt, &perf.UpdatedAt,
@@ -177,7 +179,7 @@ func (r *PerformanceRepository) GetAllByPeriod(ctx context.Context, quarter stri
 	for rows.Next() {
 		perf := &model.PerformanceSales{}
 		err = rows.Scan(
-			&perf.ID, &perf.DealerID, &perf.Period,
+			&perf.ID, &perf.DealerID, &perf.Quarter, &perf.Year,
 			&perf.QuantitySold, &perf.SalesRevenue, &perf.SalesRevenueNoVat, &perf.SalesCost,
 			&perf.SalesMargin, &perf.SalesMarginPct, &perf.SalesProfitPct,
 			&perf.CreatedAt, &perf.UpdatedAt,
@@ -197,7 +199,8 @@ func (r *PerformanceRepository) UpdateFull(ctx context.Context, perf *model.Perf
 
 	query := r.sq.Update(performanceTableName).
 		Set("dealer_id", perf.DealerID).
-		Set("period", perf.Period).
+		Set("quarter", perf.Quarter).
+		Set("year", perf.Year).
 		Set("quantity_sold", perf.QuantitySold).
 		Set("sales_revenue", perf.SalesRevenue).
 		Set("sales_revenue_no_vat", perf.SalesRevenueNoVat).
@@ -223,30 +226,15 @@ func (r *PerformanceRepository) UpdateFull(ctx context.Context, perf *model.Perf
 
 // GetWithDetailsByPeriod получает записи производительности продаж с деталями за период.
 func (r *PerformanceRepository) GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.PerformanceWithDetails, error) {
-	// Преобразуем quarter/year в period
-	var month int
-	switch quarter {
-	case "q1":
-		month = 1
-	case "q2":
-		month = 4
-	case "q3":
-		month = 7
-	case "q4":
-		month = 10
-	default:
-		return nil, fmt.Errorf("invalid quarter: %s", quarter)
-	}
-	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 
 	queryBuilder := r.sq.Select(
-		"ps.dealer_id", "d.dealer_name_ru", "d.city", "d.region", "d.manager",
-		"0 as foton_rank", "ps.sales_revenue", "ps.sales_margin", "ps.sales_margin",
-		"0 as as_revenue", "0 as as_profit", "0 as as_margin", "0 as marketing", "'' as decision",
+		"ps.dealer_id", "d.name", "d.city", "d.region", "d.manager",
+		"ps.foton_rank", "ps.sales_revenue_rub", "ps.sales_profit_rub", "ps.sales_margin_percent",
+		"ps.after_sales_revenue_rub", "ps.after_sales_profit_rub", "ps.after_sales_margin_percent", "ps.marketing_investment", "ps.performance_decision",
 	).
 		From(performanceTableName + " ps").
-		Join("dealers d ON ps.dealer_id = d.dealer_id").
-		Where(squirrel.Eq{"ps.period": period})
+		Join("dealers d ON ps.dealer_id = d.id").
+		Where(squirrel.Eq{"ps.quarter": quarter, "ps.year": year})
 
 	if region != "all-russia" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"d.region": region})
@@ -267,9 +255,9 @@ func (r *PerformanceRepository) GetWithDetailsByPeriod(ctx context.Context, quar
 	for rows.Next() {
 		pwd := &model.PerformanceWithDetails{}
 		err = rows.Scan(
-			&pwd.DealerID, &pwd.DealerName, &pwd.City, &pwd.Region, &pwd.Manager,
-			&pwd.FotonRank, &pwd.SalesRevenue, &pwd.SalesProfit, &pwd.SalesMargin,
-			&pwd.AsRevenue, &pwd.AsProfit, &pwd.AsMargin, &pwd.Marketing, &pwd.Decision,
+			&pwd.DealerID, &pwd.DealerNameRu, &pwd.City, &pwd.Region, &pwd.Manager,
+			&pwd.FotonRank, &pwd.SalesRevenueRub, &pwd.SalesProfitRub, &pwd.SalesMarginPercent,
+			&pwd.AfterSalesRevenueRub, &pwd.AfterSalesProfitRub, &pwd.AfterSalesMarginPercent, &pwd.MarketingInvestment, &pwd.PerformanceDecision,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("PerformanceRepository.GetWithDetailsByPeriod: error scanning: %w", err)
@@ -333,4 +321,83 @@ func (r *PerformanceRepository) FindPerformances(ctx context.Context, region str
 	// Получаем данные за текущий квартал (можно настроить)
 	// Для примера используем q1 2025
 	return r.GetAllByPeriod(ctx, "q1", 2025)
+}
+
+// GetWithFilters получает записи производительности с применением фильтров.
+func (r *PerformanceRepository) GetWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.PerformanceWithDetails, error) {
+	queryBuilder := r.sq.Select(
+		"perf.dealer_id", "perf.quarter", "perf.year",
+		"perf.sales_revenue_rub", "perf.sales_profit_rub", "perf.sales_profit_percent", "perf.sales_margin_percent",
+		"perf.after_sales_revenue_rub", "perf.after_sales_profit_rub", "perf.after_sales_margin_percent",
+		"perf.marketing_investment", "perf.foton_rank", "perf.performance_decision",
+		"d.name", "d.city", "d.region", "d.manager",
+	).
+		From(performanceTableName + " perf").
+		Join("dealers d ON perf.dealer_id = d.id")
+
+	// Применяем фильтры
+	if filters.HasPeriodFilter() {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{
+			"perf.quarter": filters.Quarter,
+			"perf.year":    filters.Year,
+		})
+	}
+
+	if filters.HasRegionFilter() {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"d.region": filters.Region})
+	}
+
+	if filters.HasDealerFilter() {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"perf.dealer_id": filters.DealerIDs})
+	}
+
+	// Сортировка
+	if filters.SortBy != "" {
+		order := "ASC"
+		if filters.SortOrder == "desc" {
+			order = "DESC"
+		}
+		queryBuilder = queryBuilder.OrderBy(fmt.Sprintf("%s %s", filters.SortBy, order))
+	} else {
+		queryBuilder = queryBuilder.OrderBy("d.name")
+	}
+
+	// Пагинация
+	if filters.Limit > 0 {
+		queryBuilder = queryBuilder.Limit(uint64(filters.Limit))
+	}
+	if filters.Offset > 0 {
+		queryBuilder = queryBuilder.Offset(uint64(filters.Offset))
+	}
+
+	sql, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("PerformanceRepository.GetWithFilters: error building query: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("PerformanceRepository.GetWithFilters: error querying: %w", err)
+	}
+	defer rows.Close()
+
+	var results []*model.PerformanceWithDetails
+	for rows.Next() {
+		pwd := &model.PerformanceWithDetails{}
+		var quarter string
+		var year int
+		err = rows.Scan(
+			&pwd.DealerID, &quarter, &year,
+			&pwd.SalesRevenueRub, &pwd.SalesProfitRub, &pwd.SalesMarginPercent, &pwd.SalesMarginPercent,
+			&pwd.AfterSalesRevenueRub, &pwd.AfterSalesProfitRub, &pwd.AfterSalesMarginPercent,
+			&pwd.MarketingInvestment, &pwd.FotonRank, &pwd.PerformanceDecision,
+			&pwd.DealerNameRu, &pwd.City, &pwd.Region, &pwd.Manager,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("PerformanceRepository.GetWithFilters: error scanning: %w", err)
+		}
+		results = append(results, pwd)
+	}
+
+	return results, nil
 }

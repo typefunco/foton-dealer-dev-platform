@@ -78,59 +78,59 @@ func CreateTestSales(dealerID int) *model.Sales {
 	}
 }
 
-// CreateTestAfterSales создает тестовые данные послепродажного обслуживания
-func CreateTestAfterSales(dealerID int) *model.AfterSales {
-	recommendedStockPct := 80.0
-	warrantyStockPct := 70.0
-	fotonLaborHoursPct := 90.0
-	warrantyHours := 120.0
-	serviceContractsHours := 80.0
-	trainings := model.ASTrainingsYes
-	sparePartsSalesQ := 50.0
-	sparePartsSalesYtdPct := 75.0
-	recommendation := "Planned Result"
+// // CreateTestAfterSales создает тестовые данные послепродажного обслуживания
+// func CreateTestAfterSales(dealerID int) *model.AfterSales {
+// 	recommendedStockPct := 80.0
+// 	warrantyStockPct := 70.0
+// 	fotonLaborHoursPct := 90.0
+// 	warrantyHours := 120.0
+// 	serviceContractsHours := 80.0
+// 	trainings := model.ASTrainingsYes
+// 	sparePartsSalesQ := 50.0
+// 	sparePartsSalesYtdPct := 75.0
+// 	recommendation := "Planned Result"
 
-	return &model.AfterSales{
-		DealerID:              dealerID,
-		Period:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		RecommendedStockPct:   &recommendedStockPct,
-		WarrantyStockPct:      &warrantyStockPct,
-		FotonLaborHoursPct:    &fotonLaborHoursPct,
-		WarrantyHours:         &warrantyHours,
-		ServiceContractsHours: &serviceContractsHours,
-		ASTrainings:           &trainings,
-		SparePartsSalesQ:      &sparePartsSalesQ,
-		SparePartsSalesYtdPct: &sparePartsSalesYtdPct,
-		ASRecommendation:      &recommendation,
-		CreatedAt:             time.Now(),
-		UpdatedAt:             time.Now(),
-	}
-}
+// 	return &model.AfterSales{
+// 		DealerID:              dealerID,
+// 		Period:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+// 		RecommendedStockPct:   &recommendedStockPct,
+// 		WarrantyStockPct:      &warrantyStockPct,
+// 		FotonLaborHoursPct:    &fotonLaborHoursPct,
+// 		WarrantyHours:         &warrantyHours,
+// 		ServiceContractsHours: &serviceContractsHours,
+// 		ASTrainings:           &trainings,
+// 		SparePartsSalesQ:      &sparePartsSalesQ,
+// 		SparePartsSalesYtdPct: &sparePartsSalesYtdPct,
+// 		ASRecommendation:      &recommendation,
+// 		CreatedAt:             time.Now(),
+// 		UpdatedAt:             time.Now(),
+// 	}
+// }
 
-// CreateTestDealerDevelopment создает тестовые данные развития дилера
-func CreateTestDealerDevelopment(dealerID int) *model.DealerDevelopment {
-	checkListScore := 85.0
-	dealershipClass := model.DealershipClassA
-	brands := []string{"Foton", "Dongfeng"}
-	branding := model.BrandingYes
-	marketingInvestments := 100000.0
-	bySideBusinesses := "Service, Parts"
-	recommendation := "Planned Result"
+// // CreateTestDealerDevelopment создает тестовые данные развития дилера
+// func CreateTestDealerDevelopment(dealerID int) *model.DealerDevelopment {
+// 	checkListScore := 85.0
+// 	dealershipClass := model.DealershipClassA
+// 	brands := []string{"Foton", "Dongfeng"}
+// 	branding := model.BrandingYes
+// 	marketingInvestments := 100000.0
+// 	bySideBusinesses := "Service, Parts"
+// 	recommendation := "Planned Result"
 
-	return &model.DealerDevelopment{
-		DealerID:             dealerID,
-		Period:               time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		CheckListScore:       &checkListScore,
-		DealershipClass:      &dealershipClass,
-		Brands:               brands,
-		Branding:             &branding,
-		MarketingInvestments: &marketingInvestments,
-		BySideBusinesses:     &bySideBusinesses,
-		DDRecommendation:     &recommendation,
-		CreatedAt:            time.Now(),
-		UpdatedAt:            time.Now(),
-	}
-}
+// 	return &model.DealerDevelopment{
+// 		DealerID:             dealerID,
+// 		Period:               time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+// 		CheckListScore:       &checkListScore,
+// 		DealershipClass:      &dealershipClass,
+// 		Brands:               brands,
+// 		Branding:             &branding,
+// 		MarketingInvestments: &marketingInvestments,
+// 		BySideBusinesses:     &bySideBusinesses,
+// 		DDRecommendation:     &recommendation,
+// 		CreatedAt:            time.Now(),
+// 		UpdatedAt:            time.Now(),
+// 	}
+// }
 
 // CreateTestPerformanceSales создает тестовые данные производительности продаж
 func CreateTestPerformanceSales(dealerID int) *model.PerformanceSales {

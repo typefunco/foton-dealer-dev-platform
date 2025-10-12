@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/typefunco/dealer_dev_platform/internal/model"
+	"github.com/typefunco/dealer_dev_platform/internal/utils"
 )
 
 // GetDealerCard возвращает полную карточку дилера.
@@ -35,7 +36,7 @@ func (s *Server) GetDealerCard(c echo.Context) error {
 	// Получение параметров квартала и года
 	quarter := c.QueryParam("quarter")
 	if quarter == "" {
-		quarter = "q1"
+		quarter = "Q1"
 	}
 
 	yearStr := c.QueryParam("year")
@@ -66,29 +67,40 @@ func (s *Server) GetDealerCard(c echo.Context) error {
 
 // GetDealers возвращает список дилеров.
 // @Summary Get dealers list
-// @Description Получение списка дилеров с возможностью фильтрации по региону
+// @Description Получение списка дилеров с возможностью фильтрации по региону, году, кварталу и дилерам
 // @Tags dealers
 // @Accept json
 // @Produce json
 // @Param region query string false "Region filter"
+// @Param quarter query string false "Quarter filter (Q1, Q2, Q3, Q4)"
+// @Param year query int false "Year filter"
+// @Param dealer_ids query string false "Comma-separated dealer IDs"
+// @Param limit query int false "Limit for pagination"
+// @Param offset query int false "Offset for pagination"
+// @Param sort_by query string false "Sort field"
+// @Param sort_order query string false "Sort order (asc, desc)"
 // @Success 200 {array} model.Dealer
+// @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/dealers [get]
 func (s *Server) GetDealers(c echo.Context) error {
-	region := c.QueryParam("region")
+	// Парсим параметры фильтрации с помощью универсальной функции
+	filters := utils.ParseFilterParamsFromContext(c)
 
 	var dealers []*model.Dealer
 	var err error
 
-	if region != "" {
-		dealers, err = s.dealerService.GetDealersByRegion(c.Request().Context(), region)
+	// Используем новый метод с фильтрами, если есть хотя бы один фильтр
+	if filters.Region != "" || filters.Quarter != "" || filters.Year != 0 || len(filters.DealerIDs) > 0 || filters.Limit > 0 || filters.Offset > 0 {
+		dealers, err = s.dealerService.GetDealersWithFilters(c.Request().Context(), filters)
 	} else {
+		// Иначе используем старый метод для обратной совместимости
 		dealers, err = s.dealerService.GetAllDealers(c.Request().Context())
 	}
 
 	if err != nil {
 		s.logger.Error("GetDealers: failed to get dealers",
-			"region", region,
+			"filters", filters,
 			"error", err,
 		)
 		return c.JSON(http.StatusInternalServerError, ErrorResponse{

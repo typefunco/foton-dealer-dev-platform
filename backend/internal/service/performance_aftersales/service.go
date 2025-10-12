@@ -39,7 +39,7 @@ func (s *Service) Create(ctx context.Context, pas *model.PerformanceAfterSales) 
 		return 0, fmt.Errorf("PerformanceAfterSalesService.Create: invalid dealer ID: %d", pas.DealerID)
 	}
 
-	if pas.Period.IsZero() {
+	if pas.Quarter == "" || pas.Year == 0 {
 		return 0, fmt.Errorf("PerformanceAfterSalesService.Create: invalid period")
 	}
 
@@ -112,7 +112,7 @@ func (s *Service) Update(ctx context.Context, pas *model.PerformanceAfterSales) 
 		return fmt.Errorf("PerformanceAfterSalesService.Update: invalid dealer ID: %d", pas.DealerID)
 	}
 
-	if pas.Period.IsZero() {
+	if pas.Quarter == "" || pas.Year == 0 {
 		return fmt.Errorf("PerformanceAfterSalesService.Update: invalid period")
 	}
 

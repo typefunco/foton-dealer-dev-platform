@@ -33,9 +33,9 @@ func (r *DealerRepository) Create(ctx context.Context, dealer *model.Dealer) (in
 	dealer.UpdatedAt = now
 
 	query := r.sq.Insert(dealerTableName).
-		Columns("ruft", "dealer_name_ru", "dealer_name_en", "region", "city", "manager", "joint_decision", "created_at", "updated_at").
-		Values(dealer.Ruft, dealer.DealerNameRu, dealer.DealerNameEn, dealer.Region, dealer.City, dealer.Manager, dealer.JointDecision, dealer.CreatedAt, dealer.UpdatedAt).
-		Suffix("RETURNING dealer_id")
+		Columns("name", "city", "region", "manager", "created_at", "updated_at").
+		Values(dealer.DealerNameRu, dealer.City, dealer.Region, dealer.Manager, dealer.CreatedAt, dealer.UpdatedAt).
+		Suffix("RETURNING id")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -54,9 +54,9 @@ func (r *DealerRepository) Create(ctx context.Context, dealer *model.Dealer) (in
 
 // GetByID получает дилера по ID.
 func (r *DealerRepository) GetByID(ctx context.Context, id int) (*model.Dealer, error) {
-	query := r.sq.Select("dealer_id", "ruft", "dealer_name_ru", "dealer_name_en", "region", "city", "manager", "joint_decision", "created_at", "updated_at").
+	query := r.sq.Select("id", "name", "city", "region", "manager", "created_at", "updated_at").
 		From(dealerTableName).
-		Where(squirrel.Eq{"dealer_id": id})
+		Where(squirrel.Eq{"id": id})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -65,7 +65,7 @@ func (r *DealerRepository) GetByID(ctx context.Context, id int) (*model.Dealer, 
 
 	dealer := &model.Dealer{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&dealer.DealerID, &dealer.Ruft, &dealer.DealerNameRu, &dealer.DealerNameEn, &dealer.Region, &dealer.City, &dealer.Manager, &dealer.JointDecision,
+		&dealer.DealerID, &dealer.DealerNameRu, &dealer.City, &dealer.Region, &dealer.Manager,
 		&dealer.CreatedAt, &dealer.UpdatedAt,
 	)
 	if err != nil {
@@ -77,9 +77,9 @@ func (r *DealerRepository) GetByID(ctx context.Context, id int) (*model.Dealer, 
 
 // GetAll получает всех дилеров.
 func (r *DealerRepository) GetAll(ctx context.Context) ([]*model.Dealer, error) {
-	query := r.sq.Select("dealer_id", "ruft", "dealer_name_ru", "dealer_name_en", "region", "city", "manager", "joint_decision", "created_at", "updated_at").
+	query := r.sq.Select("id", "name", "city", "region", "manager", "created_at", "updated_at").
 		From(dealerTableName).
-		OrderBy("dealer_name_ru")
+		OrderBy("name")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -96,8 +96,7 @@ func (r *DealerRepository) GetAll(ctx context.Context) ([]*model.Dealer, error) 
 	for rows.Next() {
 		dealer := &model.Dealer{}
 		err = rows.Scan(
-			&dealer.DealerID, &dealer.Ruft, &dealer.DealerNameRu, &dealer.DealerNameEn,
-			&dealer.City, &dealer.Region, &dealer.Manager, &dealer.JointDecision,
+			&dealer.DealerID, &dealer.DealerNameRu, &dealer.City, &dealer.Region, &dealer.Manager,
 			&dealer.CreatedAt, &dealer.UpdatedAt,
 		)
 		if err != nil {
@@ -111,10 +110,10 @@ func (r *DealerRepository) GetAll(ctx context.Context) ([]*model.Dealer, error) 
 
 // GetByRegion получает дилеров по региону.
 func (r *DealerRepository) GetByRegion(ctx context.Context, region string) ([]*model.Dealer, error) {
-	query := r.sq.Select("dealer_id", "ruft", "dealer_name_ru", "dealer_name_en", "region", "city", "manager", "joint_decision", "created_at", "updated_at").
+	query := r.sq.Select("id", "name", "city", "region", "manager", "created_at", "updated_at").
 		From(dealerTableName).
 		Where(squirrel.Eq{"region": region}).
-		OrderBy("dealer_name_ru")
+		OrderBy("name")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -131,12 +130,71 @@ func (r *DealerRepository) GetByRegion(ctx context.Context, region string) ([]*m
 	for rows.Next() {
 		dealer := &model.Dealer{}
 		err = rows.Scan(
-			&dealer.DealerID, &dealer.Ruft, &dealer.DealerNameRu, &dealer.DealerNameEn,
-			&dealer.City, &dealer.Region, &dealer.Manager, &dealer.JointDecision,
+			&dealer.DealerID, &dealer.DealerNameRu, &dealer.City, &dealer.Region, &dealer.Manager,
 			&dealer.CreatedAt, &dealer.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("DealerRepository.GetByRegion: error scanning: %w", err)
+		}
+		dealers = append(dealers, dealer)
+	}
+
+	return dealers, nil
+}
+
+// GetWithFilters получает дилеров с применением фильтров.
+func (r *DealerRepository) GetWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.Dealer, error) {
+	query := r.sq.Select("id", "name", "city", "region", "manager", "created_at", "updated_at").
+		From(dealerTableName)
+
+	// Применяем фильтры
+	if filters.HasRegionFilter() {
+		query = query.Where(squirrel.Eq{"region": filters.Region})
+	}
+
+	if filters.HasDealerFilter() {
+		query = query.Where(squirrel.Eq{"id": filters.DealerIDs})
+	}
+
+	// Сортировка
+	if filters.SortBy != "" {
+		order := "ASC"
+		if filters.SortOrder == "desc" {
+			order = "DESC"
+		}
+		query = query.OrderBy(fmt.Sprintf("%s %s", filters.SortBy, order))
+	} else {
+		query = query.OrderBy("name")
+	}
+
+	// Пагинация
+	if filters.Limit > 0 {
+		query = query.Limit(uint64(filters.Limit))
+	}
+	if filters.Offset > 0 {
+		query = query.Offset(uint64(filters.Offset))
+	}
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("DealerRepository.GetWithFilters: error building query: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("DealerRepository.GetWithFilters: error querying: %w", err)
+	}
+	defer rows.Close()
+
+	var dealers []*model.Dealer
+	for rows.Next() {
+		dealer := &model.Dealer{}
+		err = rows.Scan(
+			&dealer.DealerID, &dealer.DealerNameRu, &dealer.City, &dealer.Region, &dealer.Manager,
+			&dealer.CreatedAt, &dealer.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("DealerRepository.GetWithFilters: error scanning: %w", err)
 		}
 		dealers = append(dealers, dealer)
 	}
@@ -151,7 +209,7 @@ func (r *DealerRepository) Update(ctx context.Context, id int, updates map[strin
 	}
 
 	updates["updated_at"] = time.Now()
-	query := r.sq.Update(dealerTableName).SetMap(updates).Where(squirrel.Eq{"dealer_id": id})
+	query := r.sq.Update(dealerTableName).SetMap(updates).Where(squirrel.Eq{"id": id})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -172,7 +230,7 @@ func (r *DealerRepository) Update(ctx context.Context, id int, updates map[strin
 
 // Delete удаляет дилера.
 func (r *DealerRepository) Delete(ctx context.Context, id int) error {
-	query := r.sq.Delete(dealerTableName).Where(squirrel.Eq{"dealer_id": id})
+	query := r.sq.Delete(dealerTableName).Where(squirrel.Eq{"id": id})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -221,8 +279,8 @@ func (r *DealerRepository) GetDealerCardData(ctx context.Context, dealerID int, 
 // AddBrand добавляет бренд дилеру.
 func (r *DealerRepository) AddBrand(ctx context.Context, dealerID int, brandName string) error {
 	query := r.sq.Insert("dealer_brands").
-		Columns("dealer_id", "brand_name").
-		Values(dealerID, brandName)
+		Columns("dealer_id", "brand_name", "created_at").
+		Values(dealerID, brandName, time.Now())
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -288,8 +346,8 @@ func (r *DealerRepository) GetBrands(ctx context.Context, dealerID int) ([]strin
 // AddBusiness добавляет тип бизнеса дилеру.
 func (r *DealerRepository) AddBusiness(ctx context.Context, dealerID int, businessType string) error {
 	query := r.sq.Insert("dealer_businesses").
-		Columns("dealer_id", "business_type").
-		Values(dealerID, businessType)
+		Columns("dealer_id", "business_type", "created_at").
+		Values(dealerID, businessType, time.Now())
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -357,15 +415,12 @@ func (r *DealerRepository) UpdateFull(ctx context.Context, dealer *model.Dealer)
 	dealer.UpdatedAt = time.Now()
 
 	query := r.sq.Update(dealerTableName).
-		Set("ruft", dealer.Ruft).
-		Set("dealer_name_ru", dealer.DealerNameRu).
-		Set("dealer_name_en", dealer.DealerNameEn).
+		Set("name", dealer.DealerNameRu).
 		Set("region", dealer.Region).
 		Set("city", dealer.City).
 		Set("manager", dealer.Manager).
-		Set("joint_decision", dealer.JointDecision).
 		Set("updated_at", dealer.UpdatedAt).
-		Where(squirrel.Eq{"dealer_id": dealer.DealerID})
+		Where(squirrel.Eq{"id": dealer.DealerID})
 
 	sql, args, err := query.ToSql()
 	if err != nil {

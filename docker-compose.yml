@@ -50,6 +50,29 @@ services:
       retries: 3
       start_period: 10s
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dealer_platform_frontend
+    environment:
+      # API Configuration
+      VITE_API_BASE_URL: http://backend:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - dealer_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
 volumes:
   postgres_data:
     driver: local

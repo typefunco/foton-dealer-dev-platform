@@ -48,7 +48,7 @@ func (r *PerformanceAfterSalesRepository) GetAllByPeriod(ctx context.Context, pe
 		err := rows.Scan(
 			&pas.ID,
 			&pas.DealerID,
-			&pas.Period,
+			&pas.Quarter, pas.Year,
 			&pas.ASRevenue,
 			&pas.ASRevenueNoVat,
 			&pas.ASCost,
@@ -91,7 +91,7 @@ func (r *PerformanceAfterSalesRepository) GetByDealerIDAndPeriod(ctx context.Con
 	err := r.pool.QueryRow(ctx, query, dealerID, period).Scan(
 		&pas.ID,
 		&pas.DealerID,
-		&pas.Period,
+		&pas.Quarter, pas.Year,
 		&pas.ASRevenue,
 		&pas.ASRevenueNoVat,
 		&pas.ASCost,
@@ -124,7 +124,7 @@ func (r *PerformanceAfterSalesRepository) GetByID(ctx context.Context, id int) (
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&pas.ID,
 		&pas.DealerID,
-		&pas.Period,
+		&pas.Quarter, pas.Year,
 		&pas.ASRevenue,
 		&pas.ASRevenueNoVat,
 		&pas.ASCost,
@@ -156,7 +156,7 @@ func (r *PerformanceAfterSalesRepository) Create(ctx context.Context, perf *mode
 	var id int
 	err := r.pool.QueryRow(ctx, query,
 		perf.DealerID,
-		perf.Period,
+		perf.Quarter, perf.Year,
 		perf.ASRevenue,
 		perf.ASRevenueNoVat,
 		perf.ASCost,
@@ -188,7 +188,7 @@ func (r *PerformanceAfterSalesRepository) Update(ctx context.Context, perf *mode
 
 	result, err := r.pool.Exec(ctx, query,
 		perf.DealerID,
-		perf.Period,
+		perf.Quarter, perf.Year,
 		perf.ASRevenue,
 		perf.ASRevenueNoVat,
 		perf.ASCost,

@@ -49,7 +49,7 @@ func (s *Server) GetSalesTeamData(c echo.Context) error {
 
 	quarter := c.QueryParam("quarter")
 	if quarter == "" {
-		quarter = "q1"
+		quarter = "Q1"
 	}
 
 	yearStr := c.QueryParam("year")
@@ -79,22 +79,30 @@ func (s *Server) GetSalesTeamData(c echo.Context) error {
 	response := make([]SalesTeamDealerResponse, 0, len(salesList))
 	for _, sales := range salesList {
 		response = append(response, SalesTeamDealerResponse{
-			ID:                    strconv.FormatInt(int64(sales.DealerID), 10),
-			Name:                  sales.DealerNameRu,
-			City:                  sales.City,
-			SalesManager:          sales.Manager,
-			SalesTargetPlan:       sales.SalesTargetPlan,
-			SalesTargetFact:       sales.SalesTargetFact,
-			StockHDT:              sales.StockHDT,
-			StockMDT:              sales.StockMDT,
-			StockLDT:              sales.StockLDT,
-			BuyoutHDT:             sales.BuyoutHDT,
-			BuyoutMDT:             sales.BuyoutMDT,
-			BuyoutLDT:             sales.BuyoutLDT,
-			FotonSalesPersonnel:   sales.FotonSalesPersonnel,
-			ServiceContractsSales: sales.ServiceContractsSales,
-			SalesTrainings:        (*string)(sales.SalesTrainings),
-			SalesDecision:         sales.SalesRecommendation,
+			ID:                  strconv.FormatInt(int64(sales.DealerID), 10),
+			Name:                sales.DealerNameRu,
+			City:                sales.City,
+			SalesManager:        sales.Manager,
+			SalesTargetPlan:     nil, // SalesTarget теперь строка, а не int
+			SalesTargetFact:     nil, // SalesTarget теперь строка, а не int
+			StockHDT:            &sales.StockHDT,
+			StockMDT:            &sales.StockMDT,
+			StockLDT:            &sales.StockLDT,
+			BuyoutHDT:           &sales.BuyoutHDT,
+			BuyoutMDT:           &sales.BuyoutMDT,
+			BuyoutLDT:           &sales.BuyoutLDT,
+			FotonSalesPersonnel: &sales.FotonSalesmen,
+			ServiceContractsSales: func() *float64 {
+				f := float64(sales.ServiceContractsSales)
+				return &f
+			}(),
+			SalesTrainings: func() *string {
+				if sales.SalesTrainings {
+					return &[]string{"Yes"}[0]
+				}
+				return &[]string{"No"}[0]
+			}(),
+			SalesDecision: &sales.SalesDecision,
 		})
 	}
 

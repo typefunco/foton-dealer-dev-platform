@@ -5,9 +5,9 @@ import "time"
 // Dealer представляет основную информацию о дилере.
 // Это центральная модель, которая связывает все остальные данные.
 type Dealer struct {
-	DealerID      int       `json:"dealer_id" db:"dealer_id"`
+	DealerID      int       `json:"dealer_id" db:"id"`
 	Ruft          string    `json:"ruft" db:"ruft"`                     // Уникальный идентификатор дилера (0.1, 0.2 и т.д.)
-	DealerNameRu  string    `json:"dealer_name_ru" db:"dealer_name_ru"` // Название на русском
+	DealerNameRu  string    `json:"dealer_name_ru" db:"name"`           // Название на русском
 	DealerNameEn  string    `json:"dealer_name_en" db:"dealer_name_en"` // Название на английском
 	Region        string    `json:"region" db:"region"`
 	City          string    `json:"city" db:"city"`

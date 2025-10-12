@@ -34,19 +34,17 @@ func (r *SalesRepository) Create(ctx context.Context, sales *model.Sales) (int64
 
 	query := r.sq.Insert(salesTableName).
 		Columns(
-			"dealer_id", "period",
-			"stock_hdt", "stock_mdt", "stock_ldt",
+			"dealer_id", "quarter", "year",
+			"sales_target", "stock_hdt", "stock_mdt", "stock_ldt",
 			"buyout_hdt", "buyout_mdt", "buyout_ldt",
-			"foton_sales_personnel", "sales_target_plan", "sales_target_fact",
-			"service_contracts_sales", "sales_trainings", "sales_recommendation",
+			"foton_salesmen", "service_contracts_sales", "sales_trainings", "sales_decision",
 			"created_at", "updated_at",
 		).
 		Values(
-			sales.DealerID, sales.Period,
-			sales.StockHDT, sales.StockMDT, sales.StockLDT,
+			sales.DealerID, sales.Quarter, sales.Year,
+			sales.SalesTarget, sales.StockHDT, sales.StockMDT, sales.StockLDT,
 			sales.BuyoutHDT, sales.BuyoutMDT, sales.BuyoutLDT,
-			sales.FotonSalesPersonnel, sales.SalesTargetPlan, sales.SalesTargetFact,
-			sales.ServiceContractsSales, sales.SalesTrainings, sales.SalesRecommendation,
+			sales.FotonSalesmen, sales.ServiceContractsSales, sales.SalesTrainings, sales.SalesDecision,
 			sales.CreatedAt, sales.UpdatedAt,
 		).
 		Suffix("RETURNING id")
@@ -69,11 +67,10 @@ func (r *SalesRepository) Create(ctx context.Context, sales *model.Sales) (int64
 // GetByID получает запись продаж по ID.
 func (r *SalesRepository) GetByID(ctx context.Context, id int64) (*model.Sales, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "period",
-		"stock_hdt", "stock_mdt", "stock_ldt",
+		"id", "dealer_id", "quarter", "year",
+		"sales_target", "stock_hdt", "stock_mdt", "stock_ldt",
 		"buyout_hdt", "buyout_mdt", "buyout_ldt",
-		"foton_sales_personnel", "sales_target_plan", "sales_target_fact",
-		"service_contracts_sales", "sales_trainings", "sales_recommendation",
+		"foton_salesmen", "service_contracts_sales", "sales_trainings", "sales_decision",
 		"created_at", "updated_at",
 	).From(salesTableName).Where(squirrel.Eq{"id": id})
 
@@ -84,11 +81,10 @@ func (r *SalesRepository) GetByID(ctx context.Context, id int64) (*model.Sales, 
 
 	sales := &model.Sales{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&sales.ID, &sales.DealerID, &sales.Period,
-		&sales.StockHDT, &sales.StockMDT, &sales.StockLDT,
+		&sales.ID, &sales.DealerID, &sales.Quarter, &sales.Year,
+		&sales.SalesTarget, &sales.StockHDT, &sales.StockMDT, &sales.StockLDT,
 		&sales.BuyoutHDT, &sales.BuyoutMDT, &sales.BuyoutLDT,
-		&sales.FotonSalesPersonnel, &sales.SalesTargetPlan, &sales.SalesTargetFact,
-		&sales.ServiceContractsSales, &sales.SalesTrainings, &sales.SalesRecommendation,
+		&sales.FotonSalesmen, &sales.ServiceContractsSales, &sales.SalesTrainings, &sales.SalesDecision,
 		&sales.CreatedAt, &sales.UpdatedAt,
 	)
 	if err != nil {
@@ -100,37 +96,28 @@ func (r *SalesRepository) GetByID(ctx context.Context, id int64) (*model.Sales, 
 
 // GetByDealerAndPeriod получает запись продаж по дилеру и периоду.
 func (r *SalesRepository) GetByDealerAndPeriod(ctx context.Context, dealerID int64, quarter string, year int) (*model.Sales, error) {
-	// Преобразуем quarter/year в period
-	var month int
+	// Валидация quarter
 	switch quarter {
-	case "q1":
-		month = 1
-	case "q2":
-		month = 4
-	case "q3":
-		month = 7
-	case "q4":
-		month = 10
+	case "q1", "Q1", "q2", "Q2", "q3", "Q3", "q4", "Q4":
+		// Valid quarter
 	default:
 		return nil, fmt.Errorf("invalid quarter: %s", quarter)
 	}
-	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-
-	return r.GetByDealerAndPeriodTime(ctx, int(dealerID), period)
+	return r.GetByDealerAndPeriodTime(ctx, int(dealerID), quarter, year)
 }
 
 // GetByDealerAndPeriodTime получает запись продаж по дилеру и периоду.
-func (r *SalesRepository) GetByDealerAndPeriodTime(ctx context.Context, dealerID int, period time.Time) (*model.Sales, error) {
+func (r *SalesRepository) GetByDealerAndPeriodTime(ctx context.Context, dealerID int, quarter string, year int) (*model.Sales, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "period",
-		"stock_hdt", "stock_mdt", "stock_ldt",
+		"id", "dealer_id", "quarter", "year",
+		"sales_target", "stock_hdt", "stock_mdt", "stock_ldt",
 		"buyout_hdt", "buyout_mdt", "buyout_ldt",
-		"foton_sales_personnel", "sales_target_plan", "sales_target_fact",
-		"service_contracts_sales", "sales_trainings", "sales_recommendation",
+		"foton_salesmen", "service_contracts_sales", "sales_trainings", "sales_decision",
 		"created_at", "updated_at",
 	).From(salesTableName).Where(squirrel.Eq{
 		"dealer_id": dealerID,
-		"period":    period,
+		"quarter":   quarter,
+		"year":      year,
 	})
 
 	sql, args, err := query.ToSql()
@@ -140,11 +127,10 @@ func (r *SalesRepository) GetByDealerAndPeriodTime(ctx context.Context, dealerID
 
 	sales := &model.Sales{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&sales.ID, &sales.DealerID, &sales.Period,
-		&sales.StockHDT, &sales.StockMDT, &sales.StockLDT,
+		&sales.ID, &sales.DealerID, &sales.Quarter, &sales.Year,
+		&sales.SalesTarget, &sales.StockHDT, &sales.StockMDT, &sales.StockLDT,
 		&sales.BuyoutHDT, &sales.BuyoutMDT, &sales.BuyoutLDT,
-		&sales.FotonSalesPersonnel, &sales.SalesTargetPlan, &sales.SalesTargetFact,
-		&sales.ServiceContractsSales, &sales.SalesTrainings, &sales.SalesRecommendation,
+		&sales.FotonSalesmen, &sales.ServiceContractsSales, &sales.SalesTrainings, &sales.SalesDecision,
 		&sales.CreatedAt, &sales.UpdatedAt,
 	)
 	if err != nil {
@@ -156,35 +142,25 @@ func (r *SalesRepository) GetByDealerAndPeriodTime(ctx context.Context, dealerID
 
 // GetAllByPeriod получает все записи продаж за указанный период.
 func (r *SalesRepository) GetAllByPeriod(ctx context.Context, quarter string, year int) ([]*model.Sales, error) {
-	// Преобразуем quarter/year в period
-	var month int
+	// Валидация quarter
 	switch quarter {
-	case "q1":
-		month = 1
-	case "q2":
-		month = 4
-	case "q3":
-		month = 7
-	case "q4":
-		month = 10
+	case "q1", "Q1", "q2", "Q2", "q3", "Q3", "q4", "Q4":
+		// Valid quarter
 	default:
 		return nil, fmt.Errorf("invalid quarter: %s", quarter)
 	}
-	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-
-	return r.GetAllByPeriodTime(ctx, period)
+	return r.GetAllByPeriodTime(ctx, quarter, year)
 }
 
 // GetAllByPeriodTime получает все записи продаж за указанный период.
-func (r *SalesRepository) GetAllByPeriodTime(ctx context.Context, period time.Time) ([]*model.Sales, error) {
+func (r *SalesRepository) GetAllByPeriodTime(ctx context.Context, quarter string, year int) ([]*model.Sales, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "period",
-		"stock_hdt", "stock_mdt", "stock_ldt",
+		"id", "dealer_id", "quarter", "year",
+		"sales_target", "stock_hdt", "stock_mdt", "stock_ldt",
 		"buyout_hdt", "buyout_mdt", "buyout_ldt",
-		"foton_sales_personnel", "sales_target_plan", "sales_target_fact",
-		"service_contracts_sales", "sales_trainings", "sales_recommendation",
+		"foton_salesmen", "service_contracts_sales", "sales_trainings", "sales_decision",
 		"created_at", "updated_at",
-	).From(salesTableName).Where(squirrel.Eq{"period": period})
+	).From(salesTableName).Where(squirrel.Eq{"quarter": quarter, "year": year})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -201,11 +177,10 @@ func (r *SalesRepository) GetAllByPeriodTime(ctx context.Context, period time.Ti
 	for rows.Next() {
 		sales := &model.Sales{}
 		err = rows.Scan(
-			&sales.ID, &sales.DealerID, &sales.Period,
-			&sales.StockHDT, &sales.StockMDT, &sales.StockLDT,
+			&sales.ID, &sales.DealerID, &sales.Quarter, &sales.Year,
+			&sales.SalesTarget, &sales.StockHDT, &sales.StockMDT, &sales.StockLDT,
 			&sales.BuyoutHDT, &sales.BuyoutMDT, &sales.BuyoutLDT,
-			&sales.FotonSalesPersonnel, &sales.SalesTargetPlan, &sales.SalesTargetFact,
-			&sales.ServiceContractsSales, &sales.SalesTrainings, &sales.SalesRecommendation,
+			&sales.FotonSalesmen, &sales.ServiceContractsSales, &sales.SalesTrainings, &sales.SalesDecision,
 			&sales.CreatedAt, &sales.UpdatedAt,
 		)
 		if err != nil {
@@ -223,19 +198,19 @@ func (r *SalesRepository) UpdateFull(ctx context.Context, sales *model.Sales) er
 
 	query := r.sq.Update(salesTableName).
 		Set("dealer_id", sales.DealerID).
-		Set("period", sales.Period).
+		Set("quarter", sales.Quarter).
+		Set("year", sales.Year).
+		Set("sales_target", sales.SalesTarget).
 		Set("stock_hdt", sales.StockHDT).
 		Set("stock_mdt", sales.StockMDT).
 		Set("stock_ldt", sales.StockLDT).
 		Set("buyout_hdt", sales.BuyoutHDT).
 		Set("buyout_mdt", sales.BuyoutMDT).
 		Set("buyout_ldt", sales.BuyoutLDT).
-		Set("foton_sales_personnel", sales.FotonSalesPersonnel).
-		Set("sales_target_plan", sales.SalesTargetPlan).
-		Set("sales_target_fact", sales.SalesTargetFact).
+		Set("foton_salesmen", sales.FotonSalesmen).
 		Set("service_contracts_sales", sales.ServiceContractsSales).
 		Set("sales_trainings", sales.SalesTrainings).
-		Set("sales_recommendation", sales.SalesRecommendation).
+		Set("sales_decision", sales.SalesDecision).
 		Set("updated_at", sales.UpdatedAt).
 		Where(squirrel.Eq{"id": sales.ID})
 
@@ -305,39 +280,30 @@ func (r *SalesRepository) Update(ctx context.Context, id int64, updates map[stri
 
 // GetWithDetailsByPeriod получает записи продаж с деталями за период.
 func (r *SalesRepository) GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.SalesWithDetails, error) {
-	// Преобразуем quarter/year в period
-	var month int
+	// Валидация quarter
 	switch quarter {
-	case "q1":
-		month = 1
-	case "q2":
-		month = 4
-	case "q3":
-		month = 7
-	case "q4":
-		month = 10
+	case "q1", "Q1", "q2", "Q2", "q3", "Q3", "q4", "Q4":
+		// Valid quarter
 	default:
 		return nil, fmt.Errorf("invalid quarter: %s", quarter)
 	}
-	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 
-	return r.GetWithDetailsByPeriodTime(ctx, period, region)
+	return r.GetWithDetailsByPeriodTime(ctx, quarter, year, region)
 }
 
 // GetWithDetailsByPeriodTime получает записи продаж с деталями за период.
-func (r *SalesRepository) GetWithDetailsByPeriodTime(ctx context.Context, period time.Time, region string) ([]*model.SalesWithDetails, error) {
+func (r *SalesRepository) GetWithDetailsByPeriodTime(ctx context.Context, quarter string, year int, region string) ([]*model.SalesWithDetails, error) {
 	queryBuilder := r.sq.Select(
-		"s.id", "s.dealer_id", "s.period",
-		"s.stock_hdt", "s.stock_mdt", "s.stock_ldt",
+		"s.id", "s.dealer_id", "s.quarter", "s.year",
+		"s.sales_target", "s.stock_hdt", "s.stock_mdt", "s.stock_ldt",
 		"s.buyout_hdt", "s.buyout_mdt", "s.buyout_ldt",
-		"s.foton_sales_personnel", "s.sales_target_plan", "s.sales_target_fact",
-		"s.service_contracts_sales", "s.sales_trainings", "s.sales_recommendation",
+		"s.foton_salesmen", "s.service_contracts_sales", "s.sales_trainings", "s.sales_decision",
 		"s.created_at", "s.updated_at",
-		"d.dealer_name_ru", "d.dealer_name_en", "d.city", "d.region", "d.manager", "d.ruft",
+		"d.name", "d.name", "d.city", "d.region", "d.manager", "d.name",
 	).
 		From(salesTableName + " s").
-		Join("dealers d ON s.dealer_id = d.dealer_id").
-		Where(squirrel.Eq{"s.period": period})
+		Join("dealers d ON s.dealer_id = d.id").
+		Where(squirrel.Eq{"s.quarter": quarter, "s.year": year})
 
 	if region != "all-russia" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"d.region": region})
@@ -358,11 +324,10 @@ func (r *SalesRepository) GetWithDetailsByPeriodTime(ctx context.Context, period
 	for rows.Next() {
 		swd := &model.SalesWithDetails{}
 		err = rows.Scan(
-			&swd.ID, &swd.DealerID, &swd.Period,
-			&swd.StockHDT, &swd.StockMDT, &swd.StockLDT,
+			&swd.ID, &swd.DealerID, &swd.Quarter, &swd.Year,
+			&swd.SalesTarget, &swd.StockHDT, &swd.StockMDT, &swd.StockLDT,
 			&swd.BuyoutHDT, &swd.BuyoutMDT, &swd.BuyoutLDT,
-			&swd.FotonSalesPersonnel, &swd.SalesTargetPlan, &swd.SalesTargetFact,
-			&swd.ServiceContractsSales, &swd.SalesTrainings, &swd.SalesRecommendation,
+			&swd.FotonSalesmen, &swd.ServiceContractsSales, &swd.SalesTrainings, &swd.SalesDecision,
 			&swd.CreatedAt, &swd.UpdatedAt,
 			&swd.DealerNameRu, &swd.DealerNameEn, &swd.City, &swd.Region, &swd.Manager, &swd.Ruft,
 		)

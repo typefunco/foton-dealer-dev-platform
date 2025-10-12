@@ -14,6 +14,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id int64) (*model.AfterSales, error)
 	GetByDealerAndPeriod(ctx context.Context, dealerID int64, quarter string, year int) (*model.AfterSales, error)
 	GetAllByPeriod(ctx context.Context, quarter string, year int) ([]*model.AfterSales, error)
+	GetWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.AfterSalesWithDetails, error)
 	Update(ctx context.Context, id int64, updates map[string]interface{}) error
 	UpdateFull(ctx context.Context, as *model.AfterSales) error
 	Delete(ctx context.Context, id int64) error
@@ -67,6 +68,30 @@ func (s *Service) GetAfterSalesByPeriod(ctx context.Context, quarter string, yea
 	return afterSalesList, nil
 }
 
+// GetAfterSalesWithFilters возвращает данные послепродажного обслуживания с применением фильтров.
+func (s *Service) GetAfterSalesWithFilters(ctx context.Context, filters *model.FilterParams) ([]*model.AfterSalesWithDetails, error) {
+	// Валидация фильтров
+	if err := filters.Validate(); err != nil {
+		return nil, fmt.Errorf("AfterSalesService.GetAfterSalesWithFilters: validation failed: %w", err)
+	}
+
+	afterSalesList, err := s.repo.GetWithFilters(ctx, filters)
+	if err != nil {
+		s.logger.Error("AfterSalesService.GetAfterSalesWithFilters: failed to get after sales data",
+			"filters", filters,
+			"error", err,
+		)
+		return nil, fmt.Errorf("AfterSalesService.GetAfterSalesWithFilters: %w", err)
+	}
+
+	s.logger.Info("AfterSalesService.GetAfterSalesWithFilters: successfully retrieved data",
+		"filters", filters,
+		"count", len(afterSalesList),
+	)
+
+	return afterSalesList, nil
+}
+
 // GetAfterSalesByID возвращает данные послепродажного обслуживания по ID.
 func (s *Service) GetAfterSalesByID(ctx context.Context, id int64) (*model.AfterSales, error) {
 	if id <= 0 {
@@ -96,7 +121,8 @@ func (s *Service) CreateAfterSales(ctx context.Context, as *model.AfterSales) (i
 	if err != nil {
 		s.logger.Error("AfterSalesService.CreateAfterSales: failed to create",
 			"dealer_id", as.DealerID,
-			"period", as.Period,
+			"quarter", as.Quarter,
+			"year", as.Year,
 			"error", err,
 		)
 		return 0, fmt.Errorf("AfterSalesService.CreateAfterSales: %w", err)
@@ -105,7 +131,8 @@ func (s *Service) CreateAfterSales(ctx context.Context, as *model.AfterSales) (i
 	s.logger.Info("AfterSalesService.CreateAfterSales: successfully created",
 		"id", id,
 		"dealer_id", as.DealerID,
-		"period", as.Period,
+		"quarter", as.Quarter,
+		"year", as.Year,
 	)
 
 	return id, nil
@@ -165,37 +192,25 @@ func (s *Service) validateAfterSales(as *model.AfterSales) error {
 		return fmt.Errorf("dealer_id is required")
 	}
 
-	// Валидация периода
-	if as.Period.IsZero() {
-		return fmt.Errorf("period is required")
+	// Валидация квартала и года
+	if as.Quarter == "" {
+		return fmt.Errorf("quarter is required")
+	}
+	if as.Year <= 0 {
+		return fmt.Errorf("year is required")
 	}
 
-	// Валидация процентов (если не nil) - только верхняя граница 100%
-	if as.RecommendedStockPct != nil && *as.RecommendedStockPct > 100 {
-		return fmt.Errorf("recommended_stock_pct cannot exceed 100")
-	}
-
-	if as.WarrantyStockPct != nil && *as.WarrantyStockPct > 100 {
-		return fmt.Errorf("warranty_stock_pct cannot exceed 100")
-	}
-
-	if as.FotonLaborHoursPct != nil && *as.FotonLaborHoursPct > 100 {
-		return fmt.Errorf("foton_labor_hours_pct cannot exceed 100")
-	}
-
-	// Валидация решения (если не nil)
-	if as.ASRecommendation != nil {
-		validDecisions := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
-		isValid := false
-		for _, decision := range validDecisions {
-			if *as.ASRecommendation == decision {
-				isValid = true
-				break
-			}
+	// Валидация решения
+	validDecisions := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
+	isValid := false
+	for _, decision := range validDecisions {
+		if as.ASDecision == decision {
+			isValid = true
+			break
 		}
-		if !isValid {
-			return fmt.Errorf("invalid as_recommendation: %s", *as.ASRecommendation)
-		}
+	}
+	if !isValid {
+		return fmt.Errorf("invalid as_decision: %s", as.ASDecision)
 	}
 
 	return nil
@@ -204,10 +219,10 @@ func (s *Service) validateAfterSales(as *model.AfterSales) error {
 // isValidQuarter проверяет валидность квартала.
 func isValidQuarter(quarter string) bool {
 	validQuarters := map[string]bool{
-		"q1": true,
-		"q2": true,
-		"q3": true,
-		"q4": true,
+		"Q1": true,
+		"Q2": true,
+		"Q3": true,
+		"Q4": true,
 	}
 	return validQuarters[quarter]
 }

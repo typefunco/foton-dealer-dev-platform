@@ -66,11 +66,30 @@ func (s *Server) RunServer() {
 	s.srv.Use(middleware.Logger())
 	s.srv.Use(middleware.Recover())
 
-	// TODO: переделать на http
+	// CORS configuration for Docker environment
 	s.srv.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
-		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
+		AllowOrigins: []string{
+			"http://localhost:3000", // Development
+			"http://frontend:3000",  // Docker frontend service
+			"http://127.0.0.1:3000", // Alternative localhost
+		},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAuthorization,
+			echo.HeaderXRequestedWith,
+		},
+		AllowMethods: []string{
+			http.MethodGet,
+			http.MethodHead,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodPost,
+			http.MethodDelete,
+			http.MethodOptions,
+		},
+		AllowCredentials: true,
 	}))
 
 	// Auth routes
@@ -91,27 +110,39 @@ func (s *Server) RunServer() {
 	api.DELETE("/users/:id", s.DeleteUser)  // Удалить пользователя
 
 	// After Sales routes
-	api.GET("/aftersales", s.GetAfterSalesData) // Получить данные After Sales по региону
+	api.GET("/aftersales", s.GetAfterSalesData) // Получить данные After Sales по региону (legacy)
 
 	// Dealer routes
 	api.GET("/dealers", s.GetDealers)             // Получить список дилеров
 	api.GET("/dealers/:id", s.GetDealerByID)      // Получить базовую информацию о дилере
 	api.GET("/dealers/:id/card", s.GetDealerCard) // Получить полную карточку дилера
 
-	// Dealer Development routes
+	// Унифицированные маршруты для всех типов таблиц (без префикса dynamic)
+	api.GET("/dealer_dev", s.GetDynamicData)  // Dealer Development
+	api.GET("/sales", s.GetDynamicData)       // Sales Team
+	api.GET("/after_sales", s.GetDynamicData) // After Sales
+	api.GET("/performance", s.GetDynamicData) // Performance
+	api.GET("/sales_team", s.GetDynamicData)  // Sales Team (альтернативный маршрут)
+
+	// Legacy routes (сохраняем для обратной совместимости)
 	api.GET("/dealerdev", s.GetDealerDevData) // Получить данные Dealer Development
-
-	// Performance routes
-	api.GET("/performance", s.GetPerformanceData) // Получить данные производительности
-
-	// Sales Team routes
-	api.GET("/sales", s.GetSalesTeamData) // Получить данные команды продаж
 
 	// Quarter Comparison routes
 	api.GET("/quarter-comparison", s.GetQuarterComparison) // Сравнение кварталов
 
 	// All Data routes (комплексные данные всех таблиц)
 	api.GET("/all-data", s.GetAllData) // Получить все данные дилеров (DealerDev + Sales + Performance + AfterSales)
+
+	// Filter routes
+	api.GET("/filters", s.GetAvailableFilters) // Получить доступные фильтры
+
+	// Analytics routes
+	api.GET("/analytics", s.GetAnalytics) // Получить аналитические данные
+
+	// Bulk operations routes
+	api.POST("/bulk", s.BulkOperations)    // Массовые операции
+	api.POST("/bulk/update", s.BulkUpdate) // Массовое обновление
+	api.POST("/bulk/export", s.BulkExport) // Массовый экспорт
 
 	if err := s.srv.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.logger.Error("failed to start server", "error", err)

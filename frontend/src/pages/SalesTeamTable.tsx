@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { useSalesTeamData } from '../hooks/useDynamicData'
 
 interface Dealer {
   id: string
@@ -15,11 +16,39 @@ interface Dealer {
 }
 
 const SalesTeamTable: React.FC = () => {
-  const [selectedRegion, setSelectedRegion] = useState<string>('center')
+  const location = useLocation()
+  const [selectedRegion, setSelectedRegion] = useState<string>('Central')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Dealer | null
     direction: 'asc' | 'desc' | null
   }>({ key: null, direction: null })
+
+  // Получаем параметры из навигации
+  const navigationFilters = location.state?.filters || {}
+
+  const { data: dealers, loading, error, updateParams } = useSalesTeamData({
+    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion),
+    quarter: navigationFilters.quarter,
+    year: navigationFilters.year
+  })
+
+  // Обработка изменения региона
+  useEffect(() => {
+    updateParams({ region: selectedRegion === 'all-russia' ? undefined : selectedRegion })
+  }, [selectedRegion, updateParams])
+
+  // Применяем параметры из навигации при загрузке
+  useEffect(() => {
+    if (navigationFilters.region) {
+      setSelectedRegion(navigationFilters.region)
+    }
+    if (navigationFilters.quarter || navigationFilters.year) {
+      updateParams({
+        quarter: navigationFilters.quarter,
+        year: navigationFilters.year
+      })
+    }
+  }, [navigationFilters, updateParams])
 
   const handleSort = (key: keyof Dealer) => {
     let direction: 'asc' | 'desc' | null = 'asc'
@@ -36,8 +65,8 @@ const SalesTeamTable: React.FC = () => {
   }
 
   const getSortedDealers = () => {
-    if (!sortConfig.key || !sortConfig.direction) {
-      return dealers
+    if (!dealers || !sortConfig.key || !sortConfig.direction) {
+      return dealers || []
     }
 
     return [...dealers].sort((a, b) => {
@@ -116,161 +145,17 @@ const SalesTeamTable: React.FC = () => {
 
   const regions = [
     { id: 'all-russia', name: 'All Russia' },
-    { id: 'center', name: 'Center' },
-    { id: 'north-west', name: 'North West' },
-    { id: 'volga', name: 'Volga' },
-    { id: 'south', name: 'South' },
-    { id: 'ural', name: 'Ural' },
-    { id: 'siberia', name: 'Siberia' },
-    { id: 'far-east', name: 'Far East' }
+    { id: 'Central', name: 'Central' },
+    { id: 'North West', name: 'North West' },
+    { id: 'Volga', name: 'Volga' },
+    { id: 'South', name: 'South' },
+    { id: 'Kavkaz', name: 'Kavkaz' },
+    { id: 'Ural', name: 'Ural' },
+    { id: 'Siberia', name: 'Siberia' },
+    { id: 'Far East', name: 'Far East' }
   ]
 
-  const dealers: Dealer[] = [
-    {
-      id: '1',
-      name: 'AvtoFurgon',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '2',
-      name: 'Avtokub',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '3',
-      name: 'Avto-M',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '4',
-      name: 'BTS Belgorod',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '5',
-      name: 'BTS Smolensk',
-      city: 'Noginsk',
-      salesManager: 'Kozeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '6',
-      name: 'Centr Trak Grupp',
-      city: 'Solnechnogorsk',
-      salesManager: 'Kozeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '7',
-      name: 'Ecomtekh',
-      city: 'Ecomtekh',
-      salesManager: 'Avdeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '8',
-      name: 'GAS 36',
-      city: 'Yaroslavl',
-      salesManager: 'Avdeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '9',
-      name: 'Global Truck Sales',
-      city: 'Ryazan',
-      salesManager: 'Avdeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '10',
-      name: 'Gus Tekhcentr',
-      city: 'Tambov',
-      salesManager: 'Avdeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '11',
-      name: 'KomDorAvto',
-      city: 'Tula',
-      salesManager: 'Avdeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development'
-    },
-    {
-      id: '12',
-      name: 'Major Trak Centr',
-      city: 'Lipeck',
-      salesManager: 'Avdeev',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Needs development'
-    }
-  ]
+  // Данные теперь получаются из API через хук useSalesTeamData
 
   const getSalesDecisionColor = (decision: string) => {
     switch (decision) {
@@ -280,6 +165,40 @@ const SalesTeamTable: React.FC = () => {
       case 'Close Down': return 'text-red-600'
       default: return 'text-green-600'
     }
+  }
+
+  // Обработка состояний загрузки и ошибок
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading sales team data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-center bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-8 max-w-md">
+          <div className="text-red-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-white text-xl font-bold mb-2">Error Loading Data</h2>
+          <p className="text-blue-200 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

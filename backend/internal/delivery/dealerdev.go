@@ -43,7 +43,7 @@ func (s *Server) GetDealerDevData(c echo.Context) error {
 
 	quarter := c.QueryParam("quarter")
 	if quarter == "" {
-		quarter = "q1"
+		quarter = "Q1"
 	}
 
 	yearStr := c.QueryParam("year")
@@ -72,31 +72,12 @@ func (s *Server) GetDealerDevData(c echo.Context) error {
 	// Преобразование в API response
 	response := make([]DealerDevResponse, 0, len(ddList))
 	for _, dd := range ddList {
-		// Безопасное извлечение значений из указателей
-		var class string
-		if dd.DealershipClass != nil {
-			class = string(*dd.DealershipClass)
-		}
-
-		var checklist int
-		if dd.CheckListScore != nil {
-			checklist = int(*dd.CheckListScore)
-		}
-
-		var branding bool
-		if dd.Branding != nil {
-			branding = *dd.Branding == "Yes"
-		}
-
-		var buySideBusiness []string
-		if dd.BySideBusinesses != nil {
-			buySideBusiness = []string{*dd.BySideBusinesses}
-		}
-
-		var recommendation string
-		if dd.DDRecommendation != nil {
-			recommendation = *dd.DDRecommendation
-		}
+		// Извлечение значений из полей
+		class := dd.DealershipClass
+		checklist := dd.CheckListScore
+		branding := dd.Branding
+		var buySideBusiness []string // Поле удалено из модели
+		recommendation := dd.DDRecommendation
 
 		response = append(response, DealerDevResponse{
 			ID:                      strconv.FormatInt(int64(dd.DealerID), 10),
@@ -104,8 +85,8 @@ func (s *Server) GetDealerDevData(c echo.Context) error {
 			City:                    dd.City,
 			Class:                   class,
 			Checklist:               checklist,
-			BrandsInPortfolio:       dd.Brands,
-			BrandsCount:             len(dd.Brands),
+			BrandsInPortfolio:       []string{}, // Поле удалено из модели
+			BrandsCount:             0,          // Поле удалено из модели
 			Branding:                branding,
 			BuySideBusiness:         buySideBusiness,
 			DealerDevRecommendation: recommendation,

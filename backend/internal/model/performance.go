@@ -5,9 +5,10 @@ import "time"
 // PerformanceSales отвечает за блок Performance Sales (финансовая производительность продаж).
 // Содержит информацию о выручке, прибыли и марже по продажам автомобилей.
 type PerformanceSales struct {
-	ID       int       `json:"id" db:"id"`
-	DealerID int       `json:"dealer_id" db:"dealer_id"`
-	Period   time.Time `json:"period" db:"period"`
+	ID       int    `json:"id" db:"id"`
+	DealerID int    `json:"dealer_id" db:"dealer_id"`
+	Quarter  string `json:"quarter" db:"quarter"`
+	Year     int    `json:"year" db:"year"`
 
 	// Sales financial metrics
 	QuantitySold      *int     `json:"quantity_sold" db:"quantity_sold"`               // Количество проданных автомобилей
@@ -25,9 +26,10 @@ type PerformanceSales struct {
 // PerformanceAfterSales отвечает за блок Performance AfterSales (финансовая производительность запчастей).
 // Содержит информацию о выручке, прибыли и марже по продажам запчастей.
 type PerformanceAfterSales struct {
-	ID       int       `json:"id" db:"id"`
-	DealerID int       `json:"dealer_id" db:"dealer_id"`
-	Period   time.Time `json:"period" db:"period"`
+	ID       int    `json:"id" db:"id"`
+	DealerID int    `json:"dealer_id" db:"dealer_id"`
+	Quarter  string `json:"quarter" db:"quarter"`
+	Year     int    `json:"year" db:"year"`
 
 	// AfterSales financial metrics
 	ASRevenue      *float64 `json:"as_revenue" db:"as_revenue"`               // Выручка (с НДС)
@@ -67,18 +69,18 @@ type PerformanceAfterSalesWithDetails struct {
 
 // PerformanceWithDetails - алиас для совместимости со старым кодом.
 type PerformanceWithDetails struct {
-	DealerID     int     `json:"dealer_id"`
-	DealerName   string  `json:"dealer_name"`
-	City         string  `json:"city"`
-	Region       string  `json:"region"`
-	Manager      string  `json:"manager"`
-	FotonRank    int     `json:"foton_rank"`
-	SalesRevenue float64 `json:"sales_revenue"`
-	SalesProfit  float64 `json:"sales_profit"`
-	SalesMargin  float64 `json:"sales_margin"`
-	AsRevenue    float64 `json:"as_revenue"`
-	AsProfit     float64 `json:"as_profit"`
-	AsMargin     float64 `json:"as_margin"`
-	Marketing    float64 `json:"marketing"`
-	Decision     string  `json:"decision"`
+	DealerID                int     `json:"dealer_id"`
+	DealerNameRu            string  `json:"dealer_name_ru"`
+	City                    string  `json:"city"`
+	Region                  string  `json:"region"`
+	Manager                 string  `json:"manager"`
+	FotonRank               int     `json:"foton_rank"`
+	SalesRevenueRub         float64 `json:"sales_revenue_rub"`
+	SalesProfitRub          float64 `json:"sales_profit_rub"`
+	SalesMarginPercent      float64 `json:"sales_margin_percent"`
+	AfterSalesRevenueRub    float64 `json:"after_sales_revenue_rub"`
+	AfterSalesProfitRub     float64 `json:"after_sales_profit_rub"`
+	AfterSalesMarginPercent float64 `json:"after_sales_margin_percent"`
+	MarketingInvestment     float64 `json:"marketing_investment"`
+	PerformanceDecision     string  `json:"performance_decision"`
 }

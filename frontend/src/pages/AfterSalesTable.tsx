@@ -1,25 +1,42 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-
-interface AfterSalesDealer {
-  id: string
-  name: string
-  city: string
-  rStockPercent: number
-  wStockPercent: number
-  flhPercent: number
-  serviceContract: number
-  asTrainings: boolean
-  csi: boolean
-  asDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
-}
+import React, { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { useAfterSalesData } from '../hooks/useDynamicData'
+import type { AfterSalesDealer } from '../api/aftersales'
 
 const AfterSalesTable: React.FC = () => {
-  const [selectedRegion, setSelectedRegion] = useState<string>('center')
+  const location = useLocation()
+  const [selectedRegion, setSelectedRegion] = useState<string>('Central')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof AfterSalesDealer | null
     direction: 'asc' | 'desc' | null
   }>({ key: null, direction: null })
+
+  // Получаем параметры из навигации
+  const navigationFilters = location.state?.filters || {}
+
+  const { data: dealers, loading, error, updateParams } = useAfterSalesData({
+    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion),
+    quarter: navigationFilters.quarter,
+    year: navigationFilters.year
+  })
+
+  // Обработка изменения региона
+  useEffect(() => {
+    updateParams({ region: selectedRegion === 'all-russia' ? undefined : selectedRegion })
+  }, [selectedRegion, updateParams])
+
+  // Применяем параметры из навигации при загрузке
+  useEffect(() => {
+    if (navigationFilters.region) {
+      setSelectedRegion(navigationFilters.region)
+    }
+    if (navigationFilters.quarter || navigationFilters.year) {
+      updateParams({
+        quarter: navigationFilters.quarter,
+        year: navigationFilters.year
+      })
+    }
+  }, [navigationFilters, updateParams])
 
   const handleSort = (key: keyof AfterSalesDealer) => {
     let direction: 'asc' | 'desc' | null = 'asc'
@@ -37,172 +54,27 @@ const AfterSalesTable: React.FC = () => {
 
   const regions = [
     { id: 'all-russia', name: 'All Russia' },
-    { id: 'center', name: 'Center' },
-    { id: 'north-west', name: 'North West' },
-    { id: 'volga', name: 'Volga' },
-    { id: 'south', name: 'South' },
-    { id: 'ural', name: 'Ural' },
-    { id: 'siberia', name: 'Siberia' },
-    { id: 'far-east', name: 'Far East' }
+    { id: 'Central', name: 'Central' },
+    { id: 'North West', name: 'North West' },
+    { id: 'Volga', name: 'Volga' },
+    { id: 'South', name: 'South' },
+    { id: 'Kavkaz', name: 'Kavkaz' },
+    { id: 'Ural', name: 'Ural' },
+    { id: 'Siberia', name: 'Siberia' },
+    { id: 'Far East', name: 'Far East' }
   ]
 
-  const dealers: AfterSalesDealer[] = [
-    {
-      id: '1',
-      name: 'AvtoFurgon',
-      city: 'Moscow',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: true,
-      csi: true,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '2',
-      name: 'Avtokub',
-      city: 'Moscow',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: false,
-      csi: false,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '3',
-      name: 'Avto-M',
-      city: 'Moscow',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: true,
-      csi: true,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '4',
-      name: 'BTS Belgorod',
-      city: 'Moscow',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: false,
-      csi: false,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '5',
-      name: 'BTS Smolensk',
-      city: 'Noginsk',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: true,
-      csi: true,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '6',
-      name: 'Centr Trak Grupp',
-      city: 'Solnechnogorsk',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: false,
-      csi: false,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '7',
-      name: 'Ecomtekh',
-      city: 'Ecomtekh',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: true,
-      csi: true,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '8',
-      name: 'GAS 36',
-      city: 'Yaroslavl',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: false,
-      csi: false,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '9',
-      name: 'Global Truck Sales',
-      city: 'Ryazan',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: true,
-      csi: true,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '10',
-      name: 'Gus Tekhcentr',
-      city: 'Tambov',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: false,
-      csi: false,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '11',
-      name: 'KomDorAvto',
-      city: 'Tula',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: true,
-      csi: true,
-      asDecision: 'Needs development'
-    },
-    {
-      id: '12',
-      name: 'Major Trak Centr',
-      city: 'Lipeck',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 95,
-      asTrainings: false,
-      csi: false,
-      asDecision: 'Needs development'
-    }
-  ]
 
   const getSortedDealers = () => {
-    if (!sortConfig.key || !sortConfig.direction) {
-      return dealers
+    if (!dealers || !sortConfig.key || !sortConfig.direction) {
+      return dealers || []
     }
 
     return [...dealers].sort((a, b) => {
       const aValue = a[sortConfig.key!]
       const bValue = b[sortConfig.key!]
       
-      if (sortConfig.key === 'asTrainings' || sortConfig.key === 'csi') {
+      if (sortConfig.key === 'asTrainings') {
         const aBool = aValue as boolean
         const bBool = bValue as boolean
         
@@ -282,6 +154,40 @@ const AfterSalesTable: React.FC = () => {
     }
   }
 
+  // Обработка состояний загрузки и ошибок
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading after sales data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-center bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-8 max-w-md">
+          <div className="text-red-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-white text-xl font-bold mb-2">Error Loading Data</h2>
+          <p className="text-blue-200 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 relative">
       {/* Header with Back Button */}
@@ -344,7 +250,26 @@ const AfterSalesTable: React.FC = () => {
 
       {/* After Sales Table */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <table className="w-full">
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+            <span className="ml-4 text-white text-lg">Loading after sales data...</span>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span className="text-red-200">Error: {error}</span>
+            </div>
+          </div>
+        )}
+        
+        {!loading && !error && (
+          <table className="w-full">
           <thead>
             <tr>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
@@ -382,11 +307,11 @@ const AfterSalesTable: React.FC = () => {
               </th>
               <th 
                 className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
-                onClick={() => handleSort('serviceContract')}
+                onClick={() => handleSort('serviceContractsHours')}
               >
                 <div className="flex items-center justify-center space-x-1">
-                  <span>Service Contract</span>
-                  {getSortIcon('serviceContract')}
+                  <span>Service Contract Hours</span>
+                  {getSortIcon('serviceContractsHours')}
                 </div>
               </th>
               <th 
@@ -396,15 +321,6 @@ const AfterSalesTable: React.FC = () => {
                 <div className="flex items-center justify-center space-x-1">
                   <span>AS Trainings</span>
                   {getSortIcon('asTrainings')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
-                onClick={() => handleSort('csi')}
-              >
-                <div className="flex items-center justify-center space-x-1">
-                  <span>CSI</span>
-                  {getSortIcon('csi')}
                 </div>
               </th>
               <th 
@@ -419,7 +335,7 @@ const AfterSalesTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200 divide-opacity-30">
-            {getSortedDealers().map((dealer) => (
+            {(getSortedDealers() || []).map((dealer) => (
               <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <Link 
@@ -442,20 +358,13 @@ const AfterSalesTable: React.FC = () => {
                   <div className="text-sm text-white">{dealer.flhPercent}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.serviceContract}</div>
+                  <div className="text-sm text-white">{dealer.serviceContractsHours}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className={`text-sm font-medium ${
                     dealer.asTrainings ? 'text-green-600' : 'text-white'
                   }`}>
                     {dealer.asTrainings ? 'Yes' : 'No'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className={`text-sm font-medium ${
-                    dealer.csi ? 'text-green-600' : 'text-white'
-                  }`}>
-                    {dealer.csi ? 'Yes' : 'No'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -467,6 +376,7 @@ const AfterSalesTable: React.FC = () => {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   )

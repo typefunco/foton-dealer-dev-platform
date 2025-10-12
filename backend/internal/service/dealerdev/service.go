@@ -18,7 +18,7 @@ type Repository interface {
 	Update(ctx context.Context, id int, updates map[string]interface{}) error
 	UpdateFull(ctx context.Context, dd *model.DealerDevelopment) error
 	Delete(ctx context.Context, id int) error
-	GetWithDetailsByPeriod(ctx context.Context, period time.Time, region string) ([]*model.DealerDevelopmentWithDetails, error)
+	GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.DealerDevWithDetails, error)
 }
 
 // Service сервис для работы с данными развития дилеров.
@@ -47,13 +47,7 @@ func (s *Service) GetDealerDevByPeriod(ctx context.Context, quarter string, year
 		return nil, fmt.Errorf("DealerDevService.GetDealerDevByPeriod: invalid year: %d", year)
 	}
 
-	// Преобразуем quarter/year в period
-	period, err := parseQuarterToPeriod(quarter, year)
-	if err != nil {
-		return nil, fmt.Errorf("DealerDevService.GetDealerDevByPeriod: invalid quarter/year: %w", err)
-	}
-
-	ddList, err := s.repo.GetWithDetailsByPeriod(ctx, period, region)
+	ddList, err := s.repo.GetWithDetailsByPeriod(ctx, quarter, year, region)
 	if err != nil {
 		s.logger.Error("DealerDevService.GetDealerDevByPeriod: failed to get dealer dev data",
 			"quarter", quarter,
@@ -103,7 +97,8 @@ func (s *Service) CreateDealerDev(ctx context.Context, dd *model.DealerDevelopme
 	if err != nil {
 		s.logger.Error("DealerDevService.CreateDealerDev: failed to create",
 			"dealer_id", dd.DealerID,
-			"period", dd.Period,
+			"quarter", dd.Quarter,
+			"year", dd.Year,
 			"error", err,
 		)
 		return 0, fmt.Errorf("DealerDevService.CreateDealerDev: %w", err)
@@ -112,7 +107,8 @@ func (s *Service) CreateDealerDev(ctx context.Context, dd *model.DealerDevelopme
 	s.logger.Info("DealerDevService.CreateDealerDev: successfully created",
 		"id", id,
 		"dealer_id", dd.DealerID,
-		"period", dd.Period,
+		"quarter", dd.Quarter,
+		"year", dd.Year,
 	)
 
 	return id, nil
@@ -172,46 +168,45 @@ func (s *Service) validateDealerDev(dd *model.DealerDevelopment) error {
 		return fmt.Errorf("dealer_id is required")
 	}
 
-	// Валидация периода
-	if dd.Period.IsZero() {
-		return fmt.Errorf("period is required")
+	// Валидация квартала и года
+	if dd.Quarter == "" {
+		return fmt.Errorf("quarter is required")
+	}
+	if dd.Year <= 0 {
+		return fmt.Errorf("year is required")
 	}
 
-	if dd.CheckListScore != nil && (*dd.CheckListScore < 0 || *dd.CheckListScore > 100) {
+	if dd.CheckListScore < 0 || dd.CheckListScore > 100 {
 		return fmt.Errorf("check_list_score must be between 0 and 100")
 	}
 
-	// Валидация класса дилера (если не nil)
-	if dd.DealershipClass != nil {
-		validClasses := []string{"A", "B", "C", "D"}
-		isValid := false
-		for _, class := range validClasses {
-			if string(*dd.DealershipClass) == class {
-				isValid = true
-				break
-			}
-		}
-		if !isValid {
-			return fmt.Errorf("invalid dealership_class: %s", string(*dd.DealershipClass))
+	// Валидация класса дилера
+	validClasses := []string{"A", "B", "C", "D"}
+	isValid := false
+	for _, class := range validClasses {
+		if dd.DealershipClass == class {
+			isValid = true
+			break
 		}
 	}
-
-	// Валидация рекомендации (если не nil)
-	if dd.DDRecommendation != nil {
-		validRecs := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
-		isValid := false
-		for _, rec := range validRecs {
-			if *dd.DDRecommendation == rec {
-				isValid = true
-				break
-			}
-		}
-		if !isValid {
-			return fmt.Errorf("invalid dd_recommendation: %s", *dd.DDRecommendation)
-		}
+	if !isValid {
+		return fmt.Errorf("invalid dealership_class: %s", dd.DealershipClass)
 	}
 
-	if dd.MarketingInvestments != nil && *dd.MarketingInvestments < 0 {
+	// Валидация рекомендации
+	validRecs := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
+	recValid := false
+	for _, rec := range validRecs {
+		if dd.DDRecommendation == rec {
+			recValid = true
+			break
+		}
+	}
+	if !recValid {
+		return fmt.Errorf("invalid dealer_dev_recommendation: %s", dd.DDRecommendation)
+	}
+
+	if dd.MarketingInvestments < 0 {
 		return fmt.Errorf("marketing_investments cannot be negative")
 	}
 
@@ -221,10 +216,10 @@ func (s *Service) validateDealerDev(dd *model.DealerDevelopment) error {
 // isValidQuarter проверяет валидность квартала.
 func isValidQuarter(quarter string) bool {
 	validQuarters := map[string]bool{
-		"q1": true,
-		"q2": true,
-		"q3": true,
-		"q4": true,
+		"Q1": true,
+		"Q2": true,
+		"Q3": true,
+		"Q4": true,
 	}
 	return validQuarters[quarter]
 }
@@ -233,13 +228,13 @@ func isValidQuarter(quarter string) bool {
 func parseQuarterToPeriod(quarter string, year int) (time.Time, error) {
 	var month int
 	switch quarter {
-	case "q1":
+	case "Q1":
 		month = 1 // Январь
-	case "q2":
+	case "Q2":
 		month = 4 // Апрель
-	case "q3":
+	case "Q3":
 		month = 7 // Июль
-	case "q4":
+	case "Q4":
 		month = 10 // Октябрь
 	default:
 		return time.Time{}, fmt.Errorf("invalid quarter: %s", quarter)

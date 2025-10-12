@@ -25,18 +25,17 @@ const (
 // DealerDevelopment отвечает за блок Dealer Development.
 // Содержит информацию о развитии дилера, брендах, классе и чек-листе.
 type DealerDevelopment struct {
-	ID                   int              `json:"id" db:"id"`
-	DealerID             int              `json:"dealer_id" db:"dealer_id"`
-	Period               time.Time        `json:"period" db:"period"`
-	CheckListScore       *float64         `json:"check_list_score" db:"check_list_score"`           // Check List Score % (0-100)
-	DealershipClass      *DealershipClass `json:"dealership_class" db:"dealership_class"`           // A, B, C, D
-	Brands               []string         `json:"brands" db:"brands"`                               // Массив брендов ["Foton", "Kamaz", "Sitrak"]
-	Branding             *BrandingStatus  `json:"branding" db:"branding"`                           // Y, N, Yes, No
-	MarketingInvestments *float64         `json:"marketing_investments" db:"marketing_investments"` // Marketing Investments Rub
-	BySideBusinesses     *string          `json:"by_side_businesses" db:"by_side_businesses"`       // By-side businesses описание
-	DDRecommendation     *string          `json:"dd_recommendation" db:"dd_recommendation"`         // Recommendation (из Excel)
-	CreatedAt            time.Time        `json:"created_at" db:"created_at"`
-	UpdatedAt            time.Time        `json:"updated_at" db:"updated_at"`
+	ID                   int       `json:"id" db:"id"`
+	DealerID             int       `json:"dealer_id" db:"dealer_id"`
+	Quarter              string    `json:"quarter" db:"quarter"`
+	Year                 int       `json:"year" db:"year"`
+	CheckListScore       int       `json:"check_list_score" db:"check_list_score"`                   // Check List Score % (0-100)
+	DealershipClass      string    `json:"dealership_class" db:"dealer_ship_class"`                  // A, B, C, D
+	Branding             bool      `json:"branding" db:"branding"`                                   // Y, N, Yes, No
+	MarketingInvestments int64     `json:"marketing_investments" db:"marketing_investments"`         // Marketing Investments Rub
+	DDRecommendation     string    `json:"dealer_dev_recommendation" db:"dealer_dev_recommendation"` // Recommendation (из Excel)
+	CreatedAt            time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // DealerDevelopmentWithDetails содержит полную информацию о дилере для отображения.

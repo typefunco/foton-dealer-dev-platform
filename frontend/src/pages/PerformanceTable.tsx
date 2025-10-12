@@ -1,28 +1,42 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-
-interface PerformanceDealer {
-  id: string
-  name: string
-  city: string
-  srRub: string
-  salesProfit: number
-  salesMargin: number
-  autoSalesRevenue: string
-  rap: string
-  autoSalesProfitsRap: string
-  autoSalesMargin: number
-  marketingInvestment: number
-  ranking: number
-  autoSalesDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
-}
+import React, { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { usePerformanceData } from '../hooks/useDynamicData'
+import type { PerformanceDealer } from '../api/performance'
 
 const PerformanceTable: React.FC = () => {
+  const location = useLocation()
   const [selectedRegion, setSelectedRegion] = useState<string>('center')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof PerformanceDealer | null
     direction: 'asc' | 'desc' | null
   }>({ key: null, direction: null })
+
+  // Получаем параметры из навигации
+  const navigationFilters = location.state?.filters || {}
+
+  const { data: dealers, loading, error, updateParams } = usePerformanceData({
+    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion),
+    quarter: navigationFilters.quarter,
+    year: navigationFilters.year
+  })
+
+  // Обработка изменения региона
+  useEffect(() => {
+    updateParams({ region: selectedRegion === 'all-russia' ? undefined : selectedRegion })
+  }, [selectedRegion, updateParams])
+
+  // Применяем параметры из навигации при загрузке
+  useEffect(() => {
+    if (navigationFilters.region) {
+      setSelectedRegion(navigationFilters.region)
+    }
+    if (navigationFilters.quarter || navigationFilters.year) {
+      updateParams({
+        quarter: navigationFilters.quarter,
+        year: navigationFilters.year
+      })
+    }
+  }, [navigationFilters, updateParams])
 
   const handleSort = (key: keyof PerformanceDealer) => {
     let direction: 'asc' | 'desc' | null = 'asc'
@@ -49,192 +63,10 @@ const PerformanceTable: React.FC = () => {
     { id: 'far-east', name: 'Far East' }
   ]
 
-  const dealers: PerformanceDealer[] = [
-    {
-      id: '1',
-      name: 'AvtoFurgon',
-      city: 'Moscow',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 2.5,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '2',
-      name: 'Avtokub',
-      city: 'Moscow',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 3.2,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '3',
-      name: 'Avto-M',
-      city: 'Moscow',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 1.8,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '4',
-      name: 'BTS Belgorod',
-      city: 'Moscow',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 4.1,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '5',
-      name: 'BTS Smolensk',
-      city: 'Noginsk',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 2.9,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '6',
-      name: 'Centr Trak Grupp',
-      city: 'Solnechnogorsk',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 3.7,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '7',
-      name: 'Ecomtekh',
-      city: 'Ecomtekh',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 2.3,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '8',
-      name: 'GAS 36',
-      city: 'Yaroslavl',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 1.5,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '9',
-      name: 'Global Truck Sales',
-      city: 'Ryazan',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 2.1,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '10',
-      name: 'Gus Tekhcentr',
-      city: 'Tambov',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 1.9,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '11',
-      name: 'KomDorAvto',
-      city: 'Tula',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 1.2,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    },
-    {
-      id: '12',
-      name: 'Major Trak Centr',
-      city: 'Lipeck',
-      srRub: '5 555 555',
-      salesProfit: 5,
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      rap: 'Gold',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      marketingInvestment: 2.8,
-      ranking: 5,
-      autoSalesDecision: 'Needs development'
-    }
-  ]
 
   const getSortedDealers = () => {
-    if (!sortConfig.key || !sortConfig.direction) {
-      return dealers
+    if (!dealers || !sortConfig.key || !sortConfig.direction) {
+      return dealers || []
     }
 
     return [...dealers].sort((a, b) => {
@@ -322,6 +154,40 @@ const PerformanceTable: React.FC = () => {
     }
   }
 
+  // Обработка состояний загрузки и ошибок
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading performance data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-center bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-8 max-w-md">
+          <div className="text-red-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-white text-xl font-bold mb-2">Error Loading Data</h2>
+          <p className="text-blue-200 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 relative">
       {/* Header with Back Button */}
@@ -384,7 +250,26 @@ const PerformanceTable: React.FC = () => {
 
       {/* Performance Table */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <table className="w-full">
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+            <span className="ml-4 text-white text-lg">Loading performance data...</span>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span className="text-red-200">Error: {error}</span>
+            </div>
+          </div>
+        )}
+        
+        {!loading && !error && (
+          <table className="w-full">
           <thead>
             <tr>
               <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
@@ -477,7 +362,7 @@ const PerformanceTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200 divide-opacity-30">
-            {getSortedDealers().map((dealer) => (
+            {(getSortedDealers() || []).map((dealer) => (
               <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <Link 
@@ -523,6 +408,7 @@ const PerformanceTable: React.FC = () => {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   )
