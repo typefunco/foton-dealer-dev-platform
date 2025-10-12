@@ -72,17 +72,43 @@ func (s *Server) GetDealerDevData(c echo.Context) error {
 	// Преобразование в API response
 	response := make([]DealerDevResponse, 0, len(ddList))
 	for _, dd := range ddList {
+		// Безопасное извлечение значений из указателей
+		var class string
+		if dd.DealershipClass != nil {
+			class = string(*dd.DealershipClass)
+		}
+
+		var checklist int
+		if dd.CheckListScore != nil {
+			checklist = int(*dd.CheckListScore)
+		}
+
+		var branding bool
+		if dd.Branding != nil {
+			branding = *dd.Branding == "Yes"
+		}
+
+		var buySideBusiness []string
+		if dd.BySideBusinesses != nil {
+			buySideBusiness = []string{*dd.BySideBusinesses}
+		}
+
+		var recommendation string
+		if dd.DDRecommendation != nil {
+			recommendation = *dd.DDRecommendation
+		}
+
 		response = append(response, DealerDevResponse{
-			ID:                      strconv.FormatInt(dd.DealerID, 10),
-			Name:                    dd.DealerName,
+			ID:                      strconv.FormatInt(int64(dd.DealerID), 10),
+			Name:                    dd.DealerNameRu,
 			City:                    dd.City,
-			Class:                   string(dd.DealerShipClass),
-			Checklist:               int(dd.CheckListScore),
+			Class:                   class,
+			Checklist:               checklist,
 			BrandsInPortfolio:       dd.Brands,
-			BrandsCount:             dd.BrandsCount,
-			Branding:                dd.Branding,
-			BuySideBusiness:         dd.BySideBusinesses,
-			DealerDevRecommendation: string(dd.Recommendation),
+			BrandsCount:             len(dd.Brands),
+			Branding:                branding,
+			BuySideBusiness:         buySideBusiness,
+			DealerDevRecommendation: recommendation,
 		})
 	}
 

@@ -2,46 +2,59 @@ package model
 
 import "time"
 
-// SalesDecision представляет решение по продажам дилера.
-type SalesDecision string
+// SalesTrainingsStatus представляет статус тренингов по продажам.
+type SalesTrainingsStatus string
 
 const (
-	SalesDecisionPlannedResult    SalesDecision = "Planned Result"
-	SalesDecisionNeedsDevelopment SalesDecision = "Needs development"
-	SalesDecisionFindNewCandidate SalesDecision = "Find New Candidate"
-	SalesDecisionCloseDown        SalesDecision = "Close Down"
+	SalesTrainingsYes SalesTrainingsStatus = "Yes"
+	SalesTrainingsNo  SalesTrainingsStatus = "No"
+	SalesTrainingsY   SalesTrainingsStatus = "Y"
+	SalesTrainingsN   SalesTrainingsStatus = "N"
 )
 
 // Sales отвечает за блок Dealer Sales.
 // Содержит информацию о команде продаж, целях и обучении.
 type Sales struct {
-	ID                    int64         `json:"id" db:"id"`
-	DealerID              int64         `json:"dealer_id" db:"dealer_id"`
-	Quarter               string        `json:"quarter" db:"quarter"`                                 // q1, q2, q3, q4
-	Year                  int           `json:"year" db:"year"`                                       // 2024, 2025 и т.д.
-	SalesTarget           string        `json:"sales_target" db:"sales_target"`                       // Формат: "40/100" (выполнено/план)
-	StockHDT              int16         `json:"stock_hdt" db:"stock_hdt"`                             // Heavy Duty Truck
-	StockMDT              int16         `json:"stock_mdt" db:"stock_mdt"`                             // Medium Duty Truck
-	StockLDT              int16         `json:"stock_ldt" db:"stock_ldt"`                             // Light Duty Truck
-	BuyoutHDT             int16         `json:"buyout_hdt" db:"buyout_hdt"`                           // Heavy Duty Truck
-	BuyoutMDT             int16         `json:"buyout_mdt" db:"buyout_mdt"`                           // Medium Duty Truck
-	BuyoutLDT             int16         `json:"buyout_ldt" db:"buyout_ldt"`                           // Light Duty Truck
-	FotonSalesmen         int16         `json:"foton_salesmen" db:"foton_salesmen"`                   // Количество продавцов
-	SalesTrainings        bool          `json:"sales_trainings" db:"sales_trainings"`                 // Прошли ли обучение
-	ServiceContractsSales int16         `json:"service_contracts_sales" db:"service_contracts_sales"` // Количество сервисных контрактов
-	SalesDecision         SalesDecision `json:"sales_decision" db:"sales_decision"`
-	CreatedAt             time.Time     `json:"created_at" db:"created_at"`
-	UpdatedAt             time.Time     `json:"updated_at" db:"updated_at"`
+	ID       int       `json:"id" db:"id"`
+	DealerID int       `json:"dealer_id" db:"dealer_id"`
+	Period   time.Time `json:"period" db:"period"`
+
+	// Stock (остатки на складе)
+	StockHDT *int `json:"stock_hdt" db:"stock_hdt"` // Heavy Duty Truck
+	StockMDT *int `json:"stock_mdt" db:"stock_mdt"` // Medium Duty Truck
+	StockLDT *int `json:"stock_ldt" db:"stock_ldt"` // Light Duty Truck
+
+	// Buyout (выкуп)
+	BuyoutHDT *int `json:"buyout_hdt" db:"buyout_hdt"` // Heavy Duty Truck
+	BuyoutMDT *int `json:"buyout_mdt" db:"buyout_mdt"` // Medium Duty Truck
+	BuyoutLDT *int `json:"buyout_ldt" db:"buyout_ldt"` // Light Duty Truck
+
+	// Sales targets and personnel
+	FotonSalesPersonnel *int `json:"foton_sales_personnel" db:"foton_sales_personnel"` // Количество продавцов Foton
+	SalesTargetPlan     *int `json:"sales_target_plan" db:"sales_target_plan"`         // План продаж
+	SalesTargetFact     *int `json:"sales_target_fact" db:"sales_target_fact"`         // Факт продаж
+
+	// Service contracts
+	ServiceContractsSales *float64 `json:"service_contracts_sales" db:"service_contracts_sales"` // Service contracts sales
+
+	// Training
+	SalesTrainings *SalesTrainingsStatus `json:"sales_trainings" db:"sales_trainings"` // Y, N, Yes, No
+
+	// Recommendation (из Excel)
+	SalesRecommendation *string `json:"sales_recommendation" db:"sales_recommendation"` // Recommendation (из Excel)
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // SalesWithDetails содержит полную информацию о продажах дилера.
 // Используется для API ответов с объединёнными данными.
 type SalesWithDetails struct {
 	Sales
-	DealerName      string `json:"dealer_name"`
-	City            string `json:"city"`
-	Region          string `json:"region"`
-	Manager         string `json:"manager"`
-	StockHdtMdtLdt  string `json:"stock_hdt_mdt_ldt"`  // Формат: "5/2/3"
-	BuyoutHdtMdtLdt string `json:"buyout_hdt_mdt_ldt"` // Формат: "5/2/3"
+	DealerNameRu string `json:"dealer_name_ru"`
+	DealerNameEn string `json:"dealer_name_en"`
+	City         string `json:"city"`
+	Region       string `json:"region"`
+	Manager      string `json:"manager"`
+	Ruft         string `json:"ruft"`
 }

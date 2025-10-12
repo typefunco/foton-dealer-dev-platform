@@ -1,25 +1,25 @@
--- Создание таблицы производительности (Performance)
-CREATE TABLE IF NOT EXISTS performance (
-    id BIGSERIAL PRIMARY KEY,
-    dealer_id BIGINT NOT NULL REFERENCES dealers(id) ON DELETE CASCADE,
-    quarter VARCHAR(10) NOT NULL,
-    year INT NOT NULL,
-    sales_revenue_rub BIGINT NOT NULL,
-    sales_profit_rub BIGINT NOT NULL,
-    sales_profit_percent DOUBLE PRECISION NOT NULL,
-    sales_margin_percent DOUBLE PRECISION NOT NULL,
-    after_sales_revenue_rub BIGINT NOT NULL,
-    after_sales_profit_rub BIGINT NOT NULL,
-    after_sales_margin_percent DOUBLE PRECISION NOT NULL,
-    marketing_investment DOUBLE PRECISION NOT NULL,
-    foton_rank SMALLINT NOT NULL,
-    performance_decision VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
-    UNIQUE(dealer_id, quarter, year)
+-- ============================================
+-- ТАБЛИЦА: performance_sales
+-- ============================================
+CREATE TABLE IF NOT EXISTS performance_sales (
+    id SERIAL PRIMARY KEY,
+    dealer_id INTEGER REFERENCES dealers(dealer_id) ON DELETE CASCADE,
+    period DATE NOT NULL,
+    
+    -- Sales financial metrics
+    quantity_sold INTEGER,  -- Количество проданных автомобилей
+    sales_revenue DECIMAL(15,2),  -- Выручка (с НДС)
+    sales_revenue_no_vat DECIMAL(15,2),  -- Выручка без НДС
+    sales_cost DECIMAL(15,2),  -- Стоимость
+    sales_margin DECIMAL(15,2),  -- Валовая прибыль (в рублях)
+    sales_margin_pct DECIMAL(5,2),  -- Маржа % = (margin / revenue) * 100
+    sales_profit_pct DECIMAL(5,2),  -- Рентабельность %
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(dealer_id, period)
 );
 
-CREATE INDEX idx_performance_dealer_id ON performance(dealer_id);
-CREATE INDEX idx_performance_quarter_year ON performance(quarter, year);
-CREATE INDEX idx_performance_rank ON performance(foton_rank);
+CREATE INDEX idx_perf_sales_dealer_period ON performance_sales(dealer_id, period);
 

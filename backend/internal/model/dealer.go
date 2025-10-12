@@ -5,13 +5,16 @@ import "time"
 // Dealer представляет основную информацию о дилере.
 // Это центральная модель, которая связывает все остальные данные.
 type Dealer struct {
-	ID        int64     `json:"id" db:"id"`
-	Name      string    `json:"name" db:"name"`
-	City      string    `json:"city" db:"city"`
-	Region    string    `json:"region" db:"region"`
-	Manager   string    `json:"manager" db:"manager"` // Менеджер, отвечающий за дилера
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	DealerID      int       `json:"dealer_id" db:"dealer_id"`
+	Ruft          string    `json:"ruft" db:"ruft"`                     // Уникальный идентификатор дилера (0.1, 0.2 и т.д.)
+	DealerNameRu  string    `json:"dealer_name_ru" db:"dealer_name_ru"` // Название на русском
+	DealerNameEn  string    `json:"dealer_name_en" db:"dealer_name_en"` // Название на английском
+	Region        string    `json:"region" db:"region"`
+	City          string    `json:"city" db:"city"`
+	Manager       string    `json:"manager" db:"manager"`               // Менеджер, отвечающий за дилера
+	JointDecision *string   `json:"joint_decision" db:"joint_decision"` // Joint Decision (заполняется вручную через UI)
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // DealerBrand представляет связь между дилером и брендами в его портфеле.

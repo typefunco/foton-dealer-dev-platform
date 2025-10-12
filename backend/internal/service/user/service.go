@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 )
@@ -172,6 +173,13 @@ func (s *Service) validateCreateRequest(req model.UserCreateRequest) error {
 	}
 	if !validRoles[req.Role] {
 		return fmt.Errorf("invalid role: %s", req.Role)
+	}
+	// Проверка email формата
+	if req.Email != "" {
+		emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+		if !emailRegex.MatchString(req.Email) {
+			return fmt.Errorf("invalid email format")
+		}
 	}
 	return nil
 }

@@ -96,8 +96,7 @@ func (s *Service) CreateAfterSales(ctx context.Context, as *model.AfterSales) (i
 	if err != nil {
 		s.logger.Error("AfterSalesService.CreateAfterSales: failed to create",
 			"dealer_id", as.DealerID,
-			"quarter", as.Quarter,
-			"year", as.Year,
+			"period", as.Period,
 			"error", err,
 		)
 		return 0, fmt.Errorf("AfterSalesService.CreateAfterSales: %w", err)
@@ -106,8 +105,7 @@ func (s *Service) CreateAfterSales(ctx context.Context, as *model.AfterSales) (i
 	s.logger.Info("AfterSalesService.CreateAfterSales: successfully created",
 		"id", id,
 		"dealer_id", as.DealerID,
-		"quarter", as.Quarter,
-		"year", as.Year,
+		"period", as.Period,
 	)
 
 	return id, nil
@@ -167,40 +165,37 @@ func (s *Service) validateAfterSales(as *model.AfterSales) error {
 		return fmt.Errorf("dealer_id is required")
 	}
 
-	if !isValidQuarter(as.Quarter) {
-		return fmt.Errorf("invalid quarter: %s (must be q1, q2, q3, or q4)", as.Quarter)
+	// Валидация периода
+	if as.Period.IsZero() {
+		return fmt.Errorf("period is required")
 	}
 
-	if as.Year < 2020 || as.Year > 2030 {
-		return fmt.Errorf("invalid year: %d (must be between 2020 and 2030)", as.Year)
+	// Валидация процентов (если не nil) - только верхняя граница 100%
+	if as.RecommendedStockPct != nil && *as.RecommendedStockPct > 100 {
+		return fmt.Errorf("recommended_stock_pct cannot exceed 100")
 	}
 
-	if as.RecommendedStock < 0 || as.RecommendedStock > 100 {
-		return fmt.Errorf("recommended_stock must be between 0 and 100")
+	if as.WarrantyStockPct != nil && *as.WarrantyStockPct > 100 {
+		return fmt.Errorf("warranty_stock_pct cannot exceed 100")
 	}
 
-	if as.WarrantyStock < 0 || as.WarrantyStock > 100 {
-		return fmt.Errorf("warranty_stock must be between 0 and 100")
+	if as.FotonLaborHoursPct != nil && *as.FotonLaborHoursPct > 100 {
+		return fmt.Errorf("foton_labor_hours_pct cannot exceed 100")
 	}
 
-	if as.FotonLaborHours < 0 || as.FotonLaborHours > 100 {
-		return fmt.Errorf("foton_labor_hours must be between 0 and 100")
-	}
-
-	if as.ServiceContracts < 0 {
-		return fmt.Errorf("service_contracts cannot be negative")
-	}
-
-	// Валидация решения
-	validDecisions := map[model.AfterSalesDecision]bool{
-		model.AfterSalesDecisionPlannedResult:    true,
-		model.AfterSalesDecisionNeedsDevelopment: true,
-		model.AfterSalesDecisionFindNewCandidate: true,
-		model.AfterSalesDecisionCloseDown:        true,
-	}
-
-	if !validDecisions[as.AfterSalesDecision] {
-		return fmt.Errorf("invalid as_decision: %s", as.AfterSalesDecision)
+	// Валидация решения (если не nil)
+	if as.ASRecommendation != nil {
+		validDecisions := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
+		isValid := false
+		for _, decision := range validDecisions {
+			if *as.ASRecommendation == decision {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			return fmt.Errorf("invalid as_recommendation: %s", *as.ASRecommendation)
+		}
 	}
 
 	return nil

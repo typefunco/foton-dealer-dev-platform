@@ -10,7 +10,7 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 )
 
-const dealerDevTableName = "dealer_dev"
+const dealerDevTableName = "dealer_development"
 
 // DealerDevRepository репозиторий для работы с данными развития дилеров.
 type DealerDevRepository struct {
@@ -18,7 +18,7 @@ type DealerDevRepository struct {
 	sq   squirrel.StatementBuilderType
 }
 
-// NewDealerDevRepository создает новый экземпляр репозитория.
+// NewDealerDevRepository конструктор.
 func NewDealerDevRepository(pool *pgxpool.Pool) *DealerDevRepository {
 	return &DealerDevRepository{
 		pool: pool,
@@ -27,22 +27,22 @@ func NewDealerDevRepository(pool *pgxpool.Pool) *DealerDevRepository {
 }
 
 // Create создает новую запись развития дилера.
-func (r *DealerDevRepository) Create(ctx context.Context, dd *model.DealerDev) (int64, error) {
+func (r *DealerDevRepository) Create(ctx context.Context, dd *model.DealerDevelopment) (int, error) {
 	now := time.Now()
 	dd.CreatedAt = now
 	dd.UpdatedAt = now
 
 	query := r.sq.Insert(dealerDevTableName).
 		Columns(
-			"dealer_id", "quarter", "year",
-			"check_list_score", "dealer_ship_class", "branding",
-			"marketing_investments", "dealer_dev_recommendation",
+			"dealer_id", "period",
+			"check_list_score", "dealership_class", "brands", "branding",
+			"marketing_investments", "by_side_businesses", "dd_recommendation",
 			"created_at", "updated_at",
 		).
 		Values(
-			dd.DealerID, dd.Quarter, dd.Year,
-			dd.CheckListScore, dd.DealerShipClass, dd.Branding,
-			dd.MarketingInvestments, dd.Recommendation,
+			dd.DealerID, dd.Period,
+			dd.CheckListScore, dd.DealershipClass, dd.Brands, dd.Branding,
+			dd.MarketingInvestments, dd.BySideBusinesses, dd.DDRecommendation,
 			dd.CreatedAt, dd.UpdatedAt,
 		).
 		Suffix("RETURNING id")
@@ -58,16 +58,16 @@ func (r *DealerDevRepository) Create(ctx context.Context, dd *model.DealerDev) (
 		return 0, fmt.Errorf("DealerDevRepository.Create: error inserting: %w", err)
 	}
 
-	dd.ID = id
-	return id, nil
+	dd.ID = int(id)
+	return int(id), nil
 }
 
 // GetByID получает запись развития дилера по ID.
-func (r *DealerDevRepository) GetByID(ctx context.Context, id int64) (*model.DealerDev, error) {
+func (r *DealerDevRepository) GetByID(ctx context.Context, id int) (*model.DealerDevelopment, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "quarter", "year",
-		"check_list_score", "dealer_ship_class", "branding",
-		"marketing_investments", "dealer_dev_recommendation",
+		"id", "dealer_id", "period",
+		"check_list_score", "dealership_class", "brands", "branding",
+		"marketing_investments", "by_side_businesses", "dd_recommendation",
 		"created_at", "updated_at",
 	).From(dealerDevTableName).Where(squirrel.Eq{"id": id})
 
@@ -76,11 +76,11 @@ func (r *DealerDevRepository) GetByID(ctx context.Context, id int64) (*model.Dea
 		return nil, fmt.Errorf("DealerDevRepository.GetByID: error building query: %w", err)
 	}
 
-	dd := &model.DealerDev{}
+	dd := &model.DealerDevelopment{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&dd.ID, &dd.DealerID, &dd.Quarter, &dd.Year,
-		&dd.CheckListScore, &dd.DealerShipClass, &dd.Branding,
-		&dd.MarketingInvestments, &dd.Recommendation,
+		&dd.ID, &dd.DealerID, &dd.Period,
+		&dd.CheckListScore, &dd.DealershipClass, &dd.Brands, &dd.Branding,
+		&dd.MarketingInvestments, &dd.BySideBusinesses, &dd.DDRecommendation,
 		&dd.CreatedAt, &dd.UpdatedAt,
 	)
 	if err != nil {
@@ -91,16 +91,15 @@ func (r *DealerDevRepository) GetByID(ctx context.Context, id int64) (*model.Dea
 }
 
 // GetByDealerAndPeriod получает запись развития дилера по дилеру и периоду.
-func (r *DealerDevRepository) GetByDealerAndPeriod(ctx context.Context, dealerID int64, quarter string, year int) (*model.DealerDev, error) {
+func (r *DealerDevRepository) GetByDealerAndPeriod(ctx context.Context, dealerID int, period time.Time) (*model.DealerDevelopment, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "quarter", "year",
-		"check_list_score", "dealer_ship_class", "branding",
-		"marketing_investments", "dealer_dev_recommendation",
+		"id", "dealer_id", "period",
+		"check_list_score", "dealership_class", "brands", "branding",
+		"marketing_investments", "by_side_businesses", "dd_recommendation",
 		"created_at", "updated_at",
 	).From(dealerDevTableName).Where(squirrel.Eq{
 		"dealer_id": dealerID,
-		"quarter":   quarter,
-		"year":      year,
+		"period":    period,
 	})
 
 	sql, args, err := query.ToSql()
@@ -108,11 +107,11 @@ func (r *DealerDevRepository) GetByDealerAndPeriod(ctx context.Context, dealerID
 		return nil, fmt.Errorf("DealerDevRepository.GetByDealerAndPeriod: error building query: %w", err)
 	}
 
-	dd := &model.DealerDev{}
+	dd := &model.DealerDevelopment{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&dd.ID, &dd.DealerID, &dd.Quarter, &dd.Year,
-		&dd.CheckListScore, &dd.DealerShipClass, &dd.Branding,
-		&dd.MarketingInvestments, &dd.Recommendation,
+		&dd.ID, &dd.DealerID, &dd.Period,
+		&dd.CheckListScore, &dd.DealershipClass, &dd.Brands, &dd.Branding,
+		&dd.MarketingInvestments, &dd.BySideBusinesses, &dd.DDRecommendation,
 		&dd.CreatedAt, &dd.UpdatedAt,
 	)
 	if err != nil {
@@ -123,16 +122,13 @@ func (r *DealerDevRepository) GetByDealerAndPeriod(ctx context.Context, dealerID
 }
 
 // GetAllByPeriod получает все записи развития дилеров за указанный период.
-func (r *DealerDevRepository) GetAllByPeriod(ctx context.Context, quarter string, year int) ([]*model.DealerDev, error) {
+func (r *DealerDevRepository) GetAllByPeriod(ctx context.Context, period time.Time) ([]*model.DealerDevelopment, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "quarter", "year",
-		"check_list_score", "dealer_ship_class", "branding",
-		"marketing_investments", "dealer_dev_recommendation",
+		"id", "dealer_id", "period",
+		"check_list_score", "dealership_class", "brands", "branding",
+		"marketing_investments", "by_side_businesses", "dd_recommendation",
 		"created_at", "updated_at",
-	).From(dealerDevTableName).Where(squirrel.Eq{
-		"quarter": quarter,
-		"year":    year,
-	}).OrderBy("dealer_ship_class ASC", "check_list_score DESC")
+	).From(dealerDevTableName).Where(squirrel.Eq{"period": period})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -145,13 +141,13 @@ func (r *DealerDevRepository) GetAllByPeriod(ctx context.Context, quarter string
 	}
 	defer rows.Close()
 
-	var dealerDevs []*model.DealerDev
+	var dealerDevs []*model.DealerDevelopment
 	for rows.Next() {
-		dd := &model.DealerDev{}
+		dd := &model.DealerDevelopment{}
 		err = rows.Scan(
-			&dd.ID, &dd.DealerID, &dd.Quarter, &dd.Year,
-			&dd.CheckListScore, &dd.DealerShipClass, &dd.Branding,
-			&dd.MarketingInvestments, &dd.Recommendation,
+			&dd.ID, &dd.DealerID, &dd.Period,
+			&dd.CheckListScore, &dd.DealershipClass, &dd.Brands, &dd.Branding,
+			&dd.MarketingInvestments, &dd.BySideBusinesses, &dd.DDRecommendation,
 			&dd.CreatedAt, &dd.UpdatedAt,
 		)
 		if err != nil {
@@ -163,44 +159,20 @@ func (r *DealerDevRepository) GetAllByPeriod(ctx context.Context, quarter string
 	return dealerDevs, nil
 }
 
-// Update обновляет запись развития дилера (частичное обновление).
-func (r *DealerDevRepository) Update(ctx context.Context, id int64, updates map[string]interface{}) error {
-	if len(updates) == 0 {
-		return fmt.Errorf("DealerDevRepository.Update: no fields to update")
-	}
-
-	updates["updated_at"] = time.Now()
-
-	query := r.sq.Update(dealerDevTableName).
-		Where(squirrel.Eq{"id": id}).
-		SetMap(updates)
-
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("DealerDevRepository.Update: error building query: %w", err)
-	}
-
-	_, err = r.pool.Exec(ctx, sql, args...)
-	if err != nil {
-		return fmt.Errorf("DealerDevRepository.Update: error updating: %w", err)
-	}
-
-	return nil
-}
-
-// UpdateFull обновляет всю запись развития дилера.
-func (r *DealerDevRepository) UpdateFull(ctx context.Context, dd *model.DealerDev) error {
+// UpdateFull обновляет всю запись развития дилера целиком.
+func (r *DealerDevRepository) UpdateFull(ctx context.Context, dd *model.DealerDevelopment) error {
 	dd.UpdatedAt = time.Now()
 
 	query := r.sq.Update(dealerDevTableName).
 		Set("dealer_id", dd.DealerID).
-		Set("quarter", dd.Quarter).
-		Set("year", dd.Year).
+		Set("period", dd.Period).
 		Set("check_list_score", dd.CheckListScore).
-		Set("dealer_ship_class", dd.DealerShipClass).
+		Set("dealership_class", dd.DealershipClass).
+		Set("brands", dd.Brands).
 		Set("branding", dd.Branding).
 		Set("marketing_investments", dd.MarketingInvestments).
-		Set("dealer_dev_recommendation", dd.Recommendation).
+		Set("by_side_businesses", dd.BySideBusinesses).
+		Set("dd_recommendation", dd.DDRecommendation).
 		Set("updated_at", dd.UpdatedAt).
 		Where(squirrel.Eq{"id": dd.ID})
 
@@ -217,41 +189,20 @@ func (r *DealerDevRepository) UpdateFull(ctx context.Context, dd *model.DealerDe
 	return nil
 }
 
-// Delete удаляет запись развития дилера по ID.
-func (r *DealerDevRepository) Delete(ctx context.Context, id int64) error {
-	query := r.sq.Delete(dealerDevTableName).Where(squirrel.Eq{"id": id})
-
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("DealerDevRepository.Delete: error building query: %w", err)
-	}
-
-	_, err = r.pool.Exec(ctx, sql, args...)
-	if err != nil {
-		return fmt.Errorf("DealerDevRepository.Delete: error deleting: %w", err)
-	}
-
-	return nil
-}
-
 // GetWithDetailsByPeriod получает записи развития дилеров с деталями за период.
-func (r *DealerDevRepository) GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.DealerDevWithDetails, error) {
-	dealerRepo := NewDealerRepository(r.pool)
-
+func (r *DealerDevRepository) GetWithDetailsByPeriod(ctx context.Context, period time.Time, region string) ([]*model.DealerDevWithDetails, error) {
 	queryBuilder := r.sq.Select(
-		"dd.id", "dd.dealer_id", "dd.quarter", "dd.year",
-		"dd.check_list_score", "dd.dealer_ship_class", "dd.branding",
-		"dd.marketing_investments", "dd.dealer_dev_recommendation",
+		"dd.id", "dd.dealer_id", "dd.period",
+		"dd.check_list_score", "dd.dealership_class", "dd.brands", "dd.branding",
+		"dd.marketing_investments", "dd.by_side_businesses", "dd.dd_recommendation",
 		"dd.created_at", "dd.updated_at",
-		"d.name as dealer_name", "d.city", "d.region", "d.manager",
-	).From(dealerDevTableName+" dd").
-		Join("dealers d ON dd.dealer_id = d.id").
-		Where(squirrel.Eq{
-			"dd.quarter": quarter,
-			"dd.year":    year,
-		}).OrderBy("dd.dealer_ship_class ASC", "dd.check_list_score DESC")
+		"d.dealer_name_ru", "d.dealer_name_en", "d.city", "d.region", "d.manager", "d.ruft",
+	).
+		From(dealerDevTableName + " dd").
+		Join("dealers d ON dd.dealer_id = d.dealer_id").
+		Where(squirrel.Eq{"dd.period": period})
 
-	if region != "" && region != "all-russia" {
+	if region != "all-russia" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"d.region": region})
 	}
 
@@ -270,34 +221,56 @@ func (r *DealerDevRepository) GetWithDetailsByPeriod(ctx context.Context, quarte
 	for rows.Next() {
 		ddwd := &model.DealerDevWithDetails{}
 		err = rows.Scan(
-			&ddwd.ID, &ddwd.DealerID, &ddwd.Quarter, &ddwd.Year,
-			&ddwd.CheckListScore, &ddwd.DealerShipClass, &ddwd.Branding,
-			&ddwd.MarketingInvestments, &ddwd.Recommendation,
+			&ddwd.ID, &ddwd.DealerID, &ddwd.Period,
+			&ddwd.CheckListScore, &ddwd.DealershipClass, &ddwd.Brands, &ddwd.Branding,
+			&ddwd.MarketingInvestments, &ddwd.BySideBusinesses, &ddwd.DDRecommendation,
 			&ddwd.CreatedAt, &ddwd.UpdatedAt,
-			&ddwd.DealerName, &ddwd.City, &ddwd.Region, &ddwd.Manager,
+			&ddwd.DealerNameRu, &ddwd.DealerNameEn, &ddwd.City, &ddwd.Region, &ddwd.Manager, &ddwd.Ruft,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("DealerDevRepository.GetWithDetailsByPeriod: error scanning: %w", err)
 		}
-
-		// Получаем бренды дилера
-		brands, err := dealerRepo.GetBrands(ctx, ddwd.DealerID)
-		if err != nil {
-			// Логируем ошибку, но продолжаем
-			brands = []string{}
-		}
-		ddwd.Brands = brands
-		ddwd.BrandsCount = len(brands)
-
-		// Получаем побочные бизнесы
-		businesses, err := dealerRepo.GetBusinesses(ctx, ddwd.DealerID)
-		if err != nil {
-			businesses = []string{}
-		}
-		ddwd.BySideBusinesses = businesses
-
 		results = append(results, ddwd)
 	}
 
 	return results, nil
+}
+
+// Delete удаляет запись развития дилера.
+func (r *DealerDevRepository) Delete(ctx context.Context, id int) error {
+	query := r.sq.Delete(dealerDevTableName).Where(squirrel.Eq{"id": id})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("DealerDevRepository.Delete: error building query: %w", err)
+	}
+
+	_, err = r.pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("DealerDevRepository.Delete: error deleting: %w", err)
+	}
+
+	return nil
+}
+
+// Update обновляет данные развития дилера.
+func (r *DealerDevRepository) Update(ctx context.Context, id int, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return fmt.Errorf("no updates provided")
+	}
+
+	updates["updated_at"] = time.Now()
+	query := r.sq.Update(dealerDevTableName).SetMap(updates).Where(squirrel.Eq{"id": id})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("DealerDevRepository.Update: error building query: %w", err)
+	}
+
+	_, err = r.pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("DealerDevRepository.Update: error updating: %w", err)
+	}
+
+	return nil
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 )
 
-const afterSalesTableName = "after_sales"
+const afterSalesTableName = "aftersales"
 
 // AfterSalesRepository репозиторий для работы с данными послепродажного обслуживания.
 type AfterSalesRepository struct {
@@ -18,7 +18,7 @@ type AfterSalesRepository struct {
 	sq   squirrel.StatementBuilderType
 }
 
-// NewAfterSalesRepository создает новый экземпляр репозитория.
+// NewAfterSalesRepository конструктор.
 func NewAfterSalesRepository(pool *pgxpool.Pool) *AfterSalesRepository {
 	return &AfterSalesRepository{
 		pool: pool,
@@ -34,16 +34,18 @@ func (r *AfterSalesRepository) Create(ctx context.Context, as *model.AfterSales)
 
 	query := r.sq.Insert(afterSalesTableName).
 		Columns(
-			"dealer_id", "quarter", "year",
-			"recommended_stock", "warranty_stock", "foton_labor_hours",
-			"service_contracts", "as_trainings", "csi", "foton_warranty_hours",
-			"as_decision", "created_at", "updated_at",
+			"dealer_id", "period",
+			"recommended_stock_pct", "warranty_stock_pct", "foton_labor_hours_pct",
+			"warranty_hours", "service_contracts_hours", "as_trainings",
+			"spare_parts_sales_q", "spare_parts_sales_ytd_pct", "as_recommendation",
+			"created_at", "updated_at",
 		).
 		Values(
-			as.DealerID, as.Quarter, as.Year,
-			as.RecommendedStock, as.WarrantyStock, as.FotonLaborHours,
-			as.ServiceContracts, as.ASTrainings, as.CSI, as.FotonWarrantyHours,
-			as.AfterSalesDecision, as.CreatedAt, as.UpdatedAt,
+			as.DealerID, as.Period,
+			as.RecommendedStockPct, as.WarrantyStockPct, as.FotonLaborHoursPct,
+			as.WarrantyHours, as.ServiceContractsHours, as.ASTrainings,
+			as.SparePartsSalesQ, as.SparePartsSalesYtdPct, as.ASRecommendation,
+			as.CreatedAt, as.UpdatedAt,
 		).
 		Suffix("RETURNING id")
 
@@ -58,17 +60,18 @@ func (r *AfterSalesRepository) Create(ctx context.Context, as *model.AfterSales)
 		return 0, fmt.Errorf("AfterSalesRepository.Create: error inserting: %w", err)
 	}
 
-	as.ID = id
+	as.ID = int(id)
 	return id, nil
 }
 
 // GetByID получает запись послепродажного обслуживания по ID.
 func (r *AfterSalesRepository) GetByID(ctx context.Context, id int64) (*model.AfterSales, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "quarter", "year",
-		"recommended_stock", "warranty_stock", "foton_labor_hours",
-		"service_contracts", "as_trainings", "csi", "foton_warranty_hours",
-		"as_decision", "created_at", "updated_at",
+		"id", "dealer_id", "period",
+		"recommended_stock_pct", "warranty_stock_pct", "foton_labor_hours_pct",
+		"warranty_hours", "service_contracts_hours", "as_trainings",
+		"spare_parts_sales_q", "spare_parts_sales_ytd_pct", "as_recommendation",
+		"created_at", "updated_at",
 	).From(afterSalesTableName).Where(squirrel.Eq{"id": id})
 
 	sql, args, err := query.ToSql()
@@ -78,10 +81,11 @@ func (r *AfterSalesRepository) GetByID(ctx context.Context, id int64) (*model.Af
 
 	as := &model.AfterSales{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&as.ID, &as.DealerID, &as.Quarter, &as.Year,
-		&as.RecommendedStock, &as.WarrantyStock, &as.FotonLaborHours,
-		&as.ServiceContracts, &as.ASTrainings, &as.CSI, &as.FotonWarrantyHours,
-		&as.AfterSalesDecision, &as.CreatedAt, &as.UpdatedAt,
+		&as.ID, &as.DealerID, &as.Period,
+		&as.RecommendedStockPct, &as.WarrantyStockPct, &as.FotonLaborHoursPct,
+		&as.WarrantyHours, &as.ServiceContractsHours, &as.ASTrainings,
+		&as.SparePartsSalesQ, &as.SparePartsSalesYtdPct, &as.ASRecommendation,
+		&as.CreatedAt, &as.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("AfterSalesRepository.GetByID: error scanning: %w", err)
@@ -90,17 +94,17 @@ func (r *AfterSalesRepository) GetByID(ctx context.Context, id int64) (*model.Af
 	return as, nil
 }
 
-// GetByDealerAndPeriod получает запись послепродажного обслуживания по дилеру и периоду.
-func (r *AfterSalesRepository) GetByDealerAndPeriod(ctx context.Context, dealerID int64, quarter string, year int) (*model.AfterSales, error) {
+// GetByDealerAndPeriodTime получает запись послепродажного обслуживания по дилеру и периоду.
+func (r *AfterSalesRepository) GetByDealerAndPeriodTime(ctx context.Context, dealerID int, period time.Time) (*model.AfterSales, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "quarter", "year",
-		"recommended_stock", "warranty_stock", "foton_labor_hours",
-		"service_contracts", "as_trainings", "csi", "foton_warranty_hours",
-		"as_decision", "created_at", "updated_at",
+		"id", "dealer_id", "period",
+		"recommended_stock_pct", "warranty_stock_pct", "foton_labor_hours_pct",
+		"warranty_hours", "service_contracts_hours", "as_trainings",
+		"spare_parts_sales_q", "spare_parts_sales_ytd_pct", "as_recommendation",
+		"created_at", "updated_at",
 	).From(afterSalesTableName).Where(squirrel.Eq{
 		"dealer_id": dealerID,
-		"quarter":   quarter,
-		"year":      year,
+		"period":    period,
 	})
 
 	sql, args, err := query.ToSql()
@@ -110,10 +114,11 @@ func (r *AfterSalesRepository) GetByDealerAndPeriod(ctx context.Context, dealerI
 
 	as := &model.AfterSales{}
 	err = r.pool.QueryRow(ctx, sql, args...).Scan(
-		&as.ID, &as.DealerID, &as.Quarter, &as.Year,
-		&as.RecommendedStock, &as.WarrantyStock, &as.FotonLaborHours,
-		&as.ServiceContracts, &as.ASTrainings, &as.CSI, &as.FotonWarrantyHours,
-		&as.AfterSalesDecision, &as.CreatedAt, &as.UpdatedAt,
+		&as.ID, &as.DealerID, &as.Period,
+		&as.RecommendedStockPct, &as.WarrantyStockPct, &as.FotonLaborHoursPct,
+		&as.WarrantyHours, &as.ServiceContractsHours, &as.ASTrainings,
+		&as.SparePartsSalesQ, &as.SparePartsSalesYtdPct, &as.ASRecommendation,
+		&as.CreatedAt, &as.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("AfterSalesRepository.GetByDealerAndPeriod: error scanning: %w", err)
@@ -122,17 +127,15 @@ func (r *AfterSalesRepository) GetByDealerAndPeriod(ctx context.Context, dealerI
 	return as, nil
 }
 
-// GetAllByPeriod получает все записи послепродажного обслуживания за указанный период.
-func (r *AfterSalesRepository) GetAllByPeriod(ctx context.Context, quarter string, year int) ([]*model.AfterSales, error) {
+// GetAllByPeriodTime получает все записи послепродажного обслуживания за указанный период.
+func (r *AfterSalesRepository) GetAllByPeriodTime(ctx context.Context, period time.Time) ([]*model.AfterSales, error) {
 	query := r.sq.Select(
-		"id", "dealer_id", "quarter", "year",
-		"recommended_stock", "warranty_stock", "foton_labor_hours",
-		"service_contracts", "as_trainings", "csi", "foton_warranty_hours",
-		"as_decision", "created_at", "updated_at",
-	).From(afterSalesTableName).Where(squirrel.Eq{
-		"quarter": quarter,
-		"year":    year,
-	}).OrderBy("service_contracts DESC")
+		"id", "dealer_id", "period",
+		"recommended_stock_pct", "warranty_stock_pct", "foton_labor_hours_pct",
+		"warranty_hours", "service_contracts_hours", "as_trainings",
+		"spare_parts_sales_q", "spare_parts_sales_ytd_pct", "as_recommendation",
+		"created_at", "updated_at",
+	).From(afterSalesTableName).Where(squirrel.Eq{"period": period})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -149,10 +152,11 @@ func (r *AfterSalesRepository) GetAllByPeriod(ctx context.Context, quarter strin
 	for rows.Next() {
 		as := &model.AfterSales{}
 		err = rows.Scan(
-			&as.ID, &as.DealerID, &as.Quarter, &as.Year,
-			&as.RecommendedStock, &as.WarrantyStock, &as.FotonLaborHours,
-			&as.ServiceContracts, &as.ASTrainings, &as.CSI, &as.FotonWarrantyHours,
-			&as.AfterSalesDecision, &as.CreatedAt, &as.UpdatedAt,
+			&as.ID, &as.DealerID, &as.Period,
+			&as.RecommendedStockPct, &as.WarrantyStockPct, &as.FotonLaborHoursPct,
+			&as.WarrantyHours, &as.ServiceContractsHours, &as.ASTrainings,
+			&as.SparePartsSalesQ, &as.SparePartsSalesYtdPct, &as.ASRecommendation,
+			&as.CreatedAt, &as.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("AfterSalesRepository.GetAllByPeriod: error scanning: %w", err)
@@ -163,47 +167,22 @@ func (r *AfterSalesRepository) GetAllByPeriod(ctx context.Context, quarter strin
 	return afterSalesList, nil
 }
 
-// Update обновляет запись послепродажного обслуживания (частичное обновление).
-func (r *AfterSalesRepository) Update(ctx context.Context, id int64, updates map[string]interface{}) error {
-	if len(updates) == 0 {
-		return fmt.Errorf("AfterSalesRepository.Update: no fields to update")
-	}
-
-	updates["updated_at"] = time.Now()
-
-	query := r.sq.Update(afterSalesTableName).
-		Where(squirrel.Eq{"id": id}).
-		SetMap(updates)
-
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("AfterSalesRepository.Update: error building query: %w", err)
-	}
-
-	_, err = r.pool.Exec(ctx, sql, args...)
-	if err != nil {
-		return fmt.Errorf("AfterSalesRepository.Update: error updating: %w", err)
-	}
-
-	return nil
-}
-
-// UpdateFull обновляет всю запись послепродажного обслуживания.
+// UpdateFull обновляет всю запись послепродажного обслуживания целиком.
 func (r *AfterSalesRepository) UpdateFull(ctx context.Context, as *model.AfterSales) error {
 	as.UpdatedAt = time.Now()
 
 	query := r.sq.Update(afterSalesTableName).
 		Set("dealer_id", as.DealerID).
-		Set("quarter", as.Quarter).
-		Set("year", as.Year).
-		Set("recommended_stock", as.RecommendedStock).
-		Set("warranty_stock", as.WarrantyStock).
-		Set("foton_labor_hours", as.FotonLaborHours).
-		Set("service_contracts", as.ServiceContracts).
+		Set("period", as.Period).
+		Set("recommended_stock_pct", as.RecommendedStockPct).
+		Set("warranty_stock_pct", as.WarrantyStockPct).
+		Set("foton_labor_hours_pct", as.FotonLaborHoursPct).
+		Set("warranty_hours", as.WarrantyHours).
+		Set("service_contracts_hours", as.ServiceContractsHours).
 		Set("as_trainings", as.ASTrainings).
-		Set("csi", as.CSI).
-		Set("foton_warranty_hours", as.FotonWarrantyHours).
-		Set("as_decision", as.AfterSalesDecision).
+		Set("spare_parts_sales_q", as.SparePartsSalesQ).
+		Set("spare_parts_sales_ytd_pct", as.SparePartsSalesYtdPct).
+		Set("as_recommendation", as.ASRecommendation).
 		Set("updated_at", as.UpdatedAt).
 		Where(squirrel.Eq{"id": as.ID})
 
@@ -220,39 +199,22 @@ func (r *AfterSalesRepository) UpdateFull(ctx context.Context, as *model.AfterSa
 	return nil
 }
 
-// Delete удаляет запись послепродажного обслуживания по ID.
-func (r *AfterSalesRepository) Delete(ctx context.Context, id int64) error {
-	query := r.sq.Delete(afterSalesTableName).Where(squirrel.Eq{"id": id})
+// GetWithDetailsByPeriodTime получает записи послепродажного обслуживания с деталями за период.
+func (r *AfterSalesRepository) GetWithDetailsByPeriodTime(ctx context.Context, period time.Time, region string) ([]*model.AfterSalesWithDetails, error) {
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("AfterSalesRepository.Delete: error building query: %w", err)
-	}
-
-	_, err = r.pool.Exec(ctx, sql, args...)
-	if err != nil {
-		return fmt.Errorf("AfterSalesRepository.Delete: error deleting: %w", err)
-	}
-
-	return nil
-}
-
-// GetWithDetailsByPeriod получает записи послепродажного обслуживания с деталями дилера за период.
-func (r *AfterSalesRepository) GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.AfterSalesWithDetails, error) {
 	queryBuilder := r.sq.Select(
-		"a.id", "a.dealer_id", "a.quarter", "a.year",
-		"a.recommended_stock", "a.warranty_stock", "a.foton_labor_hours",
-		"a.service_contracts", "a.as_trainings", "a.csi", "a.foton_warranty_hours",
-		"a.as_decision", "a.created_at", "a.updated_at",
-		"d.name as dealer_name", "d.city", "d.region", "d.manager",
-	).From(afterSalesTableName + " a").
-		Join("dealers d ON a.dealer_id = d.id").
-		Where(squirrel.Eq{
-			"a.quarter": quarter,
-			"a.year":    year,
-		}).OrderBy("a.service_contracts DESC")
+		"aftersales.id", "aftersales.dealer_id", "aftersales.period",
+		"aftersales.recommended_stock_pct", "aftersales.warranty_stock_pct", "aftersales.foton_labor_hours_pct",
+		"aftersales.warranty_hours", "aftersales.service_contracts_hours", "aftersales.as_trainings",
+		"aftersales.spare_parts_sales_q", "aftersales.spare_parts_sales_ytd_pct", "aftersales.as_recommendation",
+		"aftersales.created_at", "aftersales.updated_at",
+		"d.dealer_name_ru", "d.dealer_name_en", "d.city", "d.region", "d.manager", "d.ruft",
+	).
+		From(afterSalesTableName + " aftersales").
+		Join("dealers d ON aftersales.dealer_id = d.dealer_id").
+		Where(squirrel.Eq{"aftersales.period": period})
 
-	if region != "" && region != "all-russia" {
+	if region != "all-russia" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"d.region": region})
 	}
 
@@ -271,18 +233,128 @@ func (r *AfterSalesRepository) GetWithDetailsByPeriod(ctx context.Context, quart
 	for rows.Next() {
 		aswd := &model.AfterSalesWithDetails{}
 		err = rows.Scan(
-			&aswd.ID, &aswd.DealerID, &aswd.Quarter, &aswd.Year,
-			&aswd.RecommendedStock, &aswd.WarrantyStock, &aswd.FotonLaborHours,
-			&aswd.ServiceContracts, &aswd.ASTrainings, &aswd.CSI, &aswd.FotonWarrantyHours,
-			&aswd.AfterSalesDecision, &aswd.CreatedAt, &aswd.UpdatedAt,
-			&aswd.DealerName, &aswd.City, &aswd.Region, &aswd.Manager,
+			&aswd.ID, &aswd.DealerID, &aswd.Period,
+			&aswd.RecommendedStockPct, &aswd.WarrantyStockPct, &aswd.FotonLaborHoursPct,
+			&aswd.WarrantyHours, &aswd.ServiceContractsHours, &aswd.ASTrainings,
+			&aswd.SparePartsSalesQ, &aswd.SparePartsSalesYtdPct, &aswd.ASRecommendation,
+			&aswd.CreatedAt, &aswd.UpdatedAt,
+			&aswd.DealerNameRu, &aswd.DealerNameEn, &aswd.City, &aswd.Region, &aswd.Manager, &aswd.Ruft,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("AfterSalesRepository.GetWithDetailsByPeriod: error scanning: %w", err)
 		}
-
 		results = append(results, aswd)
 	}
 
 	return results, nil
+}
+
+// Delete удаляет запись послепродажного обслуживания.
+func (r *AfterSalesRepository) Delete(ctx context.Context, id int64) error {
+	query := r.sq.Delete(afterSalesTableName).Where(squirrel.Eq{"id": id})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("AfterSalesRepository.Delete: error building query: %w", err)
+	}
+
+	result, err := r.pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("AfterSalesRepository.Delete: error deleting: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("AfterSalesRepository.Delete: no rows affected, record with id %d not found", id)
+	}
+
+	return nil
+}
+
+// Update обновляет данные послепродажного обслуживания.
+func (r *AfterSalesRepository) Update(ctx context.Context, id int64, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return fmt.Errorf("no updates provided")
+	}
+
+	updates["updated_at"] = time.Now()
+	query := r.sq.Update(afterSalesTableName).SetMap(updates).Where(squirrel.Eq{"id": id})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("AfterSalesRepository.Update: error building query: %w", err)
+	}
+
+	result, err := r.pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("AfterSalesRepository.Update: error updating: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("AfterSalesRepository.Update: no rows affected, record with id %d not found", id)
+	}
+
+	return nil
+}
+
+// GetByDealerAndPeriod получает запись послепродажного обслуживания по дилеру и периоду (с кварталом и годом).
+func (r *AfterSalesRepository) GetByDealerAndPeriod(ctx context.Context, dealerID int64, quarter string, year int) (*model.AfterSales, error) {
+	// Преобразуем quarter/year в period
+	var month int
+	switch quarter {
+	case "q1":
+		month = 1
+	case "q2":
+		month = 4
+	case "q3":
+		month = 7
+	case "q4":
+		month = 10
+	default:
+		return nil, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+
+	return r.GetByDealerAndPeriodTime(ctx, int(dealerID), period)
+}
+
+// GetAllByPeriod получает все записи послепродажного обслуживания за указанный период (с кварталом и годом).
+func (r *AfterSalesRepository) GetAllByPeriod(ctx context.Context, quarter string, year int) ([]*model.AfterSales, error) {
+	// Преобразуем quarter/year в period
+	var month int
+	switch quarter {
+	case "q1":
+		month = 1
+	case "q2":
+		month = 4
+	case "q3":
+		month = 7
+	case "q4":
+		month = 10
+	default:
+		return nil, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+
+	return r.GetAllByPeriodTime(ctx, period)
+}
+
+// GetWithDetailsByPeriod получает записи послепродажного обслуживания с деталями за период (с кварталом и годом).
+func (r *AfterSalesRepository) GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.AfterSalesWithDetails, error) {
+	// Преобразуем quarter/year в period
+	var month int
+	switch quarter {
+	case "q1":
+		month = 1
+	case "q2":
+		month = 4
+	case "q3":
+		month = 7
+	case "q4":
+		month = 10
+	default:
+		return nil, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+	period := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+
+	return r.GetWithDetailsByPeriodTime(ctx, period, region)
 }

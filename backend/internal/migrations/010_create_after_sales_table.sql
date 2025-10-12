@@ -1,22 +1,35 @@
--- Создание таблицы послепродажного обслуживания (After Sales)
-CREATE TABLE IF NOT EXISTS after_sales (
-    id BIGSERIAL PRIMARY KEY,
-    dealer_id BIGINT NOT NULL REFERENCES dealers(id) ON DELETE CASCADE,
-    quarter VARCHAR(10) NOT NULL,
-    year INT NOT NULL,
-    recommended_stock SMALLINT NOT NULL,
-    warranty_stock SMALLINT NOT NULL,
-    foton_labor_hours SMALLINT NOT NULL,
-    service_contracts SMALLINT NOT NULL,
-    as_trainings BOOLEAN NOT NULL,
-    csi VARCHAR(50),
-    foton_warranty_hours INT NOT NULL,
-    as_decision VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
-    UNIQUE(dealer_id, quarter, year)
+-- ============================================
+-- ТАБЛИЦА: aftersales
+-- ============================================
+CREATE TABLE IF NOT EXISTS aftersales (
+    id SERIAL PRIMARY KEY,
+    dealer_id INTEGER REFERENCES dealers(dealer_id) ON DELETE CASCADE,
+    period DATE NOT NULL,
+    
+    -- Stock metrics
+    recommended_stock_pct DECIMAL(5,2),
+    warranty_stock_pct DECIMAL(5,2),
+    
+    -- Labor hours
+    foton_labor_hours_pct DECIMAL(5,2),
+    warranty_hours DECIMAL(10,2),
+    service_contracts_hours DECIMAL(10,2),
+    
+    -- Training
+    as_trainings VARCHAR(3) CHECK (as_trainings IN ('Y', 'N', 'Yes', 'No')),
+    
+    -- Spare parts sales (revenue)
+    spare_parts_sales_q DECIMAL(15,2),  -- За квартал
+    spare_parts_sales_ytd_pct DECIMAL(5,2),  -- YTD динамика %
+    
+    -- Recommendation (из Excel)
+    as_recommendation TEXT,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(dealer_id, period)
 );
 
-CREATE INDEX idx_after_sales_dealer_id ON after_sales(dealer_id);
-CREATE INDEX idx_after_sales_quarter_year ON after_sales(quarter, year);
+CREATE INDEX idx_aftersales_dealer_period ON aftersales(dealer_id, period);
 

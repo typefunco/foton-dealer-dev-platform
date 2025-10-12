@@ -119,7 +119,7 @@ func (s *Server) GetDealerByID(c echo.Context) error {
 		})
 	}
 
-	dealer, err := s.dealerService.GetDealerByID(c.Request().Context(), id)
+	dealer, err := s.dealerService.GetDealerByID(c.Request().Context(), int(id))
 	if err != nil {
 		s.logger.Error("GetDealerByID: failed to get dealer",
 			"id", id,

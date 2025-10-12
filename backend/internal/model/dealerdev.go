@@ -2,51 +2,54 @@ package model
 
 import "time"
 
-// DealerDevClass представляет класс дилера (A, B, C, D).
-type DealerDevClass string
+// DealershipClass представляет класс дилера (A, B, C, D).
+type DealershipClass string
 
 const (
-	DealerDevClassA DealerDevClass = "A"
-	DealerDevClassB DealerDevClass = "B"
-	DealerDevClassC DealerDevClass = "C"
-	DealerDevClassD DealerDevClass = "D"
+	DealershipClassA DealershipClass = "A"
+	DealershipClassB DealershipClass = "B"
+	DealershipClassC DealershipClass = "C"
+	DealershipClassD DealershipClass = "D"
 )
 
-// DealerDevRecommendation представляет рекомендацию по развитию дилера.
-type DealerDevRecommendation string
+// BrandingStatus представляет статус брендинга.
+type BrandingStatus string
 
 const (
-	RecommendationPlannedResult    DealerDevRecommendation = "Planned Result"
-	RecommendationNeedsDevelopment DealerDevRecommendation = "Needs Development"
-	RecommendationFindNewCandidate DealerDevRecommendation = "Find New Candidate"
-	RecommendationCloseDown        DealerDevRecommendation = "Close Down"
+	BrandingYes BrandingStatus = "Yes"
+	BrandingNo  BrandingStatus = "No"
+	BrandingY   BrandingStatus = "Y"
+	BrandingN   BrandingStatus = "N"
 )
 
-// DealerDev отвечает за блок Dealer Development.
+// DealerDevelopment отвечает за блок Dealer Development.
 // Содержит информацию о развитии дилера, брендах, классе и чек-листе.
-type DealerDev struct {
-	ID                   int64                   `json:"id" db:"id"`
-	DealerID             int64                   `json:"dealer_id" db:"dealer_id"`
-	Quarter              string                  `json:"quarter" db:"quarter"`                             // q1, q2, q3, q4
-	Year                 int                     `json:"year" db:"year"`                                   // 2024, 2025 и т.д.
-	CheckListScore       int16                   `json:"check_list_score" db:"check_list_score"`           // 0-100
-	DealerShipClass      DealerDevClass          `json:"dealer_ship_class" db:"dealer_ship_class"`         // A, B, C, D
-	Branding             bool                    `json:"branding" db:"branding"`                           // Наличие брендинга
-	MarketingInvestments int64                   `json:"marketing_investments" db:"marketing_investments"` // В рублях
-	Recommendation       DealerDevRecommendation `json:"dealer_dev_recommendation" db:"dealer_dev_recommendation"`
-	CreatedAt            time.Time               `json:"created_at" db:"created_at"`
-	UpdatedAt            time.Time               `json:"updated_at" db:"updated_at"`
+type DealerDevelopment struct {
+	ID                   int              `json:"id" db:"id"`
+	DealerID             int              `json:"dealer_id" db:"dealer_id"`
+	Period               time.Time        `json:"period" db:"period"`
+	CheckListScore       *float64         `json:"check_list_score" db:"check_list_score"`           // Check List Score % (0-100)
+	DealershipClass      *DealershipClass `json:"dealership_class" db:"dealership_class"`           // A, B, C, D
+	Brands               []string         `json:"brands" db:"brands"`                               // Массив брендов ["Foton", "Kamaz", "Sitrak"]
+	Branding             *BrandingStatus  `json:"branding" db:"branding"`                           // Y, N, Yes, No
+	MarketingInvestments *float64         `json:"marketing_investments" db:"marketing_investments"` // Marketing Investments Rub
+	BySideBusinesses     *string          `json:"by_side_businesses" db:"by_side_businesses"`       // By-side businesses описание
+	DDRecommendation     *string          `json:"dd_recommendation" db:"dd_recommendation"`         // Recommendation (из Excel)
+	CreatedAt            time.Time        `json:"created_at" db:"created_at"`
+	UpdatedAt            time.Time        `json:"updated_at" db:"updated_at"`
 }
 
-// DealerDevWithDetails содержит полную информацию о дилере для отображения.
+// DealerDevelopmentWithDetails содержит полную информацию о дилере для отображения.
 // Используется для API ответов с объединёнными данными.
-type DealerDevWithDetails struct {
-	DealerDev
-	DealerName       string   `json:"dealer_name"`
-	City             string   `json:"city"`
-	Region           string   `json:"region"`
-	Manager          string   `json:"manager"`
-	Brands           []string `json:"brands"`             // Массив названий брендов
-	BrandsCount      int      `json:"brands_count"`       // Количество брендов
-	BySideBusinesses []string `json:"by_side_businesses"` // Массив типов побочного бизнеса
+type DealerDevelopmentWithDetails struct {
+	DealerDevelopment
+	DealerNameRu string `json:"dealer_name_ru"`
+	DealerNameEn string `json:"dealer_name_en"`
+	City         string `json:"city"`
+	Region       string `json:"region"`
+	Manager      string `json:"manager"`
+	Ruft         string `json:"ruft"`
 }
+
+// DealerDevWithDetails - алиас для совместимости со старым кодом.
+type DealerDevWithDetails = DealerDevelopmentWithDetails

@@ -4,20 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 )
 
-// Repository интерфейс репозитория DealerDev.
+// Repository интерфейс репозитория DealerDevelopment.
 type Repository interface {
-	Create(ctx context.Context, dd *model.DealerDev) (int64, error)
-	GetByID(ctx context.Context, id int64) (*model.DealerDev, error)
-	GetByDealerAndPeriod(ctx context.Context, dealerID int64, quarter string, year int) (*model.DealerDev, error)
-	GetAllByPeriod(ctx context.Context, quarter string, year int) ([]*model.DealerDev, error)
-	Update(ctx context.Context, id int64, updates map[string]interface{}) error
-	UpdateFull(ctx context.Context, dd *model.DealerDev) error
-	Delete(ctx context.Context, id int64) error
-	GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.DealerDevWithDetails, error)
+	Create(ctx context.Context, dd *model.DealerDevelopment) (int, error)
+	GetByID(ctx context.Context, id int) (*model.DealerDevelopment, error)
+	GetByDealerAndPeriod(ctx context.Context, dealerID int, period time.Time) (*model.DealerDevelopment, error)
+	GetAllByPeriod(ctx context.Context, period time.Time) ([]*model.DealerDevelopment, error)
+	Update(ctx context.Context, id int, updates map[string]interface{}) error
+	UpdateFull(ctx context.Context, dd *model.DealerDevelopment) error
+	Delete(ctx context.Context, id int) error
+	GetWithDetailsByPeriod(ctx context.Context, period time.Time, region string) ([]*model.DealerDevelopmentWithDetails, error)
 }
 
 // Service сервис для работы с данными развития дилеров.
@@ -46,7 +47,13 @@ func (s *Service) GetDealerDevByPeriod(ctx context.Context, quarter string, year
 		return nil, fmt.Errorf("DealerDevService.GetDealerDevByPeriod: invalid year: %d", year)
 	}
 
-	ddList, err := s.repo.GetWithDetailsByPeriod(ctx, quarter, year, region)
+	// Преобразуем quarter/year в period
+	period, err := parseQuarterToPeriod(quarter, year)
+	if err != nil {
+		return nil, fmt.Errorf("DealerDevService.GetDealerDevByPeriod: invalid quarter/year: %w", err)
+	}
+
+	ddList, err := s.repo.GetWithDetailsByPeriod(ctx, period, region)
 	if err != nil {
 		s.logger.Error("DealerDevService.GetDealerDevByPeriod: failed to get dealer dev data",
 			"quarter", quarter,
@@ -68,7 +75,7 @@ func (s *Service) GetDealerDevByPeriod(ctx context.Context, quarter string, year
 }
 
 // GetDealerDevByID возвращает данные развития дилера по ID.
-func (s *Service) GetDealerDevByID(ctx context.Context, id int64) (*model.DealerDev, error) {
+func (s *Service) GetDealerDevByID(ctx context.Context, id int) (*model.DealerDevelopment, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("DealerDevService.GetDealerDevByID: invalid ID: %d", id)
 	}
@@ -86,7 +93,7 @@ func (s *Service) GetDealerDevByID(ctx context.Context, id int64) (*model.Dealer
 }
 
 // CreateDealerDev создает новую запись развития дилера.
-func (s *Service) CreateDealerDev(ctx context.Context, dd *model.DealerDev) (int64, error) {
+func (s *Service) CreateDealerDev(ctx context.Context, dd *model.DealerDevelopment) (int, error) {
 	// Валидация
 	if err := s.validateDealerDev(dd); err != nil {
 		return 0, fmt.Errorf("DealerDevService.CreateDealerDev: validation failed: %w", err)
@@ -96,8 +103,7 @@ func (s *Service) CreateDealerDev(ctx context.Context, dd *model.DealerDev) (int
 	if err != nil {
 		s.logger.Error("DealerDevService.CreateDealerDev: failed to create",
 			"dealer_id", dd.DealerID,
-			"quarter", dd.Quarter,
-			"year", dd.Year,
+			"period", dd.Period,
 			"error", err,
 		)
 		return 0, fmt.Errorf("DealerDevService.CreateDealerDev: %w", err)
@@ -106,15 +112,14 @@ func (s *Service) CreateDealerDev(ctx context.Context, dd *model.DealerDev) (int
 	s.logger.Info("DealerDevService.CreateDealerDev: successfully created",
 		"id", id,
 		"dealer_id", dd.DealerID,
-		"quarter", dd.Quarter,
-		"year", dd.Year,
+		"period", dd.Period,
 	)
 
 	return id, nil
 }
 
 // UpdateDealerDev обновляет данные развития дилера.
-func (s *Service) UpdateDealerDev(ctx context.Context, id int64, updates map[string]interface{}) error {
+func (s *Service) UpdateDealerDev(ctx context.Context, id int, updates map[string]interface{}) error {
 	if id <= 0 {
 		return fmt.Errorf("DealerDevService.UpdateDealerDev: invalid ID: %d", id)
 	}
@@ -140,7 +145,7 @@ func (s *Service) UpdateDealerDev(ctx context.Context, id int64, updates map[str
 }
 
 // DeleteDealerDev удаляет запись развития дилера.
-func (s *Service) DeleteDealerDev(ctx context.Context, id int64) error {
+func (s *Service) DeleteDealerDev(ctx context.Context, id int) error {
 	if id <= 0 {
 		return fmt.Errorf("DealerDevService.DeleteDealerDev: invalid ID: %d", id)
 	}
@@ -162,48 +167,51 @@ func (s *Service) DeleteDealerDev(ctx context.Context, id int64) error {
 }
 
 // validateDealerDev валидирует данные развития дилера.
-func (s *Service) validateDealerDev(dd *model.DealerDev) error {
+func (s *Service) validateDealerDev(dd *model.DealerDevelopment) error {
 	if dd.DealerID <= 0 {
 		return fmt.Errorf("dealer_id is required")
 	}
 
-	if !isValidQuarter(dd.Quarter) {
-		return fmt.Errorf("invalid quarter: %s (must be q1, q2, q3, or q4)", dd.Quarter)
+	// Валидация периода
+	if dd.Period.IsZero() {
+		return fmt.Errorf("period is required")
 	}
 
-	if dd.Year < 2020 || dd.Year > 2030 {
-		return fmt.Errorf("invalid year: %d (must be between 2020 and 2030)", dd.Year)
-	}
-
-	if dd.CheckListScore < 0 || dd.CheckListScore > 100 {
+	if dd.CheckListScore != nil && (*dd.CheckListScore < 0 || *dd.CheckListScore > 100) {
 		return fmt.Errorf("check_list_score must be between 0 and 100")
 	}
 
-	// Валидация класса дилера
-	validClasses := map[model.DealerDevClass]bool{
-		model.DealerDevClassA: true,
-		model.DealerDevClassB: true,
-		model.DealerDevClassC: true,
-		model.DealerDevClassD: true,
+	// Валидация класса дилера (если не nil)
+	if dd.DealershipClass != nil {
+		validClasses := []string{"A", "B", "C", "D"}
+		isValid := false
+		for _, class := range validClasses {
+			if string(*dd.DealershipClass) == class {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			return fmt.Errorf("invalid dealership_class: %s", string(*dd.DealershipClass))
+		}
 	}
 
-	if !validClasses[dd.DealerShipClass] {
-		return fmt.Errorf("invalid dealer_ship_class: %s", dd.DealerShipClass)
+	// Валидация рекомендации (если не nil)
+	if dd.DDRecommendation != nil {
+		validRecs := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
+		isValid := false
+		for _, rec := range validRecs {
+			if *dd.DDRecommendation == rec {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			return fmt.Errorf("invalid dd_recommendation: %s", *dd.DDRecommendation)
+		}
 	}
 
-	// Валидация рекомендации
-	validRecs := map[model.DealerDevRecommendation]bool{
-		model.RecommendationPlannedResult:    true,
-		model.RecommendationNeedsDevelopment: true,
-		model.RecommendationFindNewCandidate: true,
-		model.RecommendationCloseDown:        true,
-	}
-
-	if !validRecs[dd.Recommendation] {
-		return fmt.Errorf("invalid dealer_dev_recommendation: %s", dd.Recommendation)
-	}
-
-	if dd.MarketingInvestments < 0 {
+	if dd.MarketingInvestments != nil && *dd.MarketingInvestments < 0 {
 		return fmt.Errorf("marketing_investments cannot be negative")
 	}
 
@@ -219,4 +227,23 @@ func isValidQuarter(quarter string) bool {
 		"q4": true,
 	}
 	return validQuarters[quarter]
+}
+
+// parseQuarterToPeriod преобразует quarter и year в time.Time.
+func parseQuarterToPeriod(quarter string, year int) (time.Time, error) {
+	var month int
+	switch quarter {
+	case "q1":
+		month = 1 // Январь
+	case "q2":
+		month = 4 // Апрель
+	case "q3":
+		month = 7 // Июль
+	case "q4":
+		month = 10 // Октябрь
+	default:
+		return time.Time{}, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+
+	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC), nil
 }

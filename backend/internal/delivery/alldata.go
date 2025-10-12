@@ -1,52 +1,81 @@
 package delivery
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 )
 
+// Импортируем типы из модели для использования в delivery
+type DealershipClass = model.DealershipClass
+type BrandingStatus = model.BrandingStatus
+type SalesTrainingsStatus = model.SalesTrainingsStatus
+type ASTrainingsStatus = model.ASTrainingsStatus
+
 // AllDealerData представляет комплексные данные дилера со всех таблиц.
+// Использует новую структуру БД с нормализованными таблицами.
 type AllDealerData struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	City         string `json:"city"`
-	SalesManager string `json:"salesManager"`
+	// Базовая информация
+	DealerID      int       `json:"dealer_id"`
+	Ruft          string    `json:"ruft"`
+	DealerNameRu  string    `json:"dealer_name_ru"`
+	DealerNameEn  string    `json:"dealer_name_en"`
+	City          string    `json:"city"`
+	Region        string    `json:"region"`
+	Manager       string    `json:"manager"`
+	JointDecision *string   `json:"joint_decision"`
+	Period        time.Time `json:"period"`
 
-	// Dealer Development fields
-	Class                   string   `json:"class"`
-	Checklist               int      `json:"checklist"`
-	BrandsInPortfolio       []string `json:"brandsInPortfolio"`
-	DealerDevRecommendation string   `json:"dealerDevRecommendation"`
+	// Dealer Development данные
+	CheckListScore       *float64         `json:"check_list_score"`
+	DealershipClass      *DealershipClass `json:"dealership_class"`
+	Brands               []string         `json:"brands"`
+	Branding             *BrandingStatus  `json:"branding"`
+	MarketingInvestments *float64         `json:"marketing_investments"`
+	BySideBusinesses     *string          `json:"by_side_businesses"`
+	DDRecommendation     *string          `json:"dd_recommendation"`
 
-	// Sales Team fields
-	SalesTarget     string `json:"salesTarget"`
-	StockHdtMdtLdt  string `json:"stockHdtMdtLdt"`
-	BuyoutHdtMdtLdt string `json:"buyoutHdtMdtLdt"`
-	FotonSalesmen   int    `json:"fotonSalesmen"`
-	SalesTrainings  bool   `json:"salesTrainings"`
-	SalesDecision   string `json:"salesDecision"`
+	// Sales данные
+	StockHDT              *int                  `json:"stock_hdt"`
+	StockMDT              *int                  `json:"stock_mdt"`
+	StockLDT              *int                  `json:"stock_ldt"`
+	BuyoutHDT             *int                  `json:"buyout_hdt"`
+	BuyoutMDT             *int                  `json:"buyout_mdt"`
+	BuyoutLDT             *int                  `json:"buyout_ldt"`
+	FotonSalesPersonnel   *int                  `json:"foton_sales_personnel"`
+	SalesTargetPlan       *int                  `json:"sales_target_plan"`
+	SalesTargetFact       *int                  `json:"sales_target_fact"`
+	ServiceContractsSales *float64              `json:"service_contracts_sales"`
+	SalesTrainings        *SalesTrainingsStatus `json:"sales_trainings"`
+	SalesRecommendation   *string               `json:"sales_recommendation"`
 
-	// Performance fields
-	SrRub               string  `json:"srRub"`               // Sales Revenue
-	SalesProfit         string  `json:"salesProfit"`         // Sales Profit formatted
-	SalesMargin         float64 `json:"salesMargin"`         // Sales Margin %
-	AutoSalesRevenue    string  `json:"autoSalesRevenue"`    // After Sales Revenue
-	AutoSalesProfitsRap string  `json:"autoSalesProfitsRap"` // After Sales Profit
-	AutoSalesMargin     float64 `json:"autoSalesMargin"`     // After Sales Margin %
-	Ranking             int     `json:"ranking"`             // Foton Ranking
-	AutoSalesDecision   string  `json:"autoSalesDecision"`   // Performance Decision
+	// AfterSales данные
+	RecommendedStockPct   *float64           `json:"recommended_stock_pct"`
+	WarrantyStockPct      *float64           `json:"warranty_stock_pct"`
+	FotonLaborHoursPct    *float64           `json:"foton_labor_hours_pct"`
+	WarrantyHours         *float64           `json:"warranty_hours"`
+	ServiceContractsHours *float64           `json:"service_contracts_hours"`
+	ASTrainings           *ASTrainingsStatus `json:"as_trainings"`
+	SparePartsSalesQ      *float64           `json:"spare_parts_sales_q"`
+	SparePartsSalesYtdPct *float64           `json:"spare_parts_sales_ytd_pct"`
+	ASRecommendation      *string            `json:"as_recommendation"`
 
-	// After Sales fields
-	RStockPercent   float64 `json:"rStockPercent"`   // Recommended Stock %
-	WStockPercent   float64 `json:"wStockPercent"`   // Warranty Stock %
-	FlhPercent      float64 `json:"flhPercent"`      // FLH %
-	ServiceContract string  `json:"serviceContract"` // Service Contract level
-	AsTrainings     bool    `json:"asTrainings"`     // After Sales Trainings
-	Csi             string  `json:"csi"`             // CSI
-	AsDecision      string  `json:"asDecision"`      // After Sales Decision
+	// Performance Sales данные
+	QuantitySold   *int     `json:"quantity_sold"`
+	SalesRevenue   *float64 `json:"sales_revenue"`
+	SalesMargin    *float64 `json:"sales_margin"`
+	SalesMarginPct *float64 `json:"sales_margin_pct"`
+	SalesProfitPct *float64 `json:"sales_profit_pct"`
+
+	// Performance AfterSales данные
+	ASRevenue   *float64 `json:"as_revenue"`
+	ASMargin    *float64 `json:"as_margin"`
+	ASMarginPct *float64 `json:"as_margin_pct"`
+	ASProfitPct *float64 `json:"as_profit_pct"`
 }
 
 // GetAllData возвращает комплексные данные всех дилеров за период.
@@ -86,6 +115,14 @@ func (s *Server) GetAllData(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
+	// Преобразуем quarter/year в period
+	period, err := parseQuarterToPeriod(quarter, year)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "Invalid quarter/year format",
+		})
+	}
+
 	// Получаем данные из всех сервисов
 	ddList, err := s.dealerDevService.GetDealerDevByPeriod(ctx, quarter, year, region)
 	if err != nil {
@@ -107,13 +144,24 @@ func (s *Server) GetAllData(c echo.Context) error {
 		})
 	}
 
-	perfList, err := s.perfService.GetPerformanceByPeriod(ctx, quarter, year, region)
+	// Получаем данные из новых сервисов производительности
+	perfSalesList, err := s.perfSalesService.GetAllByPeriod(ctx, period)
 	if err != nil {
-		s.logger.Error("GetAllData: failed to get performance data",
+		s.logger.Error("GetAllData: failed to get performance sales data",
 			"error", err,
 		)
 		return c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error: "Failed to get performance data",
+			Error: "Failed to get performance sales data",
+		})
+	}
+
+	perfASList, err := s.perfASService.GetAllByPeriod(ctx, period)
+	if err != nil {
+		s.logger.Error("GetAllData: failed to get performance aftersales data",
+			"error", err,
+		)
+		return c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error: "Failed to get performance aftersales data",
 		})
 	}
 
@@ -128,10 +176,11 @@ func (s *Server) GetAllData(c echo.Context) error {
 	}
 
 	// Создаем map для быстрого поиска по dealer_id
-	ddMap := make(map[int64]*model.DealerDevWithDetails)
-	salesMap := make(map[int64]*model.SalesWithDetails)
-	perfMap := make(map[int64]*model.PerformanceWithDetails)
-	asMap := make(map[int64]*model.AfterSalesWithDetails)
+	ddMap := make(map[int]*model.DealerDevWithDetails)
+	salesMap := make(map[int]*model.SalesWithDetails)
+	perfSalesMap := make(map[int]*model.PerformanceSales)
+	perfASMap := make(map[int]*model.PerformanceAfterSales)
+	asMap := make(map[int]*model.AfterSalesWithDetails)
 
 	for _, dd := range ddList {
 		ddMap[dd.DealerID] = dd
@@ -141,8 +190,12 @@ func (s *Server) GetAllData(c echo.Context) error {
 		salesMap[sales.DealerID] = sales
 	}
 
-	for _, perf := range perfList {
-		perfMap[perf.DealerID] = perf
+	for _, perf := range perfSalesList {
+		perfSalesMap[perf.DealerID] = perf
+	}
+
+	for _, perf := range perfASList {
+		perfASMap[perf.DealerID] = perf
 	}
 
 	for _, as := range asList {
@@ -150,14 +203,17 @@ func (s *Server) GetAllData(c echo.Context) error {
 	}
 
 	// Получаем уникальный список dealer_id
-	dealerIDs := make(map[int64]bool)
+	dealerIDs := make(map[int]bool)
 	for id := range ddMap {
 		dealerIDs[id] = true
 	}
 	for id := range salesMap {
 		dealerIDs[id] = true
 	}
-	for id := range perfMap {
+	for id := range perfSalesMap {
+		dealerIDs[id] = true
+	}
+	for id := range perfASMap {
 		dealerIDs[id] = true
 	}
 	for id := range asMap {
@@ -169,66 +225,84 @@ func (s *Server) GetAllData(c echo.Context) error {
 
 	for dealerID := range dealerIDs {
 		allData := AllDealerData{
-			ID: strconv.FormatInt(dealerID, 10),
+			DealerID: dealerID,
+			Period:   period,
 		}
 
 		// Dealer Development data
 		if dd, ok := ddMap[dealerID]; ok {
-			allData.Name = dd.DealerName
+			allData.DealerNameRu = dd.DealerNameRu
+			allData.DealerNameEn = dd.DealerNameEn
 			allData.City = dd.City
-			allData.SalesManager = dd.Manager
-			allData.Class = string(dd.DealerShipClass)
-			allData.Checklist = int(dd.CheckListScore)
-			allData.BrandsInPortfolio = dd.Brands
-			allData.DealerDevRecommendation = string(dd.Recommendation)
+			allData.Region = dd.Region
+			allData.Manager = dd.Manager
+			allData.CheckListScore = dd.CheckListScore
+			allData.DealershipClass = dd.DealershipClass
+			allData.Brands = dd.Brands
+			allData.Branding = dd.Branding
+			allData.MarketingInvestments = dd.MarketingInvestments
+			allData.BySideBusinesses = dd.BySideBusinesses
+			allData.DDRecommendation = dd.DDRecommendation
 		}
 
 		// Sales data
 		if sales, ok := salesMap[dealerID]; ok {
-			if allData.Name == "" {
-				allData.Name = sales.DealerName
+			if allData.DealerNameRu == "" {
+				allData.DealerNameRu = sales.DealerNameRu
+				allData.DealerNameEn = sales.DealerNameEn
 				allData.City = sales.City
-				allData.SalesManager = sales.Manager
+				allData.Region = sales.Region
+				allData.Manager = sales.Manager
 			}
-			allData.SalesTarget = sales.SalesTarget
-			allData.StockHdtMdtLdt = sales.StockHdtMdtLdt
-			allData.BuyoutHdtMdtLdt = sales.BuyoutHdtMdtLdt
-			allData.FotonSalesmen = int(sales.FotonSalesmen)
+			allData.StockHDT = sales.StockHDT
+			allData.StockMDT = sales.StockMDT
+			allData.StockLDT = sales.StockLDT
+			allData.BuyoutHDT = sales.BuyoutHDT
+			allData.BuyoutMDT = sales.BuyoutMDT
+			allData.BuyoutLDT = sales.BuyoutLDT
+			allData.FotonSalesPersonnel = sales.FotonSalesPersonnel
+			allData.SalesTargetPlan = sales.SalesTargetPlan
+			allData.SalesTargetFact = sales.SalesTargetFact
+			allData.ServiceContractsSales = sales.ServiceContractsSales
 			allData.SalesTrainings = sales.SalesTrainings
-			allData.SalesDecision = string(sales.SalesDecision)
+			allData.SalesRecommendation = sales.SalesRecommendation
 		}
 
-		// Performance data
-		if perf, ok := perfMap[dealerID]; ok {
-			if allData.Name == "" {
-				allData.Name = perf.DealerName
-				allData.City = perf.City
-				allData.SalesManager = perf.Manager
-			}
-			allData.SrRub = perf.SalesRevenueFormatted
-			allData.SalesProfit = perf.SalesProfitFormatted
-			allData.SalesMargin = perf.SalesMarginPercent
-			allData.AutoSalesRevenue = perf.AfterSalesRevenueFormatted
-			allData.AutoSalesProfitsRap = perf.AfterSalesProfitFormatted
-			allData.AutoSalesMargin = perf.AfterSalesMarginPercent
-			allData.Ranking = int(perf.FotonRank)
-			allData.AutoSalesDecision = string(perf.PerformanceDecision)
+		// Performance Sales data
+		if perf, ok := perfSalesMap[dealerID]; ok {
+			allData.QuantitySold = perf.QuantitySold
+			allData.SalesRevenue = perf.SalesRevenue
+			allData.SalesMargin = perf.SalesMargin
+			allData.SalesMarginPct = perf.SalesMarginPct
+			allData.SalesProfitPct = perf.SalesProfitPct
+		}
+
+		// Performance AfterSales data
+		if perf, ok := perfASMap[dealerID]; ok {
+			allData.ASRevenue = perf.ASRevenue
+			allData.ASMargin = perf.ASMargin
+			allData.ASMarginPct = perf.ASMarginPct
+			allData.ASProfitPct = perf.ASProfitPct
 		}
 
 		// After Sales data
 		if as, ok := asMap[dealerID]; ok {
-			if allData.Name == "" {
-				allData.Name = as.DealerName
+			if allData.DealerNameRu == "" {
+				allData.DealerNameRu = as.DealerNameRu
+				allData.DealerNameEn = as.DealerNameEn
 				allData.City = as.City
-				allData.SalesManager = as.Manager
+				allData.Region = as.Region
+				allData.Manager = as.Manager
 			}
-			allData.RStockPercent = float64(as.RecommendedStock)
-			allData.WStockPercent = float64(as.WarrantyStock)
-			allData.FlhPercent = float64(as.FotonLaborHours)
-			allData.ServiceContract = convertServiceContractsToLevel(as.ServiceContracts)
-			allData.AsTrainings = as.ASTrainings
-			allData.Csi = as.CSI
-			allData.AsDecision = string(as.AfterSalesDecision)
+			allData.RecommendedStockPct = as.RecommendedStockPct
+			allData.WarrantyStockPct = as.WarrantyStockPct
+			allData.FotonLaborHoursPct = as.FotonLaborHoursPct
+			allData.WarrantyHours = as.WarrantyHours
+			allData.ServiceContractsHours = as.ServiceContractsHours
+			allData.ASTrainings = as.ASTrainings
+			allData.SparePartsSalesQ = as.SparePartsSalesQ
+			allData.SparePartsSalesYtdPct = as.SparePartsSalesYtdPct
+			allData.ASRecommendation = as.ASRecommendation
 		}
 
 		response = append(response, allData)
@@ -244,16 +318,21 @@ func (s *Server) GetAllData(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// convertServiceContractsToLevel преобразует количество контрактов в уровень (Gold, Silver, Bronze).
-func convertServiceContractsToLevel(contracts int16) string {
-	switch {
-	case contracts >= 50:
-		return "Gold"
-	case contracts >= 20:
-		return "Silver"
-	case contracts >= 5:
-		return "Bronze"
+// parseQuarterToPeriod преобразует quarter и year в time.Time.
+func parseQuarterToPeriod(quarter string, year int) (time.Time, error) {
+	var month int
+	switch quarter {
+	case "q1":
+		month = 1 // Январь
+	case "q2":
+		month = 4 // Апрель
+	case "q3":
+		month = 7 // Июль
+	case "q4":
+		month = 10 // Октябрь
 	default:
-		return "None"
+		return time.Time{}, fmt.Errorf("invalid quarter: %s", quarter)
 	}
+
+	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC), nil
 }

@@ -2,54 +2,83 @@ package model
 
 import "time"
 
-// PerformanceDecision представляет решение по производительности дилера.
-type PerformanceDecision string
+// PerformanceSales отвечает за блок Performance Sales (финансовая производительность продаж).
+// Содержит информацию о выручке, прибыли и марже по продажам автомобилей.
+type PerformanceSales struct {
+	ID       int       `json:"id" db:"id"`
+	DealerID int       `json:"dealer_id" db:"dealer_id"`
+	Period   time.Time `json:"period" db:"period"`
 
-const (
-	PerformanceDecisionPlannedResult    PerformanceDecision = "Planned Result"
-	PerformanceDecisionNeedsDevelopment PerformanceDecision = "Needs development"
-	PerformanceDecisionFindNewCandidate PerformanceDecision = "Find New Candidate"
-	PerformanceDecisionCloseDown        PerformanceDecision = "Close Down"
-)
+	// Sales financial metrics
+	QuantitySold      *int     `json:"quantity_sold" db:"quantity_sold"`               // Количество проданных автомобилей
+	SalesRevenue      *float64 `json:"sales_revenue" db:"sales_revenue"`               // Выручка (с НДС)
+	SalesRevenueNoVat *float64 `json:"sales_revenue_no_vat" db:"sales_revenue_no_vat"` // Выручка без НДС
+	SalesCost         *float64 `json:"sales_cost" db:"sales_cost"`                     // Стоимость
+	SalesMargin       *float64 `json:"sales_margin" db:"sales_margin"`                 // Валовая прибыль (в рублях)
+	SalesMarginPct    *float64 `json:"sales_margin_pct" db:"sales_margin_pct"`         // Маржа % = (margin / revenue) * 100
+	SalesProfitPct    *float64 `json:"sales_profit_pct" db:"sales_profit_pct"`         // Рентабельность %
 
-// Performance отвечает за блок Performance (финансовая производительность).
-// Содержит информацию о выручке, прибыли и марже по продажам и послепродажному обслуживанию.
-type Performance struct {
-	ID       int64  `json:"id" db:"id"`
-	DealerID int64  `json:"dealer_id" db:"dealer_id"`
-	Quarter  string `json:"quarter" db:"quarter"` // q1, q2, q3, q4
-	Year     int    `json:"year" db:"year"`       // 2024, 2025 и т.д.
-
-	// Продажи автомобилей
-	SalesRevenueRub    int64   `json:"sales_revenue_rub" db:"sales_revenue_rub"`       // Выручка в рублях
-	SalesProfitRub     int64   `json:"sales_profit_rub" db:"sales_profit_rub"`         // Прибыль в рублях
-	SalesProfitPercent float64 `json:"sales_profit_percent" db:"sales_profit_percent"` // Прибыль в процентах
-	SalesMarginPercent float64 `json:"sales_margin_percent" db:"sales_margin_percent"` // Маржа в процентах
-
-	// Послепродажное обслуживание
-	AfterSalesRevenueRub    int64   `json:"after_sales_revenue_rub" db:"after_sales_revenue_rub"`       // Выручка в рублях
-	AfterSalesProfitRub     int64   `json:"after_sales_profit_rub" db:"after_sales_profit_rub"`         // Прибыль в рублях
-	AfterSalesMarginPercent float64 `json:"after_sales_margin_percent" db:"after_sales_margin_percent"` // Маржа в процентах
-
-	// Маркетинг и рейтинг
-	MarketingInvestment float64 `json:"marketing_investment" db:"marketing_investment"` // Инвестиции в маркетинг (в млн рублей)
-	FotonRank           int16   `json:"foton_rank" db:"foton_rank"`                     // Рейтинг от 1 до 10
-
-	PerformanceDecision PerformanceDecision `json:"performance_decision" db:"performance_decision"`
-	CreatedAt           time.Time           `json:"created_at" db:"created_at"`
-	UpdatedAt           time.Time           `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
-// PerformanceWithDetails содержит полную информацию о производительности дилера.
+// PerformanceAfterSales отвечает за блок Performance AfterSales (финансовая производительность запчастей).
+// Содержит информацию о выручке, прибыли и марже по продажам запчастей.
+type PerformanceAfterSales struct {
+	ID       int       `json:"id" db:"id"`
+	DealerID int       `json:"dealer_id" db:"dealer_id"`
+	Period   time.Time `json:"period" db:"period"`
+
+	// AfterSales financial metrics
+	ASRevenue      *float64 `json:"as_revenue" db:"as_revenue"`               // Выручка (с НДС)
+	ASRevenueNoVat *float64 `json:"as_revenue_no_vat" db:"as_revenue_no_vat"` // Выручка без НДС
+	ASCost         *float64 `json:"as_cost" db:"as_cost"`                     // Стоимость
+	ASMargin       *float64 `json:"as_margin" db:"as_margin"`                 // Валовая прибыль (в рублях)
+	ASMarginPct    *float64 `json:"as_margin_pct" db:"as_margin_pct"`         // Маржа % = (margin / revenue) * 100
+	ASProfitPct    *float64 `json:"as_profit_pct" db:"as_profit_pct"`         // Рентабельность %
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// PerformanceSalesWithDetails содержит полную информацию о производительности продаж дилера.
 // Используется для API ответов с объединёнными данными.
+type PerformanceSalesWithDetails struct {
+	PerformanceSales
+	DealerNameRu string `json:"dealer_name_ru"`
+	DealerNameEn string `json:"dealer_name_en"`
+	City         string `json:"city"`
+	Region       string `json:"region"`
+	Manager      string `json:"manager"`
+	Ruft         string `json:"ruft"`
+}
+
+// PerformanceAfterSalesWithDetails содержит полную информацию о производительности запчастей дилера.
+// Используется для API ответов с объединёнными данными.
+type PerformanceAfterSalesWithDetails struct {
+	PerformanceAfterSales
+	DealerNameRu string `json:"dealer_name_ru"`
+	DealerNameEn string `json:"dealer_name_en"`
+	City         string `json:"city"`
+	Region       string `json:"region"`
+	Manager      string `json:"manager"`
+	Ruft         string `json:"ruft"`
+}
+
+// PerformanceWithDetails - алиас для совместимости со старым кодом.
 type PerformanceWithDetails struct {
-	Performance
-	DealerName                 string `json:"dealer_name"`
-	City                       string `json:"city"`
-	Region                     string `json:"region"`
-	Manager                    string `json:"manager"`
-	SalesRevenueFormatted      string `json:"sales_revenue_formatted"`       // Форматированная строка "5 555 555"
-	SalesProfitFormatted       string `json:"sales_profit_formatted"`        // Форматированная строка "5 000 000"
-	AfterSalesRevenueFormatted string `json:"after_sales_revenue_formatted"` // Форматированная строка
-	AfterSalesProfitFormatted  string `json:"after_sales_profit_formatted"`  // Форматированная строка
+	DealerID     int     `json:"dealer_id"`
+	DealerName   string  `json:"dealer_name"`
+	City         string  `json:"city"`
+	Region       string  `json:"region"`
+	Manager      string  `json:"manager"`
+	FotonRank    int     `json:"foton_rank"`
+	SalesRevenue float64 `json:"sales_revenue"`
+	SalesProfit  float64 `json:"sales_profit"`
+	SalesMargin  float64 `json:"sales_margin"`
+	AsRevenue    float64 `json:"as_revenue"`
+	AsProfit     float64 `json:"as_profit"`
+	AsMargin     float64 `json:"as_margin"`
+	Marketing    float64 `json:"marketing"`
+	Decision     string  `json:"decision"`
 }

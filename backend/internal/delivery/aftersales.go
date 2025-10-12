@@ -9,16 +9,18 @@ import (
 
 // AfterSalesDealerResponse представляет дилера с данными After Sales для API.
 type AfterSalesDealerResponse struct {
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	City            string `json:"city"`
-	RStockPercent   int    `json:"rStockPercent"`   // Recommended Stock %
-	WStockPercent   int    `json:"wStockPercent"`   // Warranty Stock %
-	FlhPercent      int    `json:"flhPercent"`      // Foton Labor Hours %
-	ServiceContract int    `json:"serviceContract"` // Service Contracts count
-	AsTrainings     bool   `json:"asTrainings"`     // AS Trainings completed
-	Csi             bool   `json:"csi"`             // CSI available
-	AsDecision      string `json:"asDecision"`      // AS Decision
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	City                  string   `json:"city"`
+	RStockPercent         *float64 `json:"rStockPercent"`         // Recommended Stock %
+	WStockPercent         *float64 `json:"wStockPercent"`         // Warranty Stock %
+	FlhPercent            *float64 `json:"flhPercent"`            // Foton Labor Hours %
+	WarrantyHours         *float64 `json:"warrantyHours"`         // Warranty Hours
+	ServiceContractsHours *float64 `json:"serviceContractsHours"` // Service Contracts Hours
+	AsTrainings           *string  `json:"asTrainings"`           // AS Trainings status
+	SparePartsSalesQ      *float64 `json:"sparePartsSalesQ"`      // Spare Parts Sales Q
+	SparePartsSalesYtdPct *float64 `json:"sparePartsSalesYtdPct"` // Spare Parts Sales YTD %
+	AsDecision            *string  `json:"asDecision"`            // AS Decision
 }
 
 // GetAfterSalesData возвращает данные послепродажного обслуживания по региону и периоду.
@@ -73,16 +75,18 @@ func (s *Server) GetAfterSalesData(c echo.Context) error {
 	response := make([]AfterSalesDealerResponse, 0, len(afterSalesList))
 	for _, as := range afterSalesList {
 		response = append(response, AfterSalesDealerResponse{
-			ID:              strconv.FormatInt(as.DealerID, 10),
-			Name:            as.DealerName,
-			City:            as.City,
-			RStockPercent:   int(as.RecommendedStock),
-			WStockPercent:   int(as.WarrantyStock),
-			FlhPercent:      int(as.FotonLaborHours),
-			ServiceContract: int(as.ServiceContracts),
-			AsTrainings:     as.ASTrainings,
-			Csi:             as.CSI != "" && as.CSI != "0",
-			AsDecision:      string(as.AfterSalesDecision),
+			ID:                    strconv.FormatInt(int64(as.DealerID), 10),
+			Name:                  as.DealerNameRu,
+			City:                  as.City,
+			RStockPercent:         as.RecommendedStockPct,
+			WStockPercent:         as.WarrantyStockPct,
+			FlhPercent:            as.FotonLaborHoursPct,
+			WarrantyHours:         as.WarrantyHours,
+			ServiceContractsHours: as.ServiceContractsHours,
+			AsTrainings:           (*string)(as.ASTrainings),
+			SparePartsSalesQ:      as.SparePartsSalesQ,
+			SparePartsSalesYtdPct: as.SparePartsSalesYtdPct,
+			AsDecision:            as.ASRecommendation,
 		})
 	}
 

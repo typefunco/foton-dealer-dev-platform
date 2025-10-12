@@ -9,10 +9,10 @@ import (
 )
 
 type Repository interface {
-	FindPerformances(ctx context.Context, region string) ([]*model.Performance, error)
+	FindPerformances(ctx context.Context, region string) ([]*model.PerformanceSales, error)
 	GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.PerformanceWithDetails, error)
-	GetByID(ctx context.Context, id int64) (*model.Performance, error)
-	Create(ctx context.Context, perf *model.Performance) (int64, error)
+	GetByID(ctx context.Context, id int64) (*model.PerformanceSales, error)
+	Create(ctx context.Context, perf *model.PerformanceSales) (int64, error)
 	Update(ctx context.Context, id int64, updates map[string]interface{}) error
 	Delete(ctx context.Context, id int64) error
 }
@@ -31,7 +31,7 @@ func NewService(repository Repository, logger *slog.Logger) *Service {
 }
 
 // FindPerformances возвращает производительность по региону (deprecated).
-func (s *Service) FindPerformances(ctx context.Context, region string) ([]*model.Performance, error) {
+func (s *Service) FindPerformances(ctx context.Context, region string) ([]*model.PerformanceSales, error) {
 	return s.repository.FindPerformances(ctx, region)
 }
 
@@ -69,7 +69,7 @@ func (s *Service) GetPerformanceByPeriod(ctx context.Context, quarter string, ye
 }
 
 // GetPerformanceByID возвращает данные производительности по ID.
-func (s *Service) GetPerformanceByID(ctx context.Context, id int64) (*model.Performance, error) {
+func (s *Service) GetPerformanceByID(ctx context.Context, id int64) (*model.PerformanceSales, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("PerformanceService.GetPerformanceByID: invalid ID: %d", id)
 	}
@@ -87,7 +87,7 @@ func (s *Service) GetPerformanceByID(ctx context.Context, id int64) (*model.Perf
 }
 
 // CreatePerformance создает новую запись производительности.
-func (s *Service) CreatePerformance(ctx context.Context, perf *model.Performance) (int64, error) {
+func (s *Service) CreatePerformance(ctx context.Context, perf *model.PerformanceSales) (int64, error) {
 	// Валидация
 	if err := s.validatePerformance(perf); err != nil {
 		return 0, fmt.Errorf("PerformanceService.CreatePerformance: validation failed: %w", err)
@@ -97,8 +97,7 @@ func (s *Service) CreatePerformance(ctx context.Context, perf *model.Performance
 	if err != nil {
 		s.logger.Error("PerformanceService.CreatePerformance: failed to create",
 			"dealer_id", perf.DealerID,
-			"quarter", perf.Quarter,
-			"year", perf.Year,
+			"period", perf.Period,
 			"error", err,
 		)
 		return 0, fmt.Errorf("PerformanceService.CreatePerformance: %w", err)
@@ -107,8 +106,7 @@ func (s *Service) CreatePerformance(ctx context.Context, perf *model.Performance
 	s.logger.Info("PerformanceService.CreatePerformance: successfully created",
 		"id", id,
 		"dealer_id", perf.DealerID,
-		"quarter", perf.Quarter,
-		"year", perf.Year,
+		"period", perf.Period,
 	)
 
 	return id, nil
@@ -163,37 +161,27 @@ func (s *Service) DeletePerformance(ctx context.Context, id int64) error {
 }
 
 // validatePerformance валидирует данные производительности.
-func (s *Service) validatePerformance(perf *model.Performance) error {
+func (s *Service) validatePerformance(perf *model.PerformanceSales) error {
 	if perf.DealerID <= 0 {
 		return fmt.Errorf("dealer_id is required")
 	}
 
-	if !isValidQuarter(perf.Quarter) {
-		return fmt.Errorf("invalid quarter: %s (must be q1, q2, q3, or q4)", perf.Quarter)
+	// Валидация периода
+	if perf.Period.IsZero() {
+		return fmt.Errorf("period is required")
 	}
 
-	if perf.Year < 2020 || perf.Year > 2030 {
-		return fmt.Errorf("invalid year: %d (must be between 2020 and 2030)", perf.Year)
+	// Валидация финансовых показателей (если не nil)
+	if perf.SalesRevenue != nil && *perf.SalesRevenue < 0 {
+		return fmt.Errorf("sales_revenue cannot be negative")
 	}
 
-	if perf.SalesRevenueRub < 0 {
-		return fmt.Errorf("sales_revenue_rub cannot be negative")
+	if perf.SalesCost != nil && *perf.SalesCost < 0 {
+		return fmt.Errorf("sales_cost cannot be negative")
 	}
 
-	if perf.FotonRank < 1 || perf.FotonRank > 10 {
-		return fmt.Errorf("foton_rank must be between 1 and 10")
-	}
-
-	// Валидация решения
-	validDecisions := map[model.PerformanceDecision]bool{
-		model.PerformanceDecisionPlannedResult:    true,
-		model.PerformanceDecisionNeedsDevelopment: true,
-		model.PerformanceDecisionFindNewCandidate: true,
-		model.PerformanceDecisionCloseDown:        true,
-	}
-
-	if !validDecisions[perf.PerformanceDecision] {
-		return fmt.Errorf("invalid performance_decision: %s", perf.PerformanceDecision)
+	if perf.SalesMargin != nil && *perf.SalesMargin < 0 {
+		return fmt.Errorf("sales_margin cannot be negative")
 	}
 
 	return nil

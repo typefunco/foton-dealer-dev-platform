@@ -9,16 +9,22 @@ import (
 
 // SalesTeamDealerResponse представляет дилера с данными Sales Team для API.
 type SalesTeamDealerResponse struct {
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	City            string `json:"city"`
-	SalesManager    string `json:"salesManager"`
-	SalesTarget     string `json:"salesTarget"`     // "40/100"
-	StockHdtMdtLdt  string `json:"stockHdtMdtLdt"`  // "5/2/3"
-	BuyoutHdtMdtLdt string `json:"buyoutHdtMdtLdt"` // "5/2/3"
-	FotonSalesmen   int    `json:"fotonSalesmen"`   // Количество продавцов
-	SalesTrainings  bool   `json:"salesTrainings"`  // Пройдены ли тренинги
-	SalesDecision   string `json:"salesDecision"`   // Решение по продажам
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	City                  string   `json:"city"`
+	SalesManager          string   `json:"salesManager"`
+	SalesTargetPlan       *int     `json:"salesTargetPlan"`       // План продаж
+	SalesTargetFact       *int     `json:"salesTargetFact"`       // Факт продаж
+	StockHDT              *int     `json:"stockHDT"`              // Stock HDT
+	StockMDT              *int     `json:"stockMDT"`              // Stock MDT
+	StockLDT              *int     `json:"stockLDT"`              // Stock LDT
+	BuyoutHDT             *int     `json:"buyoutHDT"`             // Buyout HDT
+	BuyoutMDT             *int     `json:"buyoutMDT"`             // Buyout MDT
+	BuyoutLDT             *int     `json:"buyoutLDT"`             // Buyout LDT
+	FotonSalesPersonnel   *int     `json:"fotonSalesPersonnel"`   // Количество продавцов
+	ServiceContractsSales *float64 `json:"serviceContractsSales"` // Service Contracts Sales
+	SalesTrainings        *string  `json:"salesTrainings"`        // Статус тренингов
+	SalesDecision         *string  `json:"salesDecision"`         // Решение по продажам
 }
 
 // GetSalesTeamData возвращает данные команды продаж по региону и периоду.
@@ -73,16 +79,22 @@ func (s *Server) GetSalesTeamData(c echo.Context) error {
 	response := make([]SalesTeamDealerResponse, 0, len(salesList))
 	for _, sales := range salesList {
 		response = append(response, SalesTeamDealerResponse{
-			ID:              strconv.FormatInt(sales.DealerID, 10),
-			Name:            sales.DealerName,
-			City:            sales.City,
-			SalesManager:    sales.Manager,
-			SalesTarget:     sales.SalesTarget,
-			StockHdtMdtLdt:  sales.StockHdtMdtLdt,
-			BuyoutHdtMdtLdt: sales.BuyoutHdtMdtLdt,
-			FotonSalesmen:   int(sales.FotonSalesmen),
-			SalesTrainings:  sales.SalesTrainings,
-			SalesDecision:   string(sales.SalesDecision),
+			ID:                    strconv.FormatInt(int64(sales.DealerID), 10),
+			Name:                  sales.DealerNameRu,
+			City:                  sales.City,
+			SalesManager:          sales.Manager,
+			SalesTargetPlan:       sales.SalesTargetPlan,
+			SalesTargetFact:       sales.SalesTargetFact,
+			StockHDT:              sales.StockHDT,
+			StockMDT:              sales.StockMDT,
+			StockLDT:              sales.StockLDT,
+			BuyoutHDT:             sales.BuyoutHDT,
+			BuyoutMDT:             sales.BuyoutMDT,
+			BuyoutLDT:             sales.BuyoutLDT,
+			FotonSalesPersonnel:   sales.FotonSalesPersonnel,
+			ServiceContractsSales: sales.ServiceContractsSales,
+			SalesTrainings:        (*string)(sales.SalesTrainings),
+			SalesDecision:         sales.SalesRecommendation,
 		})
 	}
 

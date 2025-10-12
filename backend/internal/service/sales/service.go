@@ -96,8 +96,7 @@ func (s *Service) CreateSales(ctx context.Context, sales *model.Sales) (int64, e
 	if err != nil {
 		s.logger.Error("SalesService.CreateSales: failed to create",
 			"dealer_id", sales.DealerID,
-			"quarter", sales.Quarter,
-			"year", sales.Year,
+			"period", sales.Period,
 			"error", err,
 		)
 		return 0, fmt.Errorf("SalesService.CreateSales: %w", err)
@@ -106,8 +105,7 @@ func (s *Service) CreateSales(ctx context.Context, sales *model.Sales) (int64, e
 	s.logger.Info("SalesService.CreateSales: successfully created",
 		"id", id,
 		"dealer_id", sales.DealerID,
-		"quarter", sales.Quarter,
-		"year", sales.Year,
+		"period", sales.Period,
 	)
 
 	return id, nil
@@ -167,36 +165,24 @@ func (s *Service) validateSales(sales *model.Sales) error {
 		return fmt.Errorf("dealer_id is required")
 	}
 
-	if !isValidQuarter(sales.Quarter) {
-		return fmt.Errorf("invalid quarter: %s (must be q1, q2, q3, or q4)", sales.Quarter)
+	// Валидация периода
+	if sales.Period.IsZero() {
+		return fmt.Errorf("period is required")
 	}
 
-	if sales.Year < 2020 || sales.Year > 2030 {
-		return fmt.Errorf("invalid year: %d (must be between 2020 and 2030)", sales.Year)
-	}
-
-	if sales.StockHDT < 0 || sales.StockMDT < 0 || sales.StockLDT < 0 {
-		return fmt.Errorf("stock values cannot be negative")
-	}
-
-	if sales.BuyoutHDT < 0 || sales.BuyoutMDT < 0 || sales.BuyoutLDT < 0 {
-		return fmt.Errorf("buyout values cannot be negative")
-	}
-
-	if sales.FotonSalesmen < 0 {
-		return fmt.Errorf("foton_salesmen cannot be negative")
-	}
-
-	// Валидация решения
-	validDecisions := map[model.SalesDecision]bool{
-		model.SalesDecisionPlannedResult:    true,
-		model.SalesDecisionNeedsDevelopment: true,
-		model.SalesDecisionFindNewCandidate: true,
-		model.SalesDecisionCloseDown:        true,
-	}
-
-	if !validDecisions[sales.SalesDecision] {
-		return fmt.Errorf("invalid sales_decision: %s", sales.SalesDecision)
+	// Валидация решения (если не nil)
+	if sales.SalesRecommendation != nil {
+		validDecisions := []string{"Planned Result", "Needs Development", "Find New Candidate", "Close Down"}
+		isValid := false
+		for _, decision := range validDecisions {
+			if *sales.SalesRecommendation == decision {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			return fmt.Errorf("invalid sales_recommendation: %s", *sales.SalesRecommendation)
+		}
 	}
 
 	return nil

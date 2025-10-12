@@ -18,6 +18,8 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealer"
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealerdev"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance"
+	"github.com/typefunco/dealer_dev_platform/internal/service/performance_aftersales"
+	"github.com/typefunco/dealer_dev_platform/internal/service/performance_sales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/sales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/user"
 	"github.com/typefunco/dealer_dev_platform/internal/utils/jwt"
@@ -70,6 +72,8 @@ func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *sl
 	dealerDevRepo := repository.NewDealerDevRepository(pool)
 	salesRepo := repository.NewSalesRepository(pool)
 	performanceRepo := repository.NewPerformanceRepository(pool)
+	performanceSalesRepo := repository.NewPerformanceSalesRepository(pool, logger)
+	performanceASRepo := repository.NewPerformanceAfterSalesRepository(pool, logger)
 	afterSalesRepo := repository.NewAfterSalesRepository(pool)
 	authRepo := repository.NewAuthRepository(pool, logger)
 	userRepo := repository.NewUserRepository(pool, logger)
@@ -80,6 +84,8 @@ func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *sl
 	jwtService := jwt.NewService()
 	authService := auth.NewService(authRepo, jwtService, logger)
 	perfService := performance.NewService(performanceRepo, logger)
+	perfSalesService := performance_sales.NewService(performanceSalesRepo, logger)
+	perfASService := performance_aftersales.NewService(performanceASRepo, logger)
 	userService := user.NewService(userRepo, logger)
 	afterSalesService := aftersales.NewService(afterSalesRepo, logger)
 	dealerService := dealer.NewService(dealerRepo, logger)
@@ -89,7 +95,7 @@ func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *sl
 	logger.Info("Services initialized")
 
 	// Инициализация HTTP сервера
-	server := delivery.NewServer(authService, perfService, userService, afterSalesService, dealerService, salesService, dealerDevService, logger)
+	server := delivery.NewServer(authService, perfService, perfSalesService, perfASService, userService, afterSalesService, dealerService, salesService, dealerDevService, logger)
 	logger.Info("HTTP server initialized", slog.String("port", cfg.ServerPort))
 
 	// Graceful shutdown

@@ -1,93 +1,127 @@
 package model
 
+import "time"
+
 // CompleteDealerData представляет полные данные о дилере для страницы AllTable.
 // Это объединение всех данных о дилере из разных блоков.
 type CompleteDealerData struct {
 	// Базовая информация
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	City         string `json:"city"`
-	Region       string `json:"region"`
-	SalesManager string `json:"sales_manager"`
+	DealerID      int       `json:"dealer_id"`
+	Ruft          string    `json:"ruft"`
+	DealerNameRu  string    `json:"dealer_name_ru"`
+	DealerNameEn  string    `json:"dealer_name_en"`
+	City          string    `json:"city"`
+	Region        string    `json:"region"`
+	Manager       string    `json:"manager"`
+	JointDecision *string   `json:"joint_decision"`
+	Period        time.Time `json:"period"`
 
 	// Dealer Development данные
-	Class                   string   `json:"class"`                     // A, B, C, D
-	Checklist               int      `json:"checklist"`                 // 0-100
-	BrandsInPortfolio       []string `json:"brands_in_portfolio"`       // Массив брендов
-	BrandsCount             int      `json:"brands_count"`              // Количество брендов
-	Branding                bool     `json:"branding"`                  // Наличие брендинга
-	BuySideBusiness         []string `json:"buy_side_business"`         // Побочный бизнес
-	DealerDevRecommendation string   `json:"dealer_dev_recommendation"` // Рекомендация
+	CheckListScore       *float64         `json:"check_list_score"`      // Check List Score % (0-100)
+	DealershipClass      *DealershipClass `json:"dealership_class"`      // A, B, C, D
+	Brands               []string         `json:"brands"`                // Массив брендов ["Foton", "Kamaz", "Sitrak"]
+	Branding             *BrandingStatus  `json:"branding"`              // Y, N, Yes, No
+	MarketingInvestments *float64         `json:"marketing_investments"` // Marketing Investments Rub
+	BySideBusinesses     *string          `json:"by_side_businesses"`    // By-side businesses описание
+	DDRecommendation     *string          `json:"dd_recommendation"`     // Recommendation (из Excel)
 
-	// Sales Team данные
-	SalesTarget     string `json:"sales_target"`       // "40/100"
-	StockHdtMdtLdt  string `json:"stock_hdt_mdt_ldt"`  // "5/2/3"
-	BuyoutHdtMdtLdt string `json:"buyout_hdt_mdt_ldt"` // "5/2/3"
-	FotonSalesmen   int    `json:"foton_salesmen"`     // Количество продавцов
-	SalesTrainings  bool   `json:"sales_trainings"`    // Обучение
-	SalesDecision   string `json:"sales_decision"`     // Решение
+	// Sales данные
+	StockHDT              *int                  `json:"stock_hdt"`               // Heavy Duty Truck
+	StockMDT              *int                  `json:"stock_mdt"`               // Medium Duty Truck
+	StockLDT              *int                  `json:"stock_ldt"`               // Light Duty Truck
+	BuyoutHDT             *int                  `json:"buyout_hdt"`              // Heavy Duty Truck
+	BuyoutMDT             *int                  `json:"buyout_mdt"`              // Medium Duty Truck
+	BuyoutLDT             *int                  `json:"buyout_ldt"`              // Light Duty Truck
+	FotonSalesPersonnel   *int                  `json:"foton_sales_personnel"`   // Количество продавцов Foton
+	SalesTargetPlan       *int                  `json:"sales_target_plan"`       // План продаж
+	SalesTargetFact       *int                  `json:"sales_target_fact"`       // Факт продаж
+	ServiceContractsSales *float64              `json:"service_contracts_sales"` // Service contracts sales
+	SalesTrainings        *SalesTrainingsStatus `json:"sales_trainings"`         // Y, N, Yes, No
+	SalesRecommendation   *string               `json:"sales_recommendation"`    // Recommendation (из Excel)
 
-	// Performance данные
-	SrRub               string  `json:"sr_rub"`                 // Выручка от продаж "5 555 555"
-	SalesProfit         string  `json:"sales_profit"`           // Прибыль от продаж "5 000 000"
-	SalesMargin         float64 `json:"sales_margin"`           // Маржа продаж в %
-	AutoSalesRevenue    string  `json:"auto_sales_revenue"`     // Выручка от послепродажного обслуживания
-	AutoSalesProfitsRap string  `json:"auto_sales_profits_rap"` // Прибыль от послепродажного обслуживания
-	AutoSalesMargin     float64 `json:"auto_sales_margin"`      // Маржа послепродажного обслуживания в %
-	MarketingInvestment float64 `json:"marketing_investment"`   // Инвестиции в маркетинг (M Rub)
-	Ranking             int     `json:"ranking"`                // Рейтинг 1-10
-	AutoSalesDecision   string  `json:"auto_sales_decision"`    // Решение по производительности
+	// AfterSales данные
+	RecommendedStockPct   *float64           `json:"recommended_stock_pct"`     // В процентах
+	WarrantyStockPct      *float64           `json:"warranty_stock_pct"`        // В процентах
+	FotonLaborHoursPct    *float64           `json:"foton_labor_hours_pct"`     // В процентах
+	WarrantyHours         *float64           `json:"warranty_hours"`            // Гарантийные часы
+	ServiceContractsHours *float64           `json:"service_contracts_hours"`   // Часы сервисных контрактов
+	ASTrainings           *ASTrainingsStatus `json:"as_trainings"`              // Y, N, Yes, No
+	SparePartsSalesQ      *float64           `json:"spare_parts_sales_q"`       // За квартал
+	SparePartsSalesYtdPct *float64           `json:"spare_parts_sales_ytd_pct"` // YTD динамика %
+	ASRecommendation      *string            `json:"as_recommendation"`         // Recommendation (из Excel)
 
-	// After Sales данные
-	RStockPercent   int    `json:"r_stock_percent"`  // Рекомендованный запас в %
-	WStockPercent   int    `json:"w_stock_percent"`  // Гарантийный запас в %
-	FlhPercent      int    `json:"flh_percent"`      // Foton Labor Hours в %
-	ServiceContract string `json:"service_contract"` // Сервисные контракты
-	AsTrainings     bool   `json:"as_trainings"`     // Обучение
-	Csi             string `json:"csi"`              // Customer Satisfaction Index
-	AsDecision      string `json:"as_decision"`      // Решение по послепродажному обслуживанию
+	// Performance Sales данные
+	QuantitySold   *int     `json:"quantity_sold"`    // Количество проданных автомобилей
+	SalesRevenue   *float64 `json:"sales_revenue"`    // Выручка (с НДС)
+	SalesMargin    *float64 `json:"sales_margin"`     // Валовая прибыль (в рублях)
+	SalesMarginPct *float64 `json:"sales_margin_pct"` // Маржа % = (margin / revenue) * 100
+	SalesProfitPct *float64 `json:"sales_profit_pct"` // Рентабельность %
+
+	// Performance AfterSales данные
+	ASRevenue   *float64 `json:"as_revenue"`    // Выручка (с НДС)
+	ASMargin    *float64 `json:"as_margin"`     // Валовая прибыль (в рублях)
+	ASMarginPct *float64 `json:"as_margin_pct"` // Маржа % = (margin / revenue) * 100
+	ASProfitPct *float64 `json:"as_profit_pct"` // Рентабельность %
 }
 
 // DealerCardData представляет детальные данные о дилере для карточки дилера.
 // Используется на странице /dealer/:id
 type DealerCardData struct {
 	// Базовая информация
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	City         string `json:"city"`
-	Region       string `json:"region"`
-	SalesManager string `json:"sales_manager"`
+	DealerID      int       `json:"dealer_id"`
+	Ruft          string    `json:"ruft"`
+	DealerNameRu  string    `json:"dealer_name_ru"`
+	DealerNameEn  string    `json:"dealer_name_en"`
+	City          string    `json:"city"`
+	Region        string    `json:"region"`
+	Manager       string    `json:"manager"`
+	JointDecision *string   `json:"joint_decision"`
+	Period        time.Time `json:"period"`
 
 	// Dealer Development
-	Class               string   `json:"class"`
-	Checklist           int      `json:"checklist"`
-	BrandsInPortfolio   []string `json:"brands_in_portfolio"`
-	BrandsCount         int      `json:"brands_count"`
-	Branding            bool     `json:"branding"`
-	BuySideBusiness     []string `json:"buy_side_business"`
-	MarketingInvestment int      `json:"marketing_investment"` // В рублях
+	CheckListScore       *float64         `json:"check_list_score"`
+	DealershipClass      *DealershipClass `json:"dealership_class"`
+	Brands               []string         `json:"brands"`
+	Branding             *BrandingStatus  `json:"branding"`
+	MarketingInvestments *float64         `json:"marketing_investments"`
+	BySideBusinesses     *string          `json:"by_side_businesses"`
+	DDRecommendation     *string          `json:"dd_recommendation"`
 
 	// Sales
-	SalesTarget     string `json:"sales_target"`
-	StockHdtMdtLdt  string `json:"stock_hdt_mdt_ldt"`
-	BuyoutHdtMdtLdt string `json:"buyout_hdt_mdt_ldt"`
-	FotonSalesmen   string `json:"foton_salesmen"`
-	SalesTrainings  bool   `json:"sales_trainings"`
+	StockHDT              *int                  `json:"stock_hdt"`
+	StockMDT              *int                  `json:"stock_mdt"`
+	StockLDT              *int                  `json:"stock_ldt"`
+	BuyoutHDT             *int                  `json:"buyout_hdt"`
+	BuyoutMDT             *int                  `json:"buyout_mdt"`
+	BuyoutLDT             *int                  `json:"buyout_ldt"`
+	FotonSalesPersonnel   *int                  `json:"foton_sales_personnel"`
+	SalesTargetPlan       *int                  `json:"sales_target_plan"`
+	SalesTargetFact       *int                  `json:"sales_target_fact"`
+	ServiceContractsSales *float64              `json:"service_contracts_sales"`
+	SalesTrainings        *SalesTrainingsStatus `json:"sales_trainings"`
+	SalesRecommendation   *string               `json:"sales_recommendation"`
 
-	// Performance
-	SrRub                string `json:"sr_rub"`
-	SalesProfit          string `json:"sales_profit"`
-	SalesMargin          int    `json:"sales_margin"`
-	AfterSalesRevenue    string `json:"after_sales_revenue"`
-	AfterSalesProfitsRap string `json:"after_sales_profits_rap"`
-	AfterSalesMargin     int    `json:"after_sales_margin"`
-	Ranking              int    `json:"ranking"`
+	// Performance Sales
+	QuantitySold   *int     `json:"quantity_sold"`
+	SalesRevenue   *float64 `json:"sales_revenue"`
+	SalesMargin    *float64 `json:"sales_margin"`
+	SalesMarginPct *float64 `json:"sales_margin_pct"`
+	SalesProfitPct *float64 `json:"sales_profit_pct"`
 
-	// After Sales
-	RecommendedStock int    `json:"recommended_stock"`
-	WarrantyStock    int    `json:"warranty_stock"`
-	FotonLaborHours  int    `json:"foton_labor_hours"`
-	ServiceContract  bool   `json:"service_contract"`
-	AsTrainings      bool   `json:"as_trainings"`
-	Csi              string `json:"csi"`
+	// Performance AfterSales
+	ASRevenue   *float64 `json:"as_revenue"`
+	ASMargin    *float64 `json:"as_margin"`
+	ASMarginPct *float64 `json:"as_margin_pct"`
+	ASProfitPct *float64 `json:"as_profit_pct"`
+
+	// AfterSales
+	RecommendedStockPct   *float64           `json:"recommended_stock_pct"`
+	WarrantyStockPct      *float64           `json:"warranty_stock_pct"`
+	FotonLaborHoursPct    *float64           `json:"foton_labor_hours_pct"`
+	WarrantyHours         *float64           `json:"warranty_hours"`
+	ServiceContractsHours *float64           `json:"service_contracts_hours"`
+	ASTrainings           *ASTrainingsStatus `json:"as_trainings"`
+	SparePartsSalesQ      *float64           `json:"spare_parts_sales_q"`
+	SparePartsSalesYtdPct *float64           `json:"spare_parts_sales_ytd_pct"`
+	ASRecommendation      *string            `json:"as_recommendation"`
 }

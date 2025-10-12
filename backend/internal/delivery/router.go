@@ -12,6 +12,8 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealer"
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealerdev"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance"
+	"github.com/typefunco/dealer_dev_platform/internal/service/performance_aftersales"
+	"github.com/typefunco/dealer_dev_platform/internal/service/performance_sales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/sales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/user"
 )
@@ -20,6 +22,8 @@ import (
 type Server struct {
 	authService       *auth.Service
 	perfService       *performance.Service
+	perfSalesService  *performance_sales.Service
+	perfASService     *performance_aftersales.Service
 	userService       *user.Service
 	afterSalesService *aftersales.Service
 	dealerService     *dealer.Service
@@ -33,6 +37,8 @@ type Server struct {
 func NewServer(
 	authService *auth.Service,
 	perfService *performance.Service,
+	perfSalesService *performance_sales.Service,
+	perfASService *performance_aftersales.Service,
 	userService *user.Service,
 	afterSalesService *aftersales.Service,
 	dealerService *dealer.Service,
@@ -43,6 +49,8 @@ func NewServer(
 	return &Server{
 		authService:       authService,
 		perfService:       perfService,
+		perfSalesService:  perfSalesService,
+		perfASService:     perfASService,
 		userService:       userService,
 		afterSalesService: afterSalesService,
 		dealerService:     dealerService,

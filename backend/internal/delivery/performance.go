@@ -76,22 +76,22 @@ func (s *Server) GetPerformanceData(c echo.Context) error {
 	response := make([]PerformanceDealerResponse, 0, len(perfList))
 	for _, perf := range perfList {
 		// RAP можно вычислить на основе различных метрик
-		rap := calculateRAP(perf.FotonRank)
+		rap := calculateRAP(int16(perf.FotonRank))
 
 		response = append(response, PerformanceDealerResponse{
-			ID:                  strconv.FormatInt(perf.DealerID, 10),
+			ID:                  strconv.FormatInt(int64(perf.DealerID), 10),
 			Name:                perf.DealerName,
 			City:                perf.City,
-			SrRub:               perf.SalesRevenueFormatted,
-			SalesProfit:         perf.SalesProfitPercent,
-			SalesMargin:         perf.SalesMarginPercent,
-			AutoSalesRevenue:    perf.AfterSalesRevenueFormatted,
+			SrRub:               formatMoney(int64(perf.SalesRevenue)),
+			SalesProfit:         perf.SalesProfit,
+			SalesMargin:         perf.SalesMargin,
+			AutoSalesRevenue:    formatMoney(int64(perf.AsRevenue)),
 			Rap:                 rap,
-			AutoSalesProfitsRap: perf.AfterSalesProfitFormatted,
-			AutoSalesMargin:     perf.AfterSalesMarginPercent,
-			MarketingInvestment: perf.MarketingInvestment,
-			Ranking:             int(perf.FotonRank),
-			AutoSalesDecision:   string(perf.PerformanceDecision),
+			AutoSalesProfitsRap: formatMoney(int64(perf.AsProfit)),
+			AutoSalesMargin:     perf.AsMargin,
+			MarketingInvestment: perf.Marketing,
+			Ranking:             perf.FotonRank,
+			AutoSalesDecision:   perf.Decision,
 		})
 	}
 
