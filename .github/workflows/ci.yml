@@ -206,9 +206,7 @@ jobs:
           echo "Running integration tests with Testcontainers..."
           echo "Docker socket: $TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"
           go test -v -race -coverprofile=integration-coverage.out -covermode=atomic \
-            ./internal/service/... \
-            ./internal/repository/... \
-            ./internal/testutil/... \
+            ./internal/service/... ./internal/repository/... ./internal/testutil/... \
             -timeout=30m \
             -run "Test.*"
 

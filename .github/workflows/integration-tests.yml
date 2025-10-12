@@ -8,10 +8,10 @@ on:
   workflow_dispatch:
     inputs:
       test_packages:
-        description: 'Test packages (comma-separated)'
+        description: 'Test packages (space-separated)'
         required: false
         type: string
-        default: './internal/service/...,./internal/repository/...,./internal/testutil/...'
+        default: './internal/service/... ./internal/repository/... ./internal/testutil/...'
       timeout_minutes:
         description: 'Test timeout in minutes'
         required: false
@@ -57,11 +57,11 @@ jobs:
           TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
         run: |
           echo "Running integration tests with Testcontainers..."
-          echo "Test packages: ${{ github.event.inputs.test_packages || './internal/service/...,./internal/repository/...,./internal/testutil/...' }}"
+          echo "Test packages: ${{ github.event.inputs.test_packages || './internal/service/... ./internal/repository/... ./internal/testutil/...' }}"
           echo "Timeout: ${{ github.event.inputs.timeout_minutes || '30' }}m"
           
           go test -v -race -coverprofile=integration-coverage.out -covermode=atomic \
-            ${{ github.event.inputs.test_packages || './internal/service/...,./internal/repository/...,./internal/testutil/...' }} \
+            ${{ github.event.inputs.test_packages || './internal/service/... ./internal/repository/... ./internal/testutil/...' }} \
             -timeout=${{ github.event.inputs.timeout_minutes || '30' }}m \
             -run "Test.*"
 
@@ -94,7 +94,7 @@ jobs:
         run: |
           echo "🧪 Integration Tests Summary"
           echo "============================="
-          echo "Test packages: ${{ github.event.inputs.test_packages || './internal/service/...,./internal/repository/...,./internal/testutil/...' }}"
+          echo "Test packages: ${{ github.event.inputs.test_packages || './internal/service/... ./internal/repository/... ./internal/testutil/...' }}"
           echo "Timeout: ${{ github.event.inputs.timeout_minutes || '30' }}m"
           echo "Status: ${{ job.status }}"
           echo "============================="
