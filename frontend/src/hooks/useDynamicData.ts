@@ -47,9 +47,25 @@ export const useDynamicData = <T = any>({
       setResponse(result)
       setData(result.data)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
-      setError(errorMessage)
       console.error(`Error fetching ${tableType} data:`, err)
+      let errorMessage = 'Unknown error occurred'
+      
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'object' && err !== null) {
+        // Обработка ошибок axios
+        if ('response' in err) {
+          const axiosError = err as any
+          errorMessage = `Request failed with status code ${axiosError.response?.status}`
+          if (axiosError.response?.data?.error) {
+            errorMessage += `: ${axiosError.response.data.error}`
+          }
+        } else if ('message' in err) {
+          errorMessage = (err as any).message
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

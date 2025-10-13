@@ -5,7 +5,7 @@ import type { PerformanceDealer } from '../api/performance'
 
 const PerformanceTable: React.FC = () => {
   const location = useLocation()
-  const [selectedRegion, setSelectedRegion] = useState<string>('center')
+  const [selectedRegion, setSelectedRegion] = useState<string>('Central')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof PerformanceDealer | null
     direction: 'asc' | 'desc' | null
@@ -15,9 +15,9 @@ const PerformanceTable: React.FC = () => {
   const navigationFilters = location.state?.filters || {}
 
   const { data: dealers, loading, error, updateParams } = usePerformanceData({
-    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion),
-    quarter: navigationFilters.quarter,
-    year: navigationFilters.year
+    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion) || 'Central',
+    quarter: navigationFilters.quarter || 'Q1',
+    year: navigationFilters.year || 2024
   })
 
   // Обработка изменения региона
@@ -54,13 +54,13 @@ const PerformanceTable: React.FC = () => {
 
   const regions = [
     { id: 'all-russia', name: 'All Russia' },
-    { id: 'center', name: 'Center' },
-    { id: 'north-west', name: 'North West' },
-    { id: 'volga', name: 'Volga' },
-    { id: 'south', name: 'South' },
-    { id: 'ural', name: 'Ural' },
-    { id: 'siberia', name: 'Siberia' },
-    { id: 'far-east', name: 'Far East' }
+    { id: 'Central', name: 'Central' },
+    { id: 'North-West', name: 'North West' },
+    { id: 'Volga', name: 'Volga' },
+    { id: 'South', name: 'South' },
+    { id: 'Ural', name: 'Ural' },
+    { id: 'Siberia', name: 'Siberia' },
+    { id: 'Far-East', name: 'Far East' }
   ]
 
 
@@ -76,7 +76,7 @@ const PerformanceTable: React.FC = () => {
       if (sortConfig.key === 'autoSalesDecision') {
         const decisionOrder = { 
           'Planned Result': 4, 
-          'Needs development': 3, 
+          'Needs Development': 3, 
           'Find New Candidate': 2, 
           'Close Down': 1 
         }
@@ -147,7 +147,7 @@ const PerformanceTable: React.FC = () => {
   const getAutoSalesDecisionColor = (decision: string) => {
     switch (decision) {
       case 'Planned Result': return 'text-green-600'
-      case 'Needs development': return 'text-green-600'
+      case 'Needs Development': return 'text-green-600'
       case 'Find New Candidate': return 'text-orange-600'
       case 'Close Down': return 'text-red-600'
       default: return 'text-green-600'

@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useSalesTeamData } from '../hooks/useDynamicData'
+import { useDealerDevData } from '../hooks/useDynamicData'
 
 interface Dealer {
   id: string
   name: string
   city: string
-  salesManager: string
-  salesTarget: string
-  stockHdtMdtLdt: string
-  buyoutHdtMdtLdt: string
-  fotonSalesmen: number
-  salesTrainings: boolean
-  salesDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
+  class: string
+  checklist: number
+  brandsInPortfolio: string[]
+  brandsCount: number
+  branding: boolean
+  buySideBusiness: string[]
+  dealerDevRecommendation: string
 }
 
 const SalesTeamTable: React.FC = () => {
@@ -26,11 +26,12 @@ const SalesTeamTable: React.FC = () => {
   // Получаем параметры из навигации
   const navigationFilters = location.state?.filters || {}
 
-  const { data: dealers, loading, error, updateParams } = useSalesTeamData({
-    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion),
-    quarter: navigationFilters.quarter,
-    year: navigationFilters.year
+  const { data: dealers, loading, error, updateParams } = useDealerDevData({
+    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion) || 'Central',
+    quarter: navigationFilters.quarter || 'Q1',
+    year: navigationFilters.year || 2024
   })
+
 
   // Обработка изменения региона
   useEffect(() => {
@@ -73,7 +74,7 @@ const SalesTeamTable: React.FC = () => {
       const aValue = a[sortConfig.key!]
       const bValue = b[sortConfig.key!]
       
-      if (sortConfig.key === 'salesTrainings') {
+      if (sortConfig.key === 'branding') {
         const aBool = aValue as boolean
         const bBool = bValue as boolean
         
@@ -84,10 +85,10 @@ const SalesTeamTable: React.FC = () => {
         }
       }
       
-      if (sortConfig.key === 'salesDecision') {
+      if (sortConfig.key === 'dealerDevRecommendation') {
         const decisionOrder = { 
           'Planned Result': 4, 
-          'Needs development': 3, 
+          'Needs Development': 3, 
           'Find New Candidate': 2, 
           'Close Down': 1 
         }
@@ -160,7 +161,7 @@ const SalesTeamTable: React.FC = () => {
   const getSalesDecisionColor = (decision: string) => {
     switch (decision) {
       case 'Planned Result': return 'text-green-600'
-      case 'Needs development': return 'text-green-600'
+      case 'Needs Development': return 'text-green-600'
       case 'Find New Candidate': return 'text-orange-600'
       case 'Close Down': return 'text-red-600'
       default: return 'text-green-600'
@@ -173,7 +174,7 @@ const SalesTeamTable: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white text-xl">Loading sales team data...</p>
+          <p className="text-white text-xl">Loading dealer development data...</p>
         </div>
       </div>
     )
@@ -195,6 +196,29 @@ const SalesTeamTable: React.FC = () => {
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
           >
             Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Проверка на пустые данные
+  if (!dealers || dealers.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-center bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-8 max-w-md">
+          <div className="text-blue-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h2 className="text-white text-xl font-bold mb-2">No Data Available</h2>
+          <p className="text-blue-200 mb-4">No dealer development data found for the selected criteria.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Refresh Page
           </button>
         </div>
       </div>
@@ -234,10 +258,10 @@ const SalesTeamTable: React.FC = () => {
         {/* Title */}
         <div className="text-center">
           <h1 className="text-5xl md:text-5xl font-bold text-white mb-3">
-             SALES
+             DEALER
           </h1>
           <h2 className="text-3xl md:text-4xl font-bold text-blue-200">
-            ANALYSIS
+            DEVELOPMENT
           </h2>
         </div>
       </div>
@@ -274,49 +298,47 @@ const SalesTeamTable: React.FC = () => {
               </th>
               <th 
                 className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
-                onClick={() => handleSort('salesManager')}
+                onClick={() => handleSort('class')}
               >
                 <div className="flex items-center justify-center space-x-1">
-                  <span>Sales Manager</span>
-                  {getSortIcon('salesManager')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                Sales Target
-              </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                <div>Stock</div>
-                <div className="text-xs font-normal text-blue-200">hdt/mdt/ldt</div>
-              </th>
-              <th className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">
-                <div>Buyout</div>
-                <div className="text-xs font-normal text-blue-200">hdt/mdt/ldt</div>
-              </th>
-              <th 
-                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
-                onClick={() => handleSort('fotonSalesmen')}
-              >
-                <div className="flex items-center justify-center space-x-1">
-                  <span>Foton Salesmen</span>
-                  {getSortIcon('fotonSalesmen')}
+                  <span>Class</span>
+                  {getSortIcon('class')}
                 </div>
               </th>
               <th 
                 className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
-                onClick={() => handleSort('salesTrainings')}
+                onClick={() => handleSort('checklist')}
               >
                 <div className="flex items-center justify-center space-x-1">
-                  <span>Sales Trainings</span>
-                  {getSortIcon('salesTrainings')}
+                  <span>Checklist Score</span>
+                  {getSortIcon('checklist')}
                 </div>
               </th>
               <th 
                 className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
-                onClick={() => handleSort('salesDecision')}
+                onClick={() => handleSort('brandsCount')}
               >
                 <div className="flex items-center justify-center space-x-1">
-                  <span>Sales Decision</span>
-                  {getSortIcon('salesDecision')}
+                  <span>Brands Count</span>
+                  {getSortIcon('brandsCount')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                onClick={() => handleSort('branding')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Branding</span>
+                  {getSortIcon('branding')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                onClick={() => handleSort('dealerDevRecommendation')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Recommendation</span>
+                  {getSortIcon('dealerDevRecommendation')}
                 </div>
               </th>
             </tr>
@@ -336,30 +358,24 @@ const SalesTeamTable: React.FC = () => {
                   <div className="text-sm text-white">{dealer.city}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.salesManager}</div>
+                  <div className="text-sm text-white">{dealer.class}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.salesTarget}</div>
+                  <div className="text-sm text-white">{dealer.checklist}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.stockHdtMdtLdt}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.buyoutHdtMdtLdt}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.fotonSalesmen}</div>
+                  <div className="text-sm text-white">{dealer.brandsCount}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className={`text-sm font-medium ${
-                    dealer.salesTrainings ? 'text-green-600' : 'text-white'
+                    dealer.branding ? 'text-green-600' : 'text-white'
                   }`}>
-                    {dealer.salesTrainings ? 'Yes' : 'No'}
+                    {dealer.branding ? 'Yes' : 'No'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className={`text-sm font-medium ${getSalesDecisionColor(dealer.salesDecision)}`}>
-                    {dealer.salesDecision}
+                  <div className={`text-sm font-medium ${getSalesDecisionColor(dealer.dealerDevRecommendation)}`}>
+                    {dealer.dealerDevRecommendation}
                   </div>
                 </td>
               </tr>

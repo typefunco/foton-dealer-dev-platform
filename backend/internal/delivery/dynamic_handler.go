@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -285,10 +286,16 @@ func (s *Server) getSalesTeamData(c echo.Context, filters *model.FilterParams) (
 	response := make([]interface{}, 0, len(salesList))
 	for _, sale := range salesList {
 		response = append(response, map[string]interface{}{
-			"id":   strconv.FormatInt(int64(sale.DealerID), 10),
-			"name": sale.DealerNameRu,
-			"city": sale.City,
-			// Добавьте специфичные для Sales Team поля
+			"id":              strconv.FormatInt(int64(sale.DealerID), 10),
+			"name":            sale.DealerNameRu,
+			"city":            sale.City,
+			"salesManager":    sale.Manager,
+			"salesTarget":     sale.SalesTarget,
+			"stockHdtMdtLdt":  fmt.Sprintf("%d/%d/%d", sale.StockHDT, sale.StockMDT, sale.StockLDT),
+			"buyoutHdtMdtLdt": fmt.Sprintf("%d/%d/%d", sale.BuyoutHDT, sale.BuyoutMDT, sale.BuyoutLDT),
+			"fotonSalesmen":   sale.FotonSalesmen,
+			"salesTrainings":  sale.SalesTrainings,
+			"salesDecision":   sale.SalesDecision,
 		})
 	}
 

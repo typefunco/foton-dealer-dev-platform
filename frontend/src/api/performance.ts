@@ -16,7 +16,7 @@ export interface PerformanceDealer {
   autoSalesMargin: number;
   marketingInvestment: number;
   ranking: number;
-  autoSalesDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down';
+  autoSalesDecision: 'Needs Development' | 'Planned Result' | 'Find New Candidate' | 'Close Down';
 }
 
 export interface PerformanceResponse {
@@ -80,7 +80,7 @@ export async function getPerformanceData(filters?: PerformanceFilters): Promise<
  */
 export const PERFORMANCE_DECISIONS = [
   'Planned Result',
-  'Needs development',
+  'Needs Development',
   'Find New Candidate',
   'Close Down'
 ] as const;

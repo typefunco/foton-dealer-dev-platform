@@ -4,48 +4,12 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="ci fix">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/aftersales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/aftersales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/alldata.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/alldata.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/dealerdev.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/dealerdev.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/dealers.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/dealers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/performance.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/performance.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/quartercomparison.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/quartercomparison.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/salesteam.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/salesteam.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/model/aftersales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/model/aftersales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/model/dealer.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/model/dealer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/model/dealerdev.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/model/dealerdev.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/model/performance.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/model/performance.go" afterDir="false" />
+    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="frontend fixes">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/dynamic_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/dynamic_handler.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/internal/model/sales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/model/sales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/aftersales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/aftersales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/dealer.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/dealer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/dealerdev.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/dealerdev.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/performance.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/performance.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/performance_aftersales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/performance_aftersales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/performance_sales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/performance_sales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/sales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/sales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/aftersales/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/aftersales/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/aftersales/service_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/aftersales/service_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/dealer/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/dealer/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/dealerdev/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/dealerdev/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/dealerdev/service_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/dealerdev/service_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/performance/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/performance/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/performance_aftersales/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/performance_aftersales/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/performance_sales/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/performance_sales/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/sales/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/sales/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/testutil/fixtures.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/testutil/fixtures.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/AfterSalesTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/AfterSalesTable.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/DealersTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/DealersTable.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/PerformanceTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/PerformanceTable.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/SalesTeamTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/SalesTeamTable.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/tsconfig.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/vite.config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,18 +27,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "typefunco"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;typefunco&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/typefunco/foton-dealer-dev-platform.git",
-    "accountId": "af8ce04c-bfbd-455d-bfd7-1ddd2e020c8c"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/typefunco/foton-dealer-dev-platform.git&quot;,
+    &quot;accountId&quot;: &quot;af8ce04c-bfbd-455d-bfd7-1ddd2e020c8c&quot;
   }
-}]]></component>
+}</component>
   <component name="KubernetesApiPersistence">{}</component>
   <component name="KubernetesApiProvider">{
   &quot;isMigrated&quot;: true
@@ -87,36 +51,36 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
-    "Docker.docker-compose.yml.backend: Compose Deployment.executor": "Run",
-    "Docker.docker-compose.yml: Compose Deployment.executor": "Run",
-    "Go Build.go build github.com/typefunco/dealer_dev_platform/cmd/app.executor": "Run",
-    "Makefile Target.test.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.GoLinterPluginOnboarding": "true",
-    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "git-widget-placeholder": "master",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/matvey/Development/dealer_dev_platform",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/matvey/Development/dealer_dev_platform/frontend/node_modules/typescript/lib"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;Docker.docker-compose.yml.backend: Compose Deployment.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml: Compose Deployment.executor&quot;: &quot;Run&quot;,
+    &quot;Go Build.go build github.com/typefunco/dealer_dev_platform/cmd/app.executor&quot;: &quot;Run&quot;,
+    &quot;Makefile Target.test.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.GoLinterPluginOnboarding&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.GoLinterPluginStorageMigration&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/matvey/Development/dealer_dev_platform&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/matvey/Development/dealer_dev_platform/frontend/node_modules/typescript/lib&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "postgresql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;postgresql&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Docker.docker-compose.yml: Compose Deployment">
     <configuration name="go build github.com/typefunco/dealer_dev_platform/cmd/app" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="dealer_dev_platform" />
@@ -190,6 +154,14 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="UnknownFeatures">
+    <option featureType="dependencySupport" implementationName="javascript:npm:react" />
+    <option featureType="dependencySupport" implementationName="executable:docker" />
+    <option featureType="dependencySupport" implementationName="javascript:npm:tailwindcss" />
+    <option featureType="dependencySupport" implementationName="javascript:npm:vite" />
+    <option featureType="dependencySupport" implementationName="executable:kubectl" />
+    <option featureType="dependencySupport" implementationName="javascript:npm:postcss" />
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="models + ci/cd github" />
     <MESSAGE value="ci/cd fix" />
@@ -198,7 +170,8 @@
     <MESSAGE value="service layer + migrations + tests" />
     <MESSAGE value="ci pipeline + refactor tests" />
     <MESSAGE value="ci fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="ci fix" />
+    <MESSAGE value="frontend fixes" />
+    <option name="LAST_COMMIT_MESSAGE" value="frontend fixes" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

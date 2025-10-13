@@ -51,13 +51,10 @@ const App: React.FC = () => {
   // Категории параметров согласно требованиям
   const parameters = [
     { id: 'all', name: 'All Data' },
-    { id: 'total-performance', name: 'Total Performance' },
     { id: 'dealer-development', name: 'Dealer Development' },
     { id: 'sales', name: 'Sales' },
     { id: 'after-sales', name: 'AfterSales' },
-    { id: 'performance', name: 'Performance' },
-    { id: 'sales-team', name: 'Sales Team' },
-    { id: 'quarter-comparison', name: 'Quarter Comparison' }
+    { id: 'performance', name: 'Performance' }
   ]
 
   const quarters = [
@@ -149,13 +146,10 @@ const App: React.FC = () => {
     // Определяем маршрут на основе выбранных параметров
     const routeMapping: { [key: string]: string } = {
       'all': '/all',
-      'total-performance': '/all',
       'dealer-development': '/dealers',
       'sales': '/sales-team',
       'after-sales': '/after-sales',
-      'performance': '/performance',
-      'sales-team': '/sales-team',
-      'quarter-comparison': '/quarter-comparison'
+      'performance': '/performance'
     }
 
     const targetRoute = routeMapping[selectedParameters] || '/all'
