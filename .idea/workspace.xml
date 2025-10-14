@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="frontend fixes">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/dynamic_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/dynamic_handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/model/sales.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/model/sales.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/SalesTeamTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/SalesTeamTable.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="frontend fixes" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

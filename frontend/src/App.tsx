@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import DealersTable from './pages/DealersTable'
 import SalesTeamTable from './pages/SalesTeamTable'
+import SalesTable from './pages/SalesTable'
 import AfterSalesTable from './pages/AfterSalesTable'
 import PerformanceTable from './pages/PerformanceTable'
 import AllTable from './pages/AllTable'
@@ -53,7 +53,7 @@ const App: React.FC = () => {
     { id: 'all', name: 'All Data' },
     { id: 'dealer-development', name: 'Dealer Development' },
     { id: 'sales', name: 'Sales' },
-    { id: 'after-sales', name: 'AfterSales' },
+    { id: 'after-sales', name: 'After Sales' },
     { id: 'performance', name: 'Performance' }
   ]
 
@@ -146,8 +146,8 @@ const App: React.FC = () => {
     // Определяем маршрут на основе выбранных параметров
     const routeMapping: { [key: string]: string } = {
       'all': '/all',
-      'dealer-development': '/dealers',
-      'sales': '/sales-team',
+      'dealer-development': '/dealer-dev',
+      'sales': '/sales',
       'after-sales': '/after-sales',
       'performance': '/performance'
     }
@@ -467,8 +467,8 @@ const App: React.FC = () => {
             </div>
           </>
         } />
-        <Route path="/dealers" element={<DealersTable />} />
-        <Route path="/sales-team" element={<SalesTeamTable />} />
+        <Route path="/dealer-dev" element={<SalesTeamTable />} />
+        <Route path="/sales" element={<SalesTable />} />
         <Route path="/after-sales" element={<AfterSalesTable />} />
         <Route path="/performance" element={<PerformanceTable />} />
         <Route path="/all" element={<AllTable />} />

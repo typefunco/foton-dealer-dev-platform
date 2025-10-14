@@ -122,7 +122,6 @@ func (s *Server) RunServer() {
 	api.GET("/sales", s.GetDynamicData)       // Sales Team
 	api.GET("/after_sales", s.GetDynamicData) // After Sales
 	api.GET("/performance", s.GetDynamicData) // Performance
-	api.GET("/sales_team", s.GetDynamicData)  // Sales Team (альтернативный маршрут)
 
 	// Legacy routes (сохраняем для обратной совместимости)
 	api.GET("/dealerdev", s.GetDealerDevData) // Получить данные Dealer Development

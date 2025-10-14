@@ -200,14 +200,24 @@ func (s *Server) getSalesData(c echo.Context, filters *model.FilterParams) (inte
 		return nil, err
 	}
 
-	// Преобразуем в API response (адаптируем под существующую структуру)
+	// Преобразуем в API response с полными данными для Sales таблицы
 	response := make([]interface{}, 0, len(salesList))
 	for _, sale := range salesList {
+		// Формируем строки для stock и buyout в формате "hdt/mdt/ldt"
+		stockHdtMdtLdt := fmt.Sprintf("%d/%d/%d", sale.StockHDT, sale.StockMDT, sale.StockLDT)
+		buyoutHdtMdtLdt := fmt.Sprintf("%d/%d/%d", sale.BuyoutHDT, sale.BuyoutMDT, sale.BuyoutLDT)
+
 		response = append(response, map[string]interface{}{
-			"id":   strconv.FormatInt(int64(sale.DealerID), 10),
-			"name": sale.DealerNameRu,
-			"city": sale.City,
-			// Добавьте другие поля по необходимости
+			"id":              strconv.FormatInt(int64(sale.DealerID), 10),
+			"name":            sale.DealerNameRu,
+			"city":            sale.City,
+			"salesManager":    sale.Manager,
+			"salesTarget":     sale.SalesTarget,
+			"stockHdtMdtLdt":  stockHdtMdtLdt,
+			"buyoutHdtMdtLdt": buyoutHdtMdtLdt,
+			"fotonSalesmen":   sale.FotonSalesmen,
+			"salesTrainings":  sale.SalesTrainings,
+			"salesDecision":   sale.SalesDecision,
 		})
 	}
 
