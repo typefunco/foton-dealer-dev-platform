@@ -91,7 +91,7 @@ const PerformanceTable: React.FC = () => {
       }
       
       // Для строковых значений с числами (srRub, autoSalesRevenue, autoSalesProfitsRap)
-      if (sortConfig.key === 'srRub' || sortConfig.key === 'autoSalesRevenue' || sortConfig.key === 'autoSalesProfitsRap') {
+      if (sortConfig.key === 'srRub' || sortConfig.key === 'autoSalesRevenue' || sortConfig.key === 'autoSalesProfitsRap' || sortConfig.key === 'ranking') {
         const aNum = parseFloat((aValue as string).replace(/[^\d.-]/g, ''))
         const bNum = parseFloat((bValue as string).replace(/[^\d.-]/g, ''))
         
@@ -343,15 +343,6 @@ const PerformanceTable: React.FC = () => {
               </th>
               <th 
                 className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
-                onClick={() => handleSort('ranking')}
-              >
-                <div className="flex items-center justify-center space-x-1">
-                  <span>Foton Rank</span>
-                  {getSortIcon('ranking')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
                 onClick={() => handleSort('autoSalesDecision')}
               >
                 <div className="flex items-center justify-center space-x-1">
@@ -395,9 +386,6 @@ const PerformanceTable: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.marketingInvestment} M Rub</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.ranking}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className={`text-sm font-medium ${getAutoSalesDecisionColor(dealer.autoSalesDecision)}`}>
