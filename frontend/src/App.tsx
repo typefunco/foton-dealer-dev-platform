@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Routes, Route, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import SalesTeamTable from './pages/SalesTeamTable'
 import SalesTable from './pages/SalesTable'
 import AfterSalesTable from './pages/AfterSalesTable'
@@ -11,10 +11,11 @@ import BrandDemo from './pages/BrandDemo'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import Admin from './pages/Admin'
-import { REGION_MAPPING, QUARTER_MAPPING, buildDynamicParams, getTableTypeFromKey } from './api/index'
+import { REGION_MAPPING, QUARTER_MAPPING, buildDynamicParams } from './api/index'
 
 const App: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   
   // Обновленная логика согласно требованиям заказчика
   const [selectedRegion, setSelectedRegion] = useState<string>('')
@@ -34,6 +35,41 @@ const App: React.FC = () => {
   
   // Состояние для модального окна выбора дилеров
   const [showDealersModal, setShowDealersModal] = useState(false)
+
+  // Читаем параметры из URL при загрузке страницы
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search)
+    
+    // Восстанавливаем состояние формы из URL параметров
+    const region = urlParams.get('region')
+    const quarter = urlParams.get('quarter')
+    const year = urlParams.get('year')
+    const dealers = urlParams.get('dealers')
+    
+    if (region) {
+      // Находим соответствующий ID региона
+      const regionEntry = Object.entries(REGION_MAPPING).find(([_, value]) => value === region)
+      if (regionEntry) {
+        setSelectedRegion(regionEntry[0])
+      }
+    }
+    
+    if (quarter) {
+      // Находим соответствующий ID квартала
+      const quarterEntry = Object.entries(QUARTER_MAPPING).find(([_, value]) => value === quarter)
+      if (quarterEntry) {
+        setSelectedPeriod(quarterEntry[0])
+      }
+    }
+    
+    if (year) {
+      setSelectedYear(year)
+    }
+    
+    if (dealers) {
+      setSelectedDealers(dealers.split(',').filter(id => id.trim() !== ''))
+    }
+  }, [location.search])
 
   // Правильный порядок регионов согласно требованиям
   const regions = [
@@ -154,22 +190,26 @@ const App: React.FC = () => {
 
     const targetRoute = routeMapping[selectedParameters] || '/all'
     
-    // Получаем тип таблицы для нового API
-    const tableType = getTableTypeFromKey(selectedParameters)
+    // Формируем URL с параметрами
+    const searchParams = new URLSearchParams()
     
-    // Переходим на соответствующую страницу с параметрами
-    navigate(targetRoute, { 
-      state: { 
-        filters: dynamicParams,
-        tableType: tableType,
-        searchParams: {
-          region: dynamicParams.region,
-          quarter: dynamicParams.quarter,
-          year: dynamicParams.year?.toString(),
-          dealers: dynamicParams.dealer_ids
-        }
-      }
-    })
+    // Добавляем параметры в URL
+    if (dynamicParams.region) {
+      searchParams.set('region', dynamicParams.region)
+    }
+    if (dynamicParams.quarter) {
+      searchParams.set('quarter', dynamicParams.quarter)
+    }
+    if (dynamicParams.year) {
+      searchParams.set('year', dynamicParams.year.toString())
+    }
+    if (dynamicParams.dealer_ids && dynamicParams.dealer_ids.length > 0) {
+      searchParams.set('dealers', dynamicParams.dealer_ids.join(','))
+    }
+    
+    // Переходим на соответствующую страницу с параметрами в URL
+    const urlWithParams = `${targetRoute}?${searchParams.toString()}`
+    navigate(urlWithParams)
   }
 
   // Получаем доступных дилеров для выбранного региона

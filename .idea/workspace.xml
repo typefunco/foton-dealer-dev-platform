@@ -4,7 +4,17 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="frontend fixes" />
+    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="фиксы страниц">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ed5815f7-b14c-4456-9c6a-79828b4e9ea4.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ed5815f7-b14c-4456-9c6a-79828b4e9ea4.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ed5815f7-b14c-4456-9c6a-79828b4e9ea4/storage_v2/_src_/database/dealer_platform.2cfe0A/schema/public.abK9xQ.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ed5815f7-b14c-4456-9c6a-79828b4e9ea4/storage_v2/_src_/database/dealer_platform.2cfe0A/schema/public.abK9xQ.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/migrations/015_insert_extended_test_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/backend/migrations/015_insert_extended_test_data.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/hooks/useDynamicData.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/hooks/useDynamicData.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/SalesTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/SalesTable.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -165,7 +175,8 @@
     <MESSAGE value="ci pipeline + refactor tests" />
     <MESSAGE value="ci fix" />
     <MESSAGE value="frontend fixes" />
-    <option name="LAST_COMMIT_MESSAGE" value="frontend fixes" />
+    <MESSAGE value="фиксы страниц" />
+    <option name="LAST_COMMIT_MESSAGE" value="фиксы страниц" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

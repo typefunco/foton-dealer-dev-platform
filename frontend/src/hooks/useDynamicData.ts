@@ -43,9 +43,23 @@ export const useDynamicData = <T = any>({
     setError(null)
 
     try {
-      const result = await getDynamicData<T>(tableType, currentParams)
+      // Добавляем тайм-аут для запроса
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
+      })
+
+      const dataPromise = getDynamicData<T>(tableType, currentParams)
+      
+      const result = await Promise.race([dataPromise, timeoutPromise]) as any
+      
       setResponse(result)
       setData(result.data)
+      
+      // Проверяем, есть ли данные
+      if (!result.data || result.data.length === 0) {
+        console.warn(`No data found for ${tableType} with params:`, currentParams)
+      }
+      
     } catch (err) {
       console.error(`Error fetching ${tableType} data:`, err)
       let errorMessage = 'Unknown error occurred'
@@ -71,17 +85,36 @@ export const useDynamicData = <T = any>({
     }
   }, [tableType, currentParams, enabled])
 
+  // Мемоизируем refetch для предотвращения ненужных перерендеров
   const refetch = useCallback(() => {
     fetchData()
   }, [fetchData])
 
   const updateParams = useCallback((newParams: DynamicTableParams) => {
-    setCurrentParams(prev => ({ ...prev, ...newParams }))
+    setCurrentParams(prev => {
+      // Проверяем, действительно ли параметры изменились
+      const hasChanged = Object.keys(newParams).some(key => 
+        prev[key as keyof DynamicTableParams] !== newParams[key as keyof DynamicTableParams]
+      )
+      return hasChanged ? { ...prev, ...newParams } : prev
+    })
   }, [])
 
+  // Единственный эффект для загрузки данных
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    if (enabled) {
+      fetchData()
+    }
+  }, [currentParams, enabled]) // Убираем fetchData из зависимостей
+
+  // Cleanup эффект для предотвращения утечек памяти
+  useEffect(() => {
+    return () => {
+      // Сбрасываем состояние при размонтировании компонента
+      setLoading(false)
+      setError(null)
+    }
+  }, [])
 
   return {
     data,

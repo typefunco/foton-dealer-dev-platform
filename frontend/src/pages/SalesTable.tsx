@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDynamicData } from '../hooks/useDynamicData'
 
 interface SalesDealer {
@@ -17,43 +17,49 @@ interface SalesDealer {
 
 const SalesTable: React.FC = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   const [selectedRegion, setSelectedRegion] = useState<string>('Central')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof SalesDealer | null
     direction: 'asc' | 'desc' | null
   }>({ key: null, direction: null })
 
-  // Получаем параметры из навигации
-  const navigationFilters = location.state?.filters || {}
+  // Мемоизируем параметры из URL для предотвращения ненужных перерендеров
+  const urlParams = useMemo(() => new URLSearchParams(location.search), [location.search])
+  const urlRegion = useMemo(() => urlParams.get('region') || 'Central', [urlParams])
+  const urlQuarter = useMemo(() => urlParams.get('quarter') || 'Q1', [urlParams])
+  const urlYear = useMemo(() => parseInt(urlParams.get('year') || '2024'), [urlParams])
+  const urlDealers = useMemo(() => 
+    urlParams.get('dealers')?.split(',').filter(id => id.trim() !== '') || [], 
+    [urlParams]
+  )
 
-  const { data: dealers, loading, error, updateParams } = useDynamicData({
+  // Мемоизируем параметры для хука
+  const hookParams = useMemo(() => ({
+    region: urlRegion === 'all-russia' ? undefined : urlRegion,
+    quarter: urlQuarter,
+    year: urlYear,
+    dealer_ids: urlDealers.length > 0 ? urlDealers.map(id => parseInt(id)).filter(id => !isNaN(id)) : undefined
+  }), [urlRegion, urlQuarter, urlYear, urlDealers])
+
+  const { data: dealers, loading, error } = useDynamicData({
     tableType: 'sales',
-    params: {
-      region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion) || 'Central',
-      quarter: navigationFilters.quarter || 'Q1',
-      year: navigationFilters.year || 2024
-    }
+    params: hookParams
   })
 
-  // Обработка изменения региона
+  // Инициализируем состояние из URL параметров
   useEffect(() => {
-    updateParams({ region: selectedRegion === 'all-russia' ? undefined : selectedRegion })
-  }, [selectedRegion, updateParams])
+    setSelectedRegion(urlRegion)
+  }, [urlRegion])
 
-  // Применяем параметры из навигации при загрузке
-  useEffect(() => {
-    if (navigationFilters.region) {
-      setSelectedRegion(navigationFilters.region)
-    }
-    if (navigationFilters.quarter || navigationFilters.year) {
-      updateParams({
-        quarter: navigationFilters.quarter,
-        year: navigationFilters.year
-      })
-    }
-  }, [navigationFilters, updateParams])
+  // Мемоизируем функцию для обновления региона в URL
+  const handleRegionChange = useCallback((regionId: string) => {
+    const newParams = new URLSearchParams(location.search)
+    newParams.set('region', regionId)
+    navigate(`${location.pathname}?${newParams.toString()}`)
+  }, [location.search, location.pathname, navigate])
 
-  const handleSort = (key: keyof SalesDealer) => {
+  const handleSort = useCallback((key: keyof SalesDealer) => {
     let direction: 'asc' | 'desc' | null = 'asc'
     
     if (sortConfig.key === key) {
@@ -65,9 +71,9 @@ const SalesTable: React.FC = () => {
     }
     
     setSortConfig({ key, direction })
-  }
+  }, [sortConfig])
 
-  const getSortedDealers = () => {
+  const getSortedDealers = useMemo(() => {
     if (!dealers || !sortConfig.key || !sortConfig.direction) {
       return dealers || []
     }
@@ -112,9 +118,9 @@ const SalesTable: React.FC = () => {
       }
       return 0
     })
-  }
+  }, [dealers, sortConfig])
 
-  const getSortIcon = (key: keyof SalesDealer) => {
+  const getSortIcon = useCallback((key: keyof SalesDealer) => {
     if (sortConfig.key !== key) {
       return (
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,9 +150,9 @@ const SalesTable: React.FC = () => {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
       </svg>
     )
-  }
+  }, [sortConfig])
 
-  const regions = [
+  const regions = useMemo(() => [
     { id: 'all-russia', name: 'All Russia' },
     { id: 'Central', name: 'Central' },
     { id: 'North West', name: 'North West' },
@@ -156,9 +162,9 @@ const SalesTable: React.FC = () => {
     { id: 'Ural', name: 'Ural' },
     { id: 'Siberia', name: 'Siberia' },
     { id: 'Far East', name: 'Far East' }
-  ]
+  ], [])
 
-  const getSalesDecisionColor = (decision: string) => {
+  const getSalesDecisionColor = useCallback((decision: string) => {
     switch (decision) {
       case 'Planned Result': return 'text-green-600'
       case 'Needs development': return 'text-yellow-600'
@@ -166,7 +172,7 @@ const SalesTable: React.FC = () => {
       case 'Close Down': return 'text-red-600'
       default: return 'text-gray-600'
     }
-  }
+  }, [])
 
   // Обработка состояний загрузки и ошибок
   if (loading) {
@@ -212,14 +218,27 @@ const SalesTable: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h2 className="text-white text-xl font-bold mb-2">No Data Available</h2>
-          <p className="text-blue-200 mb-4">No sales data found for the selected criteria.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Refresh Page
-          </button>
+          <h2 className="text-white text-xl font-bold mb-2">No Sales Data Found</h2>
+          <p className="text-blue-200 mb-4">
+            No sales data available for:<br/>
+            <span className="font-semibold">Region:</span> {urlRegion}<br/>
+            <span className="font-semibold">Quarter:</span> {urlQuarter}<br/>
+            <span className="font-semibold">Year:</span> {urlYear}
+          </p>
+          <div className="flex space-x-3 justify-center">
+            <button
+              onClick={() => navigate('/')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Back to Search
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -272,7 +291,7 @@ const SalesTable: React.FC = () => {
           {regions.map((region) => (
             <button
               key={region.id}
-              onClick={() => setSelectedRegion(region.id)}
+              onClick={() => handleRegionChange(region.id)}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 selectedRegion === region.id
                   ? 'bg-blue-400 text-white shadow-lg'
@@ -362,7 +381,7 @@ const SalesTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200 divide-opacity-30">
-            {getSortedDealers().map((dealer) => (
+            {getSortedDealers.map((dealer) => (
               <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <Link 
