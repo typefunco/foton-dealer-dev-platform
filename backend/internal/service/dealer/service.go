@@ -260,13 +260,13 @@ func (s *Service) validateDealer(dealer *model.Dealer) error {
 func parseQuarterToPeriod(quarter string, year int) (time.Time, error) {
 	var month int
 	switch quarter {
-	case "q1":
+	case "q1", "Q1":
 		month = 1 // Январь
-	case "q2":
+	case "q2", "Q2":
 		month = 4 // Апрель
-	case "q3":
+	case "q3", "Q3":
 		month = 7 // Июль
-	case "q4":
+	case "q4", "Q4":
 		month = 10 // Октябрь
 	default:
 		return time.Time{}, fmt.Errorf("invalid quarter: %s", quarter)

@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="dynamic url" />
+    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="скрыто поле foton rank в таблице performance">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/internal/repository/dealer.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/dealer.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/internal/service/dealer/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/dealer/service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/DealerCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/DealerCard.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -167,7 +172,8 @@
     <MESSAGE value="frontend fixes" />
     <MESSAGE value="фиксы страниц" />
     <MESSAGE value="dynamic url" />
-    <option name="LAST_COMMIT_MESSAGE" value="dynamic url" />
+    <MESSAGE value="скрыто поле foton rank в таблице performance" />
+    <option name="LAST_COMMIT_MESSAGE" value="скрыто поле foton rank в таблице performance" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

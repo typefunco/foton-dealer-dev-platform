@@ -251,6 +251,10 @@ func (r *DealerRepository) Delete(ctx context.Context, id int) error {
 
 // GetDealerCardData получает данные карточки дилера за период.
 func (r *DealerRepository) GetDealerCardData(ctx context.Context, dealerID int, period time.Time) (*model.DealerCardData, error) {
+	// Определяем квартал и год из периода
+	quarter := getQuarterFromTime(period)
+	year := period.Year()
+
 	// Получаем основную информацию о дилере
 	dealer, err := r.GetByID(ctx, dealerID)
 	if err != nil {
@@ -270,10 +274,194 @@ func (r *DealerRepository) GetDealerCardData(ctx context.Context, dealerID int, 
 		Period:        period,
 	}
 
-	// Здесь можно добавить логику для получения дополнительных данных из других таблиц
-	// Например, данные из dealer_development, sales, aftersales, performance_sales, performance_aftersales
+	// Получаем данные Dealer Development
+	ddData, err := r.getDealerDevData(ctx, dealerID, quarter, year)
+	if err == nil && ddData != nil {
+		checklistScore := float64(ddData.CheckListScore)
+		cardData.CheckListScore = &checklistScore
+		class := model.DealershipClass(ddData.DealershipClass)
+		cardData.DealershipClass = &class
+		branding := model.BrandingStatus("No")
+		if ddData.Branding {
+			branding = model.BrandingStatus("Yes")
+		}
+		cardData.Branding = &branding
+		marketingInvestments := float64(ddData.MarketingInvestments)
+		cardData.MarketingInvestments = &marketingInvestments
+		cardData.DDRecommendation = &ddData.DDRecommendation
+	}
+
+	// Получаем бренды дилера
+	brands, err := r.GetBrands(ctx, dealerID)
+	if err == nil {
+		cardData.Brands = brands
+	}
+
+	// Получаем побочный бизнес дилера
+	businesses, err := r.GetBusinesses(ctx, dealerID)
+	if err == nil && len(businesses) > 0 {
+		businessStr := ""
+		for i, business := range businesses {
+			if i > 0 {
+				businessStr += ", "
+			}
+			businessStr += business
+		}
+		cardData.BySideBusinesses = &businessStr
+	}
+
+	// Получаем данные Sales
+	salesData, err := r.getSalesData(ctx, dealerID, quarter, year)
+	if err == nil && salesData != nil {
+		cardData.StockHDT = &salesData.StockHDT
+		cardData.StockMDT = &salesData.StockMDT
+		cardData.StockLDT = &salesData.StockLDT
+		cardData.BuyoutHDT = &salesData.BuyoutHDT
+		cardData.BuyoutMDT = &salesData.BuyoutMDT
+		cardData.BuyoutLDT = &salesData.BuyoutLDT
+		cardData.FotonSalesPersonnel = &salesData.FotonSalesmen
+		salesTrainings := model.SalesTrainingsStatus("No")
+		if salesData.SalesTrainings {
+			salesTrainings = model.SalesTrainingsStatus("Yes")
+		}
+		cardData.SalesTrainings = &salesTrainings
+		serviceContractsSales := float64(salesData.ServiceContractsSales)
+		cardData.ServiceContractsSales = &serviceContractsSales
+		cardData.SalesRecommendation = &salesData.SalesDecision
+	}
+
+	// Получаем данные Performance (пока используем mock данные)
+	// TODO: Реализовать получение данных из таблиц performance_sales и performance_aftersales
+
+	// Получаем данные After Sales
+	asData, err := r.getAfterSalesData(ctx, dealerID, quarter, year)
+	if err == nil && asData != nil {
+		asRevenue := float64(asData.ServiceContracts)
+		cardData.ASRevenue = &asRevenue
+		asMargin := float64(asData.FotonLaborHours)
+		cardData.ASMargin = &asMargin
+		asMarginPct := float64(asData.FotonWarrantyHours)
+		cardData.ASMarginPct = &asMarginPct
+		asProfitPct := float64(asData.RecommendedStock)
+		cardData.ASProfitPct = &asProfitPct
+	}
 
 	return cardData, nil
+}
+
+// getQuarterFromTime определяет квартал по времени
+func getQuarterFromTime(t time.Time) string {
+	month := t.Month()
+	switch {
+	case month >= 1 && month <= 3:
+		return "Q1"
+	case month >= 4 && month <= 6:
+		return "Q2"
+	case month >= 7 && month <= 9:
+		return "Q3"
+	case month >= 10 && month <= 12:
+		return "Q4"
+	default:
+		return "Q1"
+	}
+}
+
+// getDealerDevData получает данные развития дилера
+func (r *DealerRepository) getDealerDevData(ctx context.Context, dealerID int, quarter string, year int) (*model.DealerDevelopment, error) {
+	query := r.sq.Select(
+		"id", "dealer_id", "quarter", "year",
+		"check_list_score", "dealer_ship_class", "branding",
+		"marketing_investments", "dealer_dev_recommendation",
+		"created_at", "updated_at",
+	).From("dealer_dev").Where(squirrel.Eq{
+		"dealer_id": dealerID,
+		"quarter":   quarter,
+		"year":      year,
+	})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("getDealerDevData: error building query: %w", err)
+	}
+
+	dd := &model.DealerDevelopment{}
+	err = r.pool.QueryRow(ctx, sql, args...).Scan(
+		&dd.ID, &dd.DealerID, &dd.Quarter, &dd.Year,
+		&dd.CheckListScore, &dd.DealershipClass, &dd.Branding,
+		&dd.MarketingInvestments, &dd.DDRecommendation,
+		&dd.CreatedAt, &dd.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("getDealerDevData: error scanning: %w", err)
+	}
+
+	return dd, nil
+}
+
+// getSalesData получает данные продаж
+func (r *DealerRepository) getSalesData(ctx context.Context, dealerID int, quarter string, year int) (*model.Sales, error) {
+	query := r.sq.Select(
+		"id", "dealer_id", "quarter", "year",
+		"sales_target", "stock_hdt", "stock_mdt", "stock_ldt",
+		"buyout_hdt", "buyout_mdt", "buyout_ldt",
+		"foton_salesmen", "service_contracts_sales", "sales_trainings", "sales_decision",
+		"created_at", "updated_at",
+	).From("sales").Where(squirrel.Eq{
+		"dealer_id": dealerID,
+		"quarter":   quarter,
+		"year":      year,
+	})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("getSalesData: error building query: %w", err)
+	}
+
+	sales := &model.Sales{}
+	err = r.pool.QueryRow(ctx, sql, args...).Scan(
+		&sales.ID, &sales.DealerID, &sales.Quarter, &sales.Year,
+		&sales.SalesTarget, &sales.StockHDT, &sales.StockMDT, &sales.StockLDT,
+		&sales.BuyoutHDT, &sales.BuyoutMDT, &sales.BuyoutLDT,
+		&sales.FotonSalesmen, &sales.ServiceContractsSales, &sales.SalesTrainings, &sales.SalesDecision,
+		&sales.CreatedAt, &sales.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("getSalesData: error scanning: %w", err)
+	}
+
+	return sales, nil
+}
+
+// getAfterSalesData получает данные послепродажного обслуживания
+func (r *DealerRepository) getAfterSalesData(ctx context.Context, dealerID int, quarter string, year int) (*model.AfterSales, error) {
+	query := r.sq.Select(
+		"id", "dealer_id", "quarter", "year",
+		"recommended_stock", "warranty_stock", "foton_labor_hours",
+		"service_contracts", "as_trainings", "csi", "foton_warranty_hours", "as_decision",
+		"created_at", "updated_at",
+	).From("after_sales").Where(squirrel.Eq{
+		"dealer_id": dealerID,
+		"quarter":   quarter,
+		"year":      year,
+	})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("getAfterSalesData: error building query: %w", err)
+	}
+
+	as := &model.AfterSales{}
+	err = r.pool.QueryRow(ctx, sql, args...).Scan(
+		&as.ID, &as.DealerID, &as.Quarter, &as.Year,
+		&as.RecommendedStock, &as.WarrantyStock, &as.FotonLaborHours,
+		&as.ServiceContracts, &as.ASTrainings, &as.CSI, &as.FotonWarrantyHours, &as.ASDecision,
+		&as.CreatedAt, &as.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("getAfterSalesData: error scanning: %w", err)
+	}
+
+	return as, nil
 }
 
 // AddBrand добавляет бренд дилеру.
