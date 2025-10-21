@@ -28,17 +28,28 @@ type Repository interface {
 	GetBusinesses(ctx context.Context, dealerID int) ([]string, error)
 }
 
+// ExcelRepository интерфейс репозитория для работы с Excel данными дилеров.
+type ExcelRepository interface {
+	GetDealerNetTableName(year int, quarter string) string
+	TableExists(ctx context.Context, year int, quarter string) (bool, error)
+	GetDealersWithFilters(ctx context.Context, year int, quarter string, filters *model.FilterParams) ([]*model.Dealer, error)
+	GetDealerCardData(ctx context.Context, year int, quarter string, dealerName string) (*model.DealerCardData, error)
+	GetAvailableRegions(ctx context.Context, year int, quarter string) ([]string, error)
+}
+
 // Service сервис для работы с дилерами.
 type Service struct {
-	repo   Repository
-	logger *slog.Logger
+	repo      Repository
+	excelRepo ExcelRepository
+	logger    *slog.Logger
 }
 
 // NewService создает новый экземпляр сервиса Dealer.
-func NewService(repo Repository, logger *slog.Logger) *Service {
+func NewService(repo Repository, excelRepo ExcelRepository, logger *slog.Logger) *Service {
 	return &Service{
-		repo:   repo,
-		logger: logger,
+		repo:      repo,
+		excelRepo: excelRepo,
+		logger:    logger,
 	}
 }
 
@@ -142,6 +153,44 @@ func (s *Service) GetDealersWithFilters(ctx context.Context, filters *model.Filt
 		return nil, fmt.Errorf("DealerService.GetDealersWithFilters: validation failed: %w", err)
 	}
 
+	// Если нет параметров year и quarter, используем данные из Excel по умолчанию
+	// Используем последний доступный квартал (2025 Q3)
+	if filters.Year == 0 && filters.Quarter == "" {
+		s.logger.Info("No year/quarter specified, using default Excel data",
+			slog.Int("default_year", 2025),
+			slog.String("default_quarter", "Q3"),
+		)
+
+		// Проверяем существование Excel таблицы
+		exists, err := s.excelRepo.TableExists(ctx, 2025, "Q3")
+		if err != nil {
+			s.logger.Error("Failed to check Excel table existence", "error", err)
+			return nil, fmt.Errorf("failed to check Excel table existence: %w", err)
+		}
+
+		if exists {
+			// Используем Excel данные
+			dealers, err := s.excelRepo.GetDealersWithFilters(ctx, 2025, "Q3", filters)
+			if err != nil {
+				s.logger.Error("DealerService.GetDealersWithFilters: failed to get dealers from Excel",
+					"filters", filters,
+					"error", err,
+				)
+				return nil, fmt.Errorf("DealerService.GetDealersWithFilters: %w", err)
+			}
+
+			s.logger.Info("DealerService.GetDealersWithFilters: successfully retrieved dealers from Excel",
+				"filters", filters,
+				"count", len(dealers),
+			)
+
+			return dealers, nil
+		} else {
+			s.logger.Warn("Excel table does not exist, falling back to old data")
+		}
+	}
+
+	// Используем старые данные как fallback
 	dealers, err := s.repo.GetWithFilters(ctx, filters)
 	if err != nil {
 		s.logger.Error("DealerService.GetDealersWithFilters: failed to get dealers",
@@ -284,4 +333,146 @@ func isValidQuarter(quarter string) bool {
 		"Q4": true,
 	}
 	return validQuarters[quarter]
+}
+
+// GetDealersFromExcel получает дилеров из Excel таблицы с фильтрами.
+func (s *Service) GetDealersFromExcel(ctx context.Context, year int, quarter string, filters *model.FilterParams) ([]*model.Dealer, error) {
+	s.logger.Info("Getting dealers from Excel table",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.String("region", filters.Region),
+		slog.Int("limit", filters.Limit),
+	)
+
+	// Проверяем валидность параметров
+	if year < 2020 || year > 2030 {
+		return nil, fmt.Errorf("invalid year: %d", year)
+	}
+
+	if !isValidQuarter(quarter) {
+		return nil, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+
+	// Проверяем существование таблицы
+	exists, err := s.excelRepo.TableExists(ctx, year, quarter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if !exists {
+		s.logger.Warn("Excel table does not exist",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+		)
+		return []*model.Dealer{}, nil
+	}
+
+	// Получаем дилеров из Excel таблицы
+	dealers, err := s.excelRepo.GetDealersWithFilters(ctx, year, quarter, filters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dealers from Excel: %w", err)
+	}
+
+	s.logger.Info("Dealers retrieved from Excel",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.Int("count", len(dealers)),
+	)
+
+	return dealers, nil
+}
+
+// GetDealerCardFromExcel получает карточку дилера из Excel таблицы.
+func (s *Service) GetDealerCardFromExcel(ctx context.Context, year int, quarter string, dealerName string) (*model.DealerCardData, error) {
+	s.logger.Info("Getting dealer card from Excel table",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.String("dealer_name", dealerName),
+	)
+
+	// Проверяем валидность параметров
+	if year < 2020 || year > 2030 {
+		return nil, fmt.Errorf("invalid year: %d", year)
+	}
+
+	if !isValidQuarter(quarter) {
+		return nil, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+
+	if dealerName == "" {
+		return nil, fmt.Errorf("dealer name cannot be empty")
+	}
+
+	// Проверяем существование таблицы
+	exists, err := s.excelRepo.TableExists(ctx, year, quarter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if !exists {
+		s.logger.Warn("Excel table does not exist",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+		)
+		return &model.DealerCardData{}, nil
+	}
+
+	// Получаем карточку дилера из Excel таблицы
+	cardData, err := s.excelRepo.GetDealerCardData(ctx, year, quarter, dealerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dealer card from Excel: %w", err)
+	}
+
+	s.logger.Info("Dealer card retrieved from Excel",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.String("dealer_name", dealerName),
+	)
+
+	return cardData, nil
+}
+
+// GetAvailableRegionsFromExcel получает список доступных регионов из Excel таблицы.
+func (s *Service) GetAvailableRegionsFromExcel(ctx context.Context, year int, quarter string) ([]string, error) {
+	s.logger.Info("Getting available regions from Excel table",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+	)
+
+	// Проверяем валидность параметров
+	if year < 2020 || year > 2030 {
+		return nil, fmt.Errorf("invalid year: %d", year)
+	}
+
+	if !isValidQuarter(quarter) {
+		return nil, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+
+	// Проверяем существование таблицы
+	exists, err := s.excelRepo.TableExists(ctx, year, quarter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if !exists {
+		s.logger.Warn("Excel table does not exist",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+		)
+		return []string{}, nil
+	}
+
+	// Получаем регионы из Excel таблицы
+	regions, err := s.excelRepo.GetAvailableRegions(ctx, year, quarter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get regions from Excel: %w", err)
+	}
+
+	s.logger.Info("Available regions retrieved from Excel",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.Int("count", len(regions)),
+	)
+
+	return regions, nil
 }

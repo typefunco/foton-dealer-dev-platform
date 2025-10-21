@@ -1,9 +1,34 @@
 // Универсальный API сервис для всех типов данных
 // Интеграция с backend API
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080/api');
 
 export { API_BASE_URL };
+
+// Универсальная функция для API запросов с поддержкой cookies
+export async function apiRequest<T>(
+  endpoint: string, 
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const defaultOptions: RequestInit = {
+    credentials: 'include', // Включаем cookies
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  };
+
+  const response = await fetch(url, { ...defaultOptions, ...options });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(error.error || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
 
 export interface SearchFilters {
   region?: string;
@@ -54,7 +79,9 @@ export async function fetchData<T>(
   const url = `${API_BASE_URL}/${endpoint}?${params.toString()}`;
   
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      credentials: 'include', // Включаем cookies для аутентификации
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch ${endpoint}: ${response.statusText}`);
@@ -107,9 +134,9 @@ export async function fetchAllData(filters: SearchFilters = {}): Promise<any[]> 
 export const PARAMETER_ENDPOINTS = {
   'all': 'all-data',
   'total-performance': 'all-data', 
-  'dealer-development': 'dealerdev',
+  'dealer-development': 'dealer_dev',
   'sales': 'sales',
-  'after-sales': 'aftersales',
+  'after-sales': 'after_sales',
   'performance': 'performance',
   'sales-team': 'sales',
   'quarter-comparison': 'quarter-comparison'

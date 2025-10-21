@@ -41,6 +41,7 @@ export const uploadExcelFile = async (file: File): Promise<ExcelUploadResponse> 
 
   const response = await fetch(`${API_BASE_URL}/excel/upload`, {
     method: 'POST',
+    credentials: 'include', // Включаем cookies для аутентификации
     body: formData,
   });
 
@@ -54,7 +55,9 @@ export const uploadExcelFile = async (file: File): Promise<ExcelUploadResponse> 
 
 // Получение списка таблиц
 export const getExcelTables = async (): Promise<ExcelTableMetadata[]> => {
-  const response = await fetch(`${API_BASE_URL}/excel/tables`);
+  const response = await fetch(`${API_BASE_URL}/excel/tables`, {
+    credentials: 'include', // Включаем cookies для аутентификации
+  });
   
   if (!response.ok) {
     throw new Error('Failed to fetch Excel tables');
@@ -65,7 +68,9 @@ export const getExcelTables = async (): Promise<ExcelTableMetadata[]> => {
 
 // Получение метаданных таблицы
 export const getExcelTableMetadata = async (tableName: string): Promise<ExcelTableMetadata> => {
-  const response = await fetch(`${API_BASE_URL}/excel/tables/${tableName}`);
+  const response = await fetch(`${API_BASE_URL}/excel/tables/${tableName}`, {
+    credentials: 'include', // Включаем cookies для аутентификации
+  });
   
   if (!response.ok) {
     throw new Error('Failed to fetch table metadata');
@@ -81,7 +86,10 @@ export const getExcelTableData = async (
   offset: number = 0
 ): Promise<ExcelTableData> => {
   const response = await fetch(
-    `${API_BASE_URL}/excel/tables/${tableName}/data?limit=${limit}&offset=${offset}`
+    `${API_BASE_URL}/excel/tables/${tableName}/data?limit=${limit}&offset=${offset}`,
+    {
+      credentials: 'include', // Включаем cookies для аутентификации
+    }
   );
   
   if (!response.ok) {
@@ -95,6 +103,7 @@ export const getExcelTableData = async (
 export const deleteExcelTable = async (tableName: string): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/excel/tables/${tableName}`, {
     method: 'DELETE',
+    credentials: 'include', // Включаем cookies для аутентификации
   });
   
   if (!response.ok) {

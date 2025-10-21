@@ -1,7 +1,7 @@
 // API клиент для работы с пользователями
 // Интеграция с backend User Management API
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
 
 export interface User {
   id: string;
@@ -82,7 +82,9 @@ export async function getUsers(filters?: UserFilters): Promise<UsersResponse> {
   if (filters?.page) params.append('page', filters.page.toString());
   if (filters?.limit) params.append('limit', filters.limit.toString());
 
-  const response = await fetch(`${API_BASE_URL}/users?${params.toString()}`);
+  const response = await fetch(`${API_BASE_URL}/users?${params.toString()}`, {
+    credentials: 'include', // Включаем cookies для аутентификации
+  });
   
   if (!response.ok) {
     throw new Error(`Failed to fetch users: ${response.statusText}`);
@@ -95,7 +97,9 @@ export async function getUsers(filters?: UserFilters): Promise<UsersResponse> {
  * Получить пользователя по ID
  */
 export async function getUserById(id: string): Promise<User> {
-  const response = await fetch(`${API_BASE_URL}/users/${id}`);
+  const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    credentials: 'include', // Включаем cookies для аутентификации
+  });
   
   if (!response.ok) {
     if (response.status === 404) {
@@ -116,6 +120,7 @@ export async function createUser(data: CreateUserRequest): Promise<CreateUserRes
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // Включаем cookies для аутентификации
     body: JSON.stringify(data),
   });
   
@@ -136,6 +141,7 @@ export async function updateUser(id: string, data: UpdateUserRequest): Promise<U
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // Включаем cookies для аутентификации
     body: JSON.stringify(data),
   });
   
@@ -153,6 +159,7 @@ export async function updateUser(id: string, data: UpdateUserRequest): Promise<U
 export async function deleteUser(id: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/users/${id}`, {
     method: 'DELETE',
+    credentials: 'include', // Включаем cookies для аутентификации
   });
   
   if (!response.ok) {
@@ -165,7 +172,9 @@ export async function deleteUser(id: string): Promise<void> {
  * Получить статистику пользователей
  */
 export async function getUserStats(): Promise<UserStatsResponse> {
-  const response = await fetch(`${API_BASE_URL}/users/stats`);
+  const response = await fetch(`${API_BASE_URL}/users/stats`, {
+    credentials: 'include', // Включаем cookies для аутентификации
+  });
   
   if (!response.ok) {
     throw new Error(`Failed to fetch user stats: ${response.statusText}`);

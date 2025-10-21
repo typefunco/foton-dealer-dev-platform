@@ -155,17 +155,16 @@ func (s *Service) ProcessExcelFile(ctx context.Context, file io.Reader, fileName
 		}, nil
 	}
 
-	// Создаем единую таблицу
-	tableName := fileInfo.TableName
-	err = s.createUnifiedTable(ctx, tx, tableName, commonColumns)
+	// Создаем единую таблицу dealer_net
+	err = s.dynamicRepo.CreateDealerNetTable(ctx, tx, fileInfo.Year, fileInfo.Quarter, commonColumns)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create unified table: %w", err)
+		return nil, fmt.Errorf("failed to create dealer_net table: %w", err)
 	}
 
-	// Вставляем все данные
-	err = s.insertUnifiedData(ctx, tx, tableName, commonColumns, allData)
+	// Вставляем все данные в таблицу dealer_net
+	err = s.insertDealerNetData(ctx, tx, fileInfo.Year, fileInfo.Quarter, commonColumns, allData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert unified data: %w", err)
+		return nil, fmt.Errorf("failed to insert dealer_net data: %w", err)
 	}
 
 	// Коммитим транзакцию
@@ -174,6 +173,7 @@ func (s *Service) ProcessExcelFile(ctx context.Context, file io.Reader, fileName
 	}
 
 	processingTime := time.Since(startTime)
+	tableName := s.dynamicRepo.GetDealerNetTableName(fileInfo.Year, fileInfo.Quarter)
 
 	s.logger.Info("Excel file processing completed successfully",
 		slog.String("file_name", fileName),
@@ -732,6 +732,35 @@ func (s *Service) compareColumnStructures(cols1, cols2 []string) bool {
 	}
 
 	return true
+}
+
+// insertDealerNetData вставляет данные в таблицу dealer_net.
+func (s *Service) insertDealerNetData(ctx context.Context, tx pgx.Tx, year int, quarter string, columns []string, data []model.ExcelRowWithRegion) error {
+	if len(data) == 0 {
+		s.logger.Info("No data to insert",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+		)
+		return nil
+	}
+
+	// Преобразуем данные в формат для репозитория
+	rows := make([][]interface{}, len(data))
+	for i, row := range data {
+		rowValues := make([]interface{}, len(columns))
+		for j, col := range columns {
+			value, exists := row.Values[col]
+			if !exists || value == "" {
+				rowValues[j] = nil
+			} else {
+				rowValues[j] = value
+			}
+		}
+		rows[i] = rowValues
+	}
+
+	// Используем репозиторий для вставки данных
+	return s.dynamicRepo.InsertDealerNetData(ctx, tx, year, quarter, columns, rows)
 }
 
 // createUnifiedTable создает единую таблицу.

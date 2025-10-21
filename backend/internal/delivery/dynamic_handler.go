@@ -241,11 +241,14 @@ func (s *Server) getAfterSalesData(c echo.Context, filters *model.FilterParams) 
 			RStockPercent:         &as.RecommendedStock,
 			WStockPercent:         &as.WarrantyStock,
 			FlhPercent:            &as.FotonLaborHours,
+			FlhSharePercent:       &as.FotonLabourHoursShare,
 			WarrantyHours:         &as.FotonWarrantyHours,
 			ServiceContractsHours: &as.ServiceContracts,
 			AsTrainings:           &as.ASTrainings,
 			CSI:                   as.CSI,
 			AsDecision:            &as.ASDecision,
+			SparePartsSalesQ3:     &as.SparePartsSalesQ3,
+			SparePartsSalesYtd:    &as.SparePartsSalesYtd,
 		})
 	}
 

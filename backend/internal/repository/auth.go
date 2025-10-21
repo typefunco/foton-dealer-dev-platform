@@ -3,10 +3,11 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log/slog"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/typefunco/dealer_dev_platform/internal/model"
-	"log/slog"
 )
 
 type AuthRepository struct {
@@ -63,7 +64,9 @@ func (repo *AuthRepository) DeleteUser(ctx context.Context, login string) error 
 
 func (repo *AuthRepository) GetUser(ctx context.Context, login string) (*model.User, error) {
 	var user model.User
-	query := repo.sq.Select(usersTableName).Where(squirrel.Eq{"login": login}).Columns("id", "login", "password")
+	query := repo.sq.Select("id", "login", "password", "is_admin", "role", "region", "first_name", "last_name", "email", "created_at", "updated_at").
+		From(usersTableName).
+		Where(squirrel.Eq{"login": login})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -71,16 +74,21 @@ func (repo *AuthRepository) GetUser(ctx context.Context, login string) (*model.U
 	}
 
 	rows, err := repo.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("AuthRepository.GetUser error exec query: %w", err)
+	}
 	defer rows.Close()
 
-	for rows.Next() {
-		err := rows.Scan(&user.ID, &user.Login, &user.Password)
+	if rows.Next() {
+		err := rows.Scan(&user.ID, &user.Login, &user.Password, &user.IsAdmin, &user.Role, &user.Region, &user.FirstName, &user.LastName, &user.Email, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			repo.logger.Error("AuthRepository.GetUser error parse sql")
+			return nil, fmt.Errorf("AuthRepository.GetUser error parse sql: %w", err)
 		}
+		return &user, nil
 	}
 
-	return &user, rows.Err()
+	return nil, nil
 }
 
 func (repo *AuthRepository) Ping(ctx context.Context) error {

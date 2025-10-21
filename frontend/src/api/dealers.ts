@@ -14,7 +14,7 @@ export interface DealerListParams {
   offset?: number
 }
 
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
 
 /**
  * Получает список дилеров для выпадающих меню
@@ -35,7 +35,9 @@ export async function getDealersList(params: DealerListParams = {}): Promise<Dea
   const url = `${API_BASE_URL}/dealers/list?${searchParams.toString()}`
   
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      credentials: 'include', // Включаем cookies для аутентификации
+    })
     
     if (!response.ok) {
       throw new Error(`Failed to fetch dealers list: ${response.status} ${response.statusText}`)

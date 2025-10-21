@@ -16,11 +16,14 @@ type AfterSalesDealerResponse struct {
 	RStockPercent         *int    `json:"rStockPercent"`         // Recommended Stock
 	WStockPercent         *int    `json:"wStockPercent"`         // Warranty Stock
 	FlhPercent            *int    `json:"flhPercent"`            // Foton Labor Hours
+	FlhSharePercent       *string `json:"flhSharePercent"`       // Foton Labour Hours Share
 	WarrantyHours         *int    `json:"warrantyHours"`         // Foton Warranty Hours
 	ServiceContractsHours *int    `json:"serviceContractsHours"` // Service Contracts
 	AsTrainings           *bool   `json:"asTrainings"`           // AS Trainings status
 	CSI                   *string `json:"csi"`                   // Customer Satisfaction Index
 	AsDecision            *string `json:"asDecision"`            // AS Decision
+	SparePartsSalesQ3     *string `json:"sparePartsSalesQ3"`     // Spare Parts Sales Q3
+	SparePartsSalesYtd    *string `json:"sparePartsSalesYtd"`    // Spare Parts Sales YTD %
 }
 
 // GetAfterSalesData возвращает данные послепродажного обслуживания с поддержкой фильтров.

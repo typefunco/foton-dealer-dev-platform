@@ -1,29 +1,46 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { usePerformanceData } from '../hooks/useDynamicData'
 import type { PerformanceDealer } from '../api/performance'
 
 const PerformanceTable: React.FC = () => {
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [selectedRegion, setSelectedRegion] = useState<string>('Central')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof PerformanceDealer | null
     direction: 'asc' | 'desc' | null
   }>({ key: null, direction: null })
 
-  // Получаем параметры из навигации
+  // Получаем параметры из URL
+  const regionFromUrl = searchParams.get('region') || 'Central'
+  const quarterFromUrl = searchParams.get('quarter') || ''
+  const yearFromUrl = parseInt(searchParams.get('year') || '0')
+
+  // Получаем параметры из навигации (если есть)
   const navigationFilters = location.state?.filters || {}
 
   const { data: dealers, loading, error, updateParams } = usePerformanceData({
-    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion) || 'Central',
-    quarter: navigationFilters.quarter || 'Q1',
-    year: navigationFilters.year || 2024
+    region: regionFromUrl === 'all-russia' ? undefined : regionFromUrl,
+    quarter: quarterFromUrl || navigationFilters.quarter,
+    year: yearFromUrl || navigationFilters.year
   })
 
   // Обработка изменения региона
   useEffect(() => {
-    updateParams({ region: selectedRegion === 'all-russia' ? undefined : selectedRegion })
-  }, [selectedRegion, updateParams])
+    updateParams({ 
+      region: selectedRegion === 'all-russia' ? undefined : selectedRegion,
+      quarter: quarterFromUrl || navigationFilters.quarter,
+      year: yearFromUrl || navigationFilters.year
+    })
+  }, [selectedRegion, updateParams, quarterFromUrl, yearFromUrl, navigationFilters])
+
+  // Инициализируем регион из URL при загрузке
+  useEffect(() => {
+    if (regionFromUrl && regionFromUrl !== selectedRegion) {
+      setSelectedRegion(regionFromUrl)
+    }
+  }, [regionFromUrl])
 
   // Применяем параметры из навигации при загрузке
   useEffect(() => {

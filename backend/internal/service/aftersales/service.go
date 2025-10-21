@@ -21,17 +21,26 @@ type Repository interface {
 	GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.AfterSalesWithDetails, error)
 }
 
+// ExcelRepository интерфейс репозитория для работы с Excel данными автозапчастей.
+type ExcelRepository interface {
+	GetDealerNetTableName(year int, quarter string) string
+	TableExists(ctx context.Context, year int, quarter string) (bool, error)
+	GetAfterSalesDataFromExcel(ctx context.Context, year int, quarter string, region string) ([]*model.AfterSalesWithDetails, error)
+}
+
 // Service сервис для работы с данными послепродажного обслуживания.
 type Service struct {
-	repo   Repository
-	logger *slog.Logger
+	repo      Repository
+	excelRepo ExcelRepository
+	logger    *slog.Logger
 }
 
 // NewService создает новый экземпляр сервиса AfterSales.
-func NewService(repo Repository, logger *slog.Logger) *Service {
+func NewService(repo Repository, excelRepo ExcelRepository, logger *slog.Logger) *Service {
 	return &Service{
-		repo:   repo,
-		logger: logger,
+		repo:      repo,
+		excelRepo: excelRepo,
+		logger:    logger,
 	}
 }
 
@@ -45,6 +54,44 @@ func (s *Service) GetAfterSalesByPeriod(ctx context.Context, quarter string, yea
 	// Валидация года
 	if year < 2020 || year > 2030 {
 		return nil, fmt.Errorf("AfterSalesService.GetAfterSalesByPeriod: invalid year: %d", year)
+	}
+
+	// Если указаны год и квартал, используем Excel данные
+	if year > 0 && quarter != "" {
+		s.logger.Info("Getting after sales data from Excel table",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+			slog.String("region", region),
+		)
+
+		// Проверяем существование таблицы
+		exists, err := s.excelRepo.TableExists(ctx, year, quarter)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check Excel table existence: %w", err)
+		}
+
+		if !exists {
+			s.logger.Warn("Excel table does not exist",
+				slog.Int("year", year),
+				slog.String("quarter", quarter),
+			)
+			return []*model.AfterSalesWithDetails{}, nil
+		}
+
+		// Получаем данные из Excel таблицы
+		afterSalesData, err := s.excelRepo.GetAfterSalesDataFromExcel(ctx, year, quarter, region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get after sales data from Excel: %w", err)
+		}
+
+		s.logger.Info("After sales data retrieved from Excel",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+			slog.String("region", region),
+			slog.Int("count", len(afterSalesData)),
+		)
+
+		return afterSalesData, nil
 	}
 
 	afterSalesList, err := s.repo.GetWithDetailsByPeriod(ctx, quarter, year, region)
@@ -73,6 +120,44 @@ func (s *Service) GetAfterSalesWithFilters(ctx context.Context, filters *model.F
 	// Валидация фильтров
 	if err := filters.Validate(); err != nil {
 		return nil, fmt.Errorf("AfterSalesService.GetAfterSalesWithFilters: validation failed: %w", err)
+	}
+
+	// Если указаны год и квартал, используем Excel данные
+	if filters.Year > 0 && filters.Quarter != "" {
+		s.logger.Info("Getting after sales data from Excel table",
+			slog.Int("year", filters.Year),
+			slog.String("quarter", filters.Quarter),
+			slog.String("region", filters.Region),
+		)
+
+		// Проверяем существование таблицы
+		exists, err := s.excelRepo.TableExists(ctx, filters.Year, filters.Quarter)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check Excel table existence: %w", err)
+		}
+
+		if !exists {
+			s.logger.Warn("Excel table does not exist",
+				slog.Int("year", filters.Year),
+				slog.String("quarter", filters.Quarter),
+			)
+			return []*model.AfterSalesWithDetails{}, nil
+		}
+
+		// Получаем данные из Excel таблицы
+		afterSalesData, err := s.excelRepo.GetAfterSalesDataFromExcel(ctx, filters.Year, filters.Quarter, filters.Region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get after sales data from Excel: %w", err)
+		}
+
+		s.logger.Info("After sales data retrieved from Excel",
+			slog.Int("year", filters.Year),
+			slog.String("quarter", filters.Quarter),
+			slog.String("region", filters.Region),
+			slog.Int("count", len(afterSalesData)),
+		)
+
+		return afterSalesData, nil
 	}
 
 	afterSalesList, err := s.repo.GetWithFilters(ctx, filters)

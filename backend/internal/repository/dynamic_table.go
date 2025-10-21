@@ -14,11 +14,14 @@ import (
 
 // DynamicTableRepository интерфейс репозитория для работы с динамическими таблицами.
 type DynamicTableRepository interface {
-	// CreateTable создает таблицу с заданной схемой
-	CreateTable(ctx context.Context, schema *model.DynamicTableSchema) error
+	// CreateDealerNetTable создает таблицу dealer_net для указанного года и квартала
+	CreateDealerNetTable(ctx context.Context, tx pgx.Tx, year int, quarter string, columns []string) error
 
-	// InsertData вставляет данные в таблицу
-	InsertData(ctx context.Context, tableName string, columns []string, rows [][]interface{}) error
+	// InsertDealerNetData вставляет данные в таблицу dealer_net
+	InsertDealerNetData(ctx context.Context, tx pgx.Tx, year int, quarter string, columns []string, rows [][]interface{}) error
+
+	// GetDealerNetTableName возвращает название таблицы dealer_net для указанного года и квартала
+	GetDealerNetTableName(year int, quarter string) string
 
 	// TableExists проверяет существование таблицы
 	TableExists(ctx context.Context, tableName string) (bool, error)
@@ -45,6 +48,113 @@ func NewDynamicTableRepository(pool *pgxpool.Pool, logger *slog.Logger) DynamicT
 		pool:   pool,
 		logger: logger,
 	}
+}
+
+// GetDealerNetTableName возвращает название таблицы dealer_net для указанного года и квартала.
+func (r *dynamicTableRepository) GetDealerNetTableName(year int, quarter string) string {
+	return fmt.Sprintf("dealer_net_%d_%s", year, strings.ToLower(quarter))
+}
+
+// CreateDealerNetTable создает таблицу dealer_net для указанного года и квартала.
+func (r *dynamicTableRepository) CreateDealerNetTable(ctx context.Context, tx pgx.Tx, year int, quarter string, columns []string) error {
+	tableName := r.GetDealerNetTableName(year, quarter)
+
+	var columnDefs []string
+	columnDefs = append(columnDefs, "id BIGSERIAL PRIMARY KEY")
+
+	for _, col := range columns {
+		if col == "dealer" {
+			columnDefs = append(columnDefs, fmt.Sprintf("%s TEXT NOT NULL", col))
+		} else {
+			columnDefs = append(columnDefs, fmt.Sprintf("%s TEXT", col))
+		}
+	}
+
+	columnDefs = append(columnDefs, "created_at TIMESTAMP DEFAULT NOW()")
+
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n    %s\n)",
+		tableName,
+		strings.Join(columnDefs, ",\n    "))
+
+	r.logger.Info("Creating dealer_net table",
+		slog.String("table_name", tableName),
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.Int("columns_count", len(columns)),
+	)
+
+	_, err := tx.Exec(ctx, query)
+	if err != nil {
+		r.logger.Error("Failed to create dealer_net table",
+			slog.String("table_name", tableName),
+			slog.String("error", err.Error()),
+		)
+		return fmt.Errorf("failed to create table %s: %w", tableName, err)
+	}
+
+	r.logger.Info("Dealer_net table created successfully",
+		slog.String("table_name", tableName),
+	)
+
+	return nil
+}
+
+// InsertDealerNetData вставляет данные в таблицу dealer_net.
+func (r *dynamicTableRepository) InsertDealerNetData(ctx context.Context, tx pgx.Tx, year int, quarter string, columns []string, rows [][]interface{}) error {
+	if len(rows) == 0 {
+		r.logger.Info("No data to insert",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+		)
+		return nil
+	}
+
+	tableName := r.GetDealerNetTableName(year, quarter)
+
+	// Строим запрос для вставки
+	placeholders := make([]string, len(rows))
+	args := make([]interface{}, 0, len(rows)*len(columns))
+
+	for i, row := range rows {
+		rowPlaceholders := make([]string, len(columns))
+		for j := range columns {
+			rowPlaceholders[j] = fmt.Sprintf("$%d", len(args)+j+1)
+		}
+		placeholders[i] = fmt.Sprintf("(%s)", strings.Join(rowPlaceholders, ", "))
+
+		for _, value := range row {
+			args = append(args, value)
+		}
+	}
+
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
+		tableName,
+		strings.Join(columns, ", "),
+		strings.Join(placeholders, ", "))
+
+	r.logger.Info("Inserting dealer_net data",
+		slog.String("table_name", tableName),
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.Int("rows", len(rows)),
+		slog.Int("columns", len(columns)),
+	)
+
+	_, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		r.logger.Error("Failed to insert dealer_net data",
+			slog.String("table_name", tableName),
+			slog.String("error", err.Error()),
+		)
+		return fmt.Errorf("failed to insert data into table %s: %w", tableName, err)
+	}
+
+	r.logger.Info("Dealer_net data inserted successfully",
+		slog.String("table_name", tableName),
+		slog.Int("rows_inserted", len(rows)),
+	)
+
+	return nil
 }
 
 // CreateTable создает таблицу с заданной схемой.

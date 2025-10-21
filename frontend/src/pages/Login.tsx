@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -7,6 +8,17 @@ const Login: React.FC = () => {
     password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const { login, error, clearError } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Получаем URL для перенаправления после логина
+  const from = location.state?.from?.pathname || '/'
+  
+  console.log('Login page - location.state:', location.state)
+  console.log('Login page - from pathname:', from)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -14,12 +26,33 @@ const Login: React.FC = () => {
       ...prev,
       [name]: value
     }))
+    // Очищаем ошибку при изменении полей
+    if (error) clearError()
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Login logic will be here
-    console.log('Login attempt:', formData)
+    setIsLoading(true)
+    
+    try {
+      console.log('Login form submitted')
+      const user = await login({
+        login: formData.username,
+        password: formData.password
+      })
+      
+      console.log('Login successful, user:', user)
+      console.log('Redirecting to:', from)
+      
+      // Мгновенное перенаправление без alert и задержки
+      console.log('Navigating to:', from)
+      navigate(from, { replace: true })
+    } catch (err) {
+      // Ошибка уже обработана в хуке useAuth
+      console.error('Login failed:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -65,6 +98,12 @@ const Login: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
             {/* Username Field */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
@@ -152,9 +191,20 @@ const Login: React.FC = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Sign In
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Вход...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </button>
 
             {/* Don't have account */}

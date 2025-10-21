@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"log/slog"
+
 	"github.com/labstack/echo/v4"
 	"github.com/typefunco/dealer_dev_platform/internal/model"
 	"github.com/typefunco/dealer_dev_platform/internal/utils"
@@ -49,17 +51,54 @@ func (s *Server) GetDealerCard(c echo.Context) error {
 	}
 
 	// Получение данных из сервиса
-	cardData, err := s.dealerService.GetDealerCard(c.Request().Context(), id, quarter, year)
-	if err != nil {
-		s.logger.Error("GetDealerCard: failed to get dealer card",
-			"id", id,
-			"quarter", quarter,
-			"year", year,
-			"error", err,
+	var cardData *model.DealerCardData
+
+	// Если указаны год и квартал, используем Excel данные
+	if year > 0 && quarter != "" {
+		s.logger.Info("Getting dealer card from Excel table",
+			slog.Int64("id", id),
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
 		)
-		return c.JSON(http.StatusNotFound, ErrorResponse{
-			Error: "Dealer not found or data unavailable",
-		})
+
+		// Сначала получаем название дилера по ID из основной таблицы
+		dealer, err := s.dealerService.GetDealerByID(c.Request().Context(), int(id))
+		if err != nil {
+			s.logger.Error("GetDealerCard: failed to get dealer by ID",
+				slog.Int64("id", id),
+				slog.String("error", err.Error()),
+			)
+			return c.JSON(http.StatusNotFound, ErrorResponse{
+				Error: "Dealer not found",
+			})
+		}
+
+		cardData, err = s.dealerService.GetDealerCardFromExcel(c.Request().Context(), year, quarter, dealer.DealerNameRu)
+		if err != nil {
+			s.logger.Error("GetDealerCard: failed to get dealer card from Excel",
+				slog.Int64("id", id),
+				slog.Int("year", year),
+				slog.String("quarter", quarter),
+				slog.String("error", err.Error()),
+			)
+			return c.JSON(http.StatusNotFound, ErrorResponse{
+				Error: "Dealer data not found in Excel table",
+			})
+		}
+	} else {
+		// Используем обычные данные
+		cardData, err = s.dealerService.GetDealerCard(c.Request().Context(), id, quarter, year)
+		if err != nil {
+			s.logger.Error("GetDealerCard: failed to get dealer card",
+				slog.Int64("id", id),
+				slog.String("quarter", quarter),
+				slog.Int("year", year),
+				slog.String("error", err.Error()),
+			)
+			return c.JSON(http.StatusNotFound, ErrorResponse{
+				Error: "Dealer not found or data unavailable",
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, cardData)
@@ -90,22 +129,41 @@ func (s *Server) GetDealers(c echo.Context) error {
 	var dealers []*model.Dealer
 	var err error
 
-	// Используем новый метод с фильтрами, если есть хотя бы один фильтр
-	if filters.Region != "" || filters.Quarter != "" || filters.Year != 0 || len(filters.DealerIDs) > 0 || filters.Limit > 0 || filters.Offset > 0 {
-		dealers, err = s.dealerService.GetDealersWithFilters(c.Request().Context(), filters)
-	} else {
-		// Иначе используем старый метод для обратной совместимости
-		dealers, err = s.dealerService.GetAllDealers(c.Request().Context())
-	}
-
-	if err != nil {
-		s.logger.Error("GetDealers: failed to get dealers",
-			"filters", filters,
-			"error", err,
+	// Если указаны год и квартал, используем Excel данные
+	if filters.Year > 0 && filters.Quarter != "" {
+		s.logger.Info("Getting dealers from Excel table",
+			slog.Int("year", filters.Year),
+			slog.String("quarter", filters.Quarter),
+			slog.String("region", filters.Region),
 		)
-		return c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error: "Failed to get dealers",
-		})
+
+		dealers, err = s.dealerService.GetDealersFromExcel(c.Request().Context(), filters.Year, filters.Quarter, filters)
+		if err != nil {
+			s.logger.Error("GetDealers: failed to get dealers from Excel",
+				slog.Int("year", filters.Year),
+				slog.String("quarter", filters.Quarter),
+				slog.String("error", err.Error()),
+			)
+			return c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Error: "Failed to get dealers from Excel data",
+			})
+		}
+	} else {
+		// Используем обычные данные из основной таблицы
+		if filters.Region != "" || len(filters.DealerIDs) > 0 || filters.Limit > 0 || filters.Offset > 0 {
+			dealers, err = s.dealerService.GetDealersWithFilters(c.Request().Context(), filters)
+		} else {
+			dealers, err = s.dealerService.GetAllDealers(c.Request().Context())
+		}
+
+		if err != nil {
+			s.logger.Error("GetDealers: failed to get dealers",
+				slog.String("error", err.Error()),
+			)
+			return c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Error: "Failed to get dealers",
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, dealers)

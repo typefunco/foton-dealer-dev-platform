@@ -72,6 +72,7 @@ func RunApp() {
 func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *slog.Logger) error {
 	// Инициализация репозиториев
 	dealerRepo := repository.NewDealerRepository(pool)
+	excelDealerRepo := repository.NewExcelDealerRepository(pool, logger)
 	dealerDevRepo := repository.NewDealerDevRepository(pool)
 	salesRepo := repository.NewSalesRepository(pool)
 	performanceRepo := repository.NewPerformanceRepository(pool)
@@ -91,16 +92,16 @@ func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *sl
 	perfSalesService := performance_sales.NewService(performanceSalesRepo, logger)
 	perfASService := performance_aftersales.NewService(performanceASRepo, logger)
 	userService := user.NewService(userRepo, logger)
-	afterSalesService := aftersales.NewService(afterSalesRepo, logger)
-	dealerService := dealer.NewService(dealerRepo, logger)
-	salesService := sales.NewService(salesRepo, logger)
-	dealerDevService := dealerdev.NewService(dealerDevRepo, logger)
+	afterSalesService := aftersales.NewService(afterSalesRepo, excelDealerRepo, logger)
+	dealerService := dealer.NewService(dealerRepo, excelDealerRepo, logger)
+	salesService := sales.NewService(salesRepo, excelDealerRepo, logger)
+	dealerDevService := dealerdev.NewService(dealerDevRepo, excelDealerRepo, logger)
 	excelService := excel.NewService(dynamicRepo, logger)
 
 	logger.Info("Services initialized")
 
 	// Инициализация HTTP сервера
-	server := delivery.NewServer(authService, perfService, perfSalesService, perfASService, userService, afterSalesService, dealerService, salesService, dealerDevService, excelService, dynamicRepo, pool, cfg.MaxFileSize, logger)
+	server := delivery.NewServer(authService, jwtService, perfService, perfSalesService, perfASService, userService, afterSalesService, dealerService, salesService, dealerDevService, excelService, dynamicRepo, pool, cfg.MaxFileSize, logger)
 	logger.Info("HTTP server initialized", slog.String("port", cfg.ServerPort))
 
 	// Graceful shutdown

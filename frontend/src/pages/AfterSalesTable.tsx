@@ -1,29 +1,46 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useAfterSalesData } from '../hooks/useDynamicData'
 import type { AfterSalesDealer } from '../api/aftersales'
 
 const AfterSalesTable: React.FC = () => {
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [selectedRegion, setSelectedRegion] = useState<string>('Central')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof AfterSalesDealer | null
     direction: 'asc' | 'desc' | null
   }>({ key: null, direction: null })
 
-  // Получаем параметры из навигации
+  // Получаем параметры из URL
+  const regionFromUrl = searchParams.get('region') || 'Central'
+  const quarterFromUrl = searchParams.get('quarter') || ''
+  const yearFromUrl = parseInt(searchParams.get('year') || '0')
+
+  // Получаем параметры из навигации (если есть)
   const navigationFilters = location.state?.filters || {}
 
   const { data: dealers, loading, error, updateParams } = useAfterSalesData({
-    region: navigationFilters.region || (selectedRegion === 'all-russia' ? undefined : selectedRegion),
-    quarter: navigationFilters.quarter,
-    year: navigationFilters.year
+    region: regionFromUrl === 'all-russia' ? undefined : regionFromUrl,
+    quarter: quarterFromUrl || navigationFilters.quarter,
+    year: yearFromUrl || navigationFilters.year
   })
 
   // Обработка изменения региона
   useEffect(() => {
-    updateParams({ region: selectedRegion === 'all-russia' ? undefined : selectedRegion })
-  }, [selectedRegion, updateParams])
+    updateParams({ 
+      region: selectedRegion === 'all-russia' ? undefined : selectedRegion,
+      quarter: quarterFromUrl || navigationFilters.quarter,
+      year: yearFromUrl || navigationFilters.year
+    })
+  }, [selectedRegion, updateParams, quarterFromUrl, yearFromUrl, navigationFilters])
+
+  // Инициализируем регион из URL при загрузке
+  useEffect(() => {
+    if (regionFromUrl && regionFromUrl !== selectedRegion) {
+      setSelectedRegion(regionFromUrl)
+    }
+  }, [regionFromUrl])
 
   // Применяем параметры из навигации при загрузке
   useEffect(() => {
@@ -298,11 +315,38 @@ const AfterSalesTable: React.FC = () => {
               </th>
               <th 
                 className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('sparePartsSalesQ3')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Spare Parts Sales Q3</span>
+                  {getSortIcon('sparePartsSalesQ3')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('sparePartsSalesYtd')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Spare Parts Sales YTD %</span>
+                  {getSortIcon('sparePartsSalesYtd')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
                 onClick={() => handleSort('flhPercent')}
               >
                 <div className="flex items-center justify-center space-x-1">
                   <span>Foton Labor Hours %</span>
                   {getSortIcon('flhPercent')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 hover:bg-opacity-30 transition-colors duration-200"
+                onClick={() => handleSort('flhSharePercent')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Foton Labour Hours Share</span>
+                  {getSortIcon('flhSharePercent')}
                 </div>
               </th>
               <th 
@@ -355,7 +399,16 @@ const AfterSalesTable: React.FC = () => {
                   <div className="text-sm text-white">{dealer.wStockPercent}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <div className="text-sm text-white">{dealer.sparePartsSalesQ3}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <div className="text-sm text-white">{dealer.sparePartsSalesYtd}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.flhPercent}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <div className="text-sm text-white">{dealer.flhSharePercent}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="text-sm text-white">{dealer.serviceContractsHours}</div>

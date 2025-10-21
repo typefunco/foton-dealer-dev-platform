@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useDynamicData } from '../hooks/useDynamicData'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useSalesData } from '../hooks/useDynamicData'
 
 interface SalesDealer {
   id: string
@@ -17,47 +17,55 @@ interface SalesDealer {
 
 const SalesTable: React.FC = () => {
   const location = useLocation()
-  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [selectedRegion, setSelectedRegion] = useState<string>('Central')
   const [sortConfig, setSortConfig] = useState<{
     key: keyof SalesDealer | null
     direction: 'asc' | 'desc' | null
   }>({ key: null, direction: null })
 
-  // Мемоизируем параметры из URL для предотвращения ненужных перерендеров
-  const urlParams = useMemo(() => new URLSearchParams(location.search), [location.search])
-  const urlRegion = useMemo(() => urlParams.get('region') || 'Central', [urlParams])
-  const urlQuarter = useMemo(() => urlParams.get('quarter') || 'Q1', [urlParams])
-  const urlYear = useMemo(() => parseInt(urlParams.get('year') || '2024'), [urlParams])
-  const urlDealers = useMemo(() => 
-    urlParams.get('dealers')?.split(',').filter(id => id.trim() !== '') || [], 
-    [urlParams]
-  )
+  // Получаем параметры из URL
+  const regionFromUrl = searchParams.get('region') || 'Central'
+  const quarterFromUrl = searchParams.get('quarter') || ''
+  const yearFromUrl = parseInt(searchParams.get('year') || '0')
 
-  // Мемоизируем параметры для хука
-  const hookParams = useMemo(() => ({
-    region: urlRegion === 'all-russia' ? undefined : urlRegion,
-    quarter: urlQuarter,
-    year: urlYear,
-    dealer_ids: urlDealers.length > 0 ? urlDealers.map(id => parseInt(id)).filter(id => !isNaN(id)) : undefined
-  }), [urlRegion, urlQuarter, urlYear, urlDealers])
+  // Получаем параметры из навигации (если есть)
+  const navigationFilters = location.state?.filters || {}
 
-  const { data: dealers, loading, error } = useDynamicData({
-    tableType: 'sales',
-    params: hookParams
+  const { data: dealers, loading, error, updateParams } = useSalesData({
+    region: regionFromUrl === 'all-russia' ? undefined : regionFromUrl,
+    quarter: quarterFromUrl || navigationFilters.quarter,
+    year: yearFromUrl || navigationFilters.year
   })
 
-  // Инициализируем состояние из URL параметров
+  // Обработка изменения региона
   useEffect(() => {
-    setSelectedRegion(urlRegion)
-  }, [urlRegion])
+    updateParams({ 
+      region: selectedRegion === 'all-russia' ? undefined : selectedRegion,
+      quarter: quarterFromUrl || navigationFilters.quarter,
+      year: yearFromUrl || navigationFilters.year
+    })
+  }, [selectedRegion, updateParams, quarterFromUrl, yearFromUrl, navigationFilters])
 
-  // Мемоизируем функцию для обновления региона в URL
-  const handleRegionChange = useCallback((regionId: string) => {
-    const newParams = new URLSearchParams(location.search)
-    newParams.set('region', regionId)
-    navigate(`${location.pathname}?${newParams.toString()}`)
-  }, [location.search, location.pathname, navigate])
+  // Инициализируем регион из URL при загрузке
+  useEffect(() => {
+    if (regionFromUrl && regionFromUrl !== selectedRegion) {
+      setSelectedRegion(regionFromUrl)
+    }
+  }, [regionFromUrl])
+
+  // Применяем параметры из навигации при загрузке
+  useEffect(() => {
+    if (navigationFilters.region) {
+      setSelectedRegion(navigationFilters.region)
+    }
+    if (navigationFilters.quarter || navigationFilters.year) {
+      updateParams({
+        quarter: navigationFilters.quarter,
+        year: navigationFilters.year
+      })
+    }
+  }, [navigationFilters, updateParams])
 
   const handleSort = useCallback((key: keyof SalesDealer) => {
     let direction: 'asc' | 'desc' | null = 'asc'
@@ -221,17 +229,17 @@ const SalesTable: React.FC = () => {
           <h2 className="text-white text-xl font-bold mb-2">No Sales Data Found</h2>
           <p className="text-blue-200 mb-4">
             No sales data available for:<br/>
-            <span className="font-semibold">Region:</span> {urlRegion}<br/>
-            <span className="font-semibold">Quarter:</span> {urlQuarter}<br/>
-            <span className="font-semibold">Year:</span> {urlYear}
+            <span className="font-semibold">Region:</span> {regionFromUrl}<br/>
+            <span className="font-semibold">Quarter:</span> {quarterFromUrl}<br/>
+            <span className="font-semibold">Year:</span> {yearFromUrl}
           </p>
           <div className="flex space-x-3 justify-center">
-            <button
-              onClick={() => navigate('/')}
+            <Link
+              to="/"
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
             >
               Back to Search
-            </button>
+            </Link>
             <button
               onClick={() => window.location.reload()}
               className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
@@ -291,7 +299,7 @@ const SalesTable: React.FC = () => {
           {regions.map((region) => (
             <button
               key={region.id}
-              onClick={() => handleRegionChange(region.id)}
+              onClick={() => setSelectedRegion(region.id)}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 selectedRegion === region.id
                   ? 'bg-blue-400 text-white shadow-lg'

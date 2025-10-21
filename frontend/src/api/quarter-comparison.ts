@@ -1,7 +1,7 @@
 // API клиент для работы с данными сравнения кварталов
 // Интеграция с backend Quarter Comparison API
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
 
 export interface QuarterComparisonData {
   dealerId: string;
@@ -70,7 +70,9 @@ export async function getQuarterComparison(filters?: QuarterComparisonFilters): 
   params.append('quarter', filters?.quarter || 'Q1');
   params.append('year', (filters?.year || 2024).toString());
 
-  const response = await fetch(`${API_BASE_URL}/quarter-comparison?${params.toString()}`);
+  const response = await fetch(`${API_BASE_URL}/quarter-comparison?${params.toString()}`, {
+    credentials: 'include', // Включаем cookies для аутентификации
+  });
   
   if (!response.ok) {
     throw new Error(`Failed to fetch quarter comparison data: ${response.statusText}`);

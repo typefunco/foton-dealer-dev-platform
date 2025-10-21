@@ -57,7 +57,7 @@ export interface AllDataParams {
   year?: number
 }
 
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
 
 /**
  * Получает все данные дилеров (комплексные данные из всех таблиц)
@@ -78,7 +78,9 @@ export async function getAllDealerData(params: AllDataParams = {}): Promise<AllD
   const url = `${API_BASE_URL}/all-data?${searchParams.toString()}`
   
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      credentials: 'include', // Включаем cookies для аутентификации
+    })
     
     if (!response.ok) {
       throw new Error(`Failed to fetch all dealer data: ${response.status} ${response.statusText}`)

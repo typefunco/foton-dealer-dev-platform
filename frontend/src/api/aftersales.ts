@@ -1,7 +1,7 @@
 // API клиент для работы с данными After Sales
 // Интеграция с backend After Sales API
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
 
 export interface AfterSalesDealer {
   id: string;
@@ -10,11 +10,14 @@ export interface AfterSalesDealer {
   rStockPercent: number;
   wStockPercent: number;
   flhPercent: number;
+  flhSharePercent: string;
   warrantyHours: number;
   serviceContractsHours: number;
   asTrainings: boolean;
   csi: string;
   asDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down';
+  sparePartsSalesQ3: string;
+  sparePartsSalesYtd: string;
 }
 
 export interface AfterSalesResponse {
@@ -51,7 +54,9 @@ export async function getAfterSalesData(filters?: AfterSalesFilters): Promise<Af
   params.append('quarter', 'Q1');
   params.append('year', '2024');
 
-  const response = await fetch(`${API_BASE_URL}/aftersales?${params.toString()}`);
+  const response = await fetch(`${API_BASE_URL}/aftersales?${params.toString()}`, {
+    credentials: 'include', // Включаем cookies для аутентификации
+  });
   
   if (!response.ok) {
     throw new Error(`Failed to fetch after sales data: ${response.statusText}`);

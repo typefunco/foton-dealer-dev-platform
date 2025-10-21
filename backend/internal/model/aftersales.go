@@ -48,4 +48,8 @@ type AfterSalesWithDetails struct {
 	City         string `json:"city"`
 	Region       string `json:"region"`
 	Manager      string `json:"manager"`
+	// Дополнительные поля для Excel данных
+	SparePartsSalesQ3     string `json:"spare_parts_sales_q3"`
+	SparePartsSalesYtd    string `json:"spare_parts_sales_ytd_percent"`
+	FotonLabourHoursShare string `json:"foton_labour_hours_share"`
 }

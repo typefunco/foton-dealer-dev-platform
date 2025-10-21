@@ -21,17 +21,26 @@ type Repository interface {
 	GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.SalesWithDetails, error)
 }
 
+// ExcelRepository интерфейс репозитория для работы с Excel данными продаж.
+type ExcelRepository interface {
+	GetDealerNetTableName(year int, quarter string) string
+	TableExists(ctx context.Context, year int, quarter string) (bool, error)
+	GetSalesDataFromExcel(ctx context.Context, year int, quarter string, region string) ([]*model.SalesWithDetails, error)
+}
+
 // Service сервис для работы с данными продаж.
 type Service struct {
-	repo   Repository
-	logger *slog.Logger
+	repo      Repository
+	excelRepo ExcelRepository
+	logger    *slog.Logger
 }
 
 // NewService создает новый экземпляр сервиса Sales.
-func NewService(repo Repository, logger *slog.Logger) *Service {
+func NewService(repo Repository, excelRepo ExcelRepository, logger *slog.Logger) *Service {
 	return &Service{
-		repo:   repo,
-		logger: logger,
+		repo:      repo,
+		excelRepo: excelRepo,
+		logger:    logger,
 	}
 }
 
@@ -42,6 +51,45 @@ func (s *Service) GetSalesByPeriod(ctx context.Context, quarter string, year int
 		return nil, fmt.Errorf("SalesService.GetSalesByPeriod: %w", err)
 	}
 
+	// Если указаны год и квартал, используем Excel данные
+	if year > 0 && quarter != "" {
+		s.logger.Info("Getting sales data from Excel table",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+			slog.String("region", region),
+		)
+
+		// Проверяем существование таблицы
+		exists, err := s.excelRepo.TableExists(ctx, year, quarter)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check Excel table existence: %w", err)
+		}
+
+		if !exists {
+			s.logger.Warn("Excel table does not exist",
+				slog.Int("year", year),
+				slog.String("quarter", quarter),
+			)
+			return []*model.SalesWithDetails{}, nil
+		}
+
+		// Получаем данные из Excel таблицы
+		salesData, err := s.excelRepo.GetSalesDataFromExcel(ctx, year, quarter, region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get sales data from Excel: %w", err)
+		}
+
+		s.logger.Info("Sales data retrieved from Excel",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+			slog.String("region", region),
+			slog.Int("count", len(salesData)),
+		)
+
+		return salesData, nil
+	}
+
+	// Используем обычные данные из основной таблицы
 	salesList, err := s.repo.GetWithDetailsByPeriod(ctx, quarter, year, region)
 	if err != nil {
 		s.logger.Error("SalesService.GetSalesByPeriod: failed to get sales data",

@@ -21,17 +21,26 @@ type Repository interface {
 	GetWithDetailsByPeriod(ctx context.Context, quarter string, year int, region string) ([]*model.DealerDevWithDetails, error)
 }
 
+// ExcelRepository интерфейс репозитория для работы с Excel данными дилер-девелопмента.
+type ExcelRepository interface {
+	GetDealerNetTableName(year int, quarter string) string
+	TableExists(ctx context.Context, year int, quarter string) (bool, error)
+	GetDealerDevDataFromExcel(ctx context.Context, year int, quarter string, region string) ([]*model.DealerDevWithDetails, error)
+}
+
 // Service сервис для работы с данными развития дилеров.
 type Service struct {
-	repo   Repository
-	logger *slog.Logger
+	repo      Repository
+	excelRepo ExcelRepository
+	logger    *slog.Logger
 }
 
 // NewService создает новый экземпляр сервиса DealerDev.
-func NewService(repo Repository, logger *slog.Logger) *Service {
+func NewService(repo Repository, excelRepo ExcelRepository, logger *slog.Logger) *Service {
 	return &Service{
-		repo:   repo,
-		logger: logger,
+		repo:      repo,
+		excelRepo: excelRepo,
+		logger:    logger,
 	}
 }
 
@@ -45,6 +54,44 @@ func (s *Service) GetDealerDevByPeriod(ctx context.Context, quarter string, year
 	// Валидация года
 	if year < 2020 || year > 2030 {
 		return nil, fmt.Errorf("DealerDevService.GetDealerDevByPeriod: invalid year: %d", year)
+	}
+
+	// Если указаны год и квартал, используем Excel данные
+	if year > 0 && quarter != "" {
+		s.logger.Info("Getting dealer dev data from Excel table",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+			slog.String("region", region),
+		)
+
+		// Проверяем существование таблицы
+		exists, err := s.excelRepo.TableExists(ctx, year, quarter)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check Excel table existence: %w", err)
+		}
+
+		if !exists {
+			s.logger.Warn("Excel table does not exist",
+				slog.Int("year", year),
+				slog.String("quarter", quarter),
+			)
+			return []*model.DealerDevWithDetails{}, nil
+		}
+
+		// Получаем данные из Excel таблицы
+		dealerDevData, err := s.excelRepo.GetDealerDevDataFromExcel(ctx, year, quarter, region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get dealer dev data from Excel: %w", err)
+		}
+
+		s.logger.Info("Dealer dev data retrieved from Excel",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+			slog.String("region", region),
+			slog.Int("count", len(dealerDevData)),
+		)
+
+		return dealerDevData, nil
 	}
 
 	ddList, err := s.repo.GetWithDetailsByPeriod(ctx, quarter, year, region)

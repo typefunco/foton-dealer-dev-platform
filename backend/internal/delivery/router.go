@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	authMiddleware "github.com/typefunco/dealer_dev_platform/internal/middleware"
 	"github.com/typefunco/dealer_dev_platform/internal/repository"
 	"github.com/typefunco/dealer_dev_platform/internal/service/aftersales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/auth"
@@ -19,11 +20,13 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance_sales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/sales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/user"
+	"github.com/typefunco/dealer_dev_platform/internal/utils/jwt"
 )
 
 // Server структура сервера.
 type Server struct {
 	authService       *auth.Service
+	jwtService        *jwt.Service
 	perfService       *performance.Service
 	perfSalesService  *performance_sales.Service
 	perfASService     *performance_aftersales.Service
@@ -43,6 +46,7 @@ type Server struct {
 // NewServer - конструктор сервера.
 func NewServer(
 	authService *auth.Service,
+	jwtService *jwt.Service,
 	perfService *performance.Service,
 	perfSalesService *performance_sales.Service,
 	perfASService *performance_aftersales.Service,
@@ -59,6 +63,7 @@ func NewServer(
 ) *Server {
 	return &Server{
 		authService:       authService,
+		jwtService:        jwtService,
 		perfService:       perfService,
 		perfSalesService:  perfSalesService,
 		perfASService:     perfASService,
@@ -107,22 +112,20 @@ func (s *Server) RunServer() {
 		AllowCredentials: true,
 	}))
 
-	// Auth routes
+	// Auth routes (без middleware)
 	s.srv.POST("/auth/login", s.Login)
 
-	// Health check
+	// Health check (без middleware)
 	s.srv.GET("/health", s.Health)
 
-	// API group
+	// API group с обязательной аутентификацией
 	api := s.srv.Group("/api")
+	api.Use(authMiddleware.AuthMiddleware(s.jwtService))
 
-	// User management routes
+	// User management routes (только чтение для всех пользователей)
 	api.GET("/users", s.GetUsers)           // Получить список пользователей с фильтрами
 	api.GET("/users/stats", s.GetUserStats) // Получить статистику по регионам
 	api.GET("/users/:id", s.GetUserByID)    // Получить пользователя по ID
-	api.POST("/users", s.CreateUser)        // Создать пользователя
-	api.PUT("/users/:id", s.UpdateUser)     // Обновить пользователя
-	api.DELETE("/users/:id", s.DeleteUser)  // Удалить пользователя
 
 	// After Sales routes
 	api.GET("/aftersales", s.GetAfterSalesData) // Получить данные After Sales по региону (legacy)
@@ -154,17 +157,26 @@ func (s *Server) RunServer() {
 	// Analytics routes
 	api.GET("/analytics", s.GetAnalytics) // Получить аналитические данные
 
-	// Bulk operations routes
-	api.POST("/bulk", s.BulkOperations)    // Массовые операции
-	api.POST("/bulk/update", s.BulkUpdate) // Массовое обновление
-	api.POST("/bulk/export", s.BulkExport) // Массовый экспорт
+	// Admin routes (только для администраторов)
+	admin := api.Group("/admin")
+	admin.Use(authMiddleware.AdminMiddleware())
 
-	// Excel operations routes
-	api.POST("/excel/upload", s.UploadExcelFile)                  // Загрузка Excel файла
-	api.GET("/excel/tables", s.GetExcelTables)                    // Список созданных таблиц
-	api.GET("/excel/tables/:tableName", s.GetExcelTableMetadata)  // Метаданные таблицы
-	api.GET("/excel/tables/:tableName/data", s.GetExcelTableData) // Данные таблицы
-	api.DELETE("/excel/tables/:tableName", s.DeleteExcelTable)    // Удаление таблицы
+	// Excel operations routes (только для админов)
+	admin.POST("/excel/upload", s.UploadExcelFile)                  // Загрузка Excel файла
+	admin.GET("/excel/tables", s.GetExcelTables)                    // Список созданных таблиц
+	admin.GET("/excel/tables/:tableName", s.GetExcelTableMetadata)  // Метаданные таблицы
+	admin.GET("/excel/tables/:tableName/data", s.GetExcelTableData) // Данные таблицы
+	admin.DELETE("/excel/tables/:tableName", s.DeleteExcelTable)    // Удаление таблицы
+
+	// User management routes (только для админов)
+	admin.POST("/users", s.CreateUser)       // Создать пользователя
+	admin.PUT("/users/:id", s.UpdateUser)    // Обновить пользователя
+	admin.DELETE("/users/:id", s.DeleteUser) // Удалить пользователя
+
+	// Bulk operations routes (только для админов)
+	admin.POST("/bulk", s.BulkOperations)    // Массовые операции
+	admin.POST("/bulk/update", s.BulkUpdate) // Массовое обновление
+	admin.POST("/bulk/export", s.BulkExport) // Массовый экспорт
 
 	if err := s.srv.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.logger.Error("failed to start server", "error", err)

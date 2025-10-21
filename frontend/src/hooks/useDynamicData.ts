@@ -98,14 +98,14 @@ export const useDynamicData = <T = any>({
       )
       return hasChanged ? { ...prev, ...newParams } : prev
     })
-  }, [])
+  }, [fetchData]) // Добавляем fetchData в зависимости
 
   // Единственный эффект для загрузки данных
   useEffect(() => {
     if (enabled) {
       fetchData()
     }
-  }, [currentParams, enabled]) // Убираем fetchData из зависимостей
+  }, [currentParams, enabled, fetchData]) // Добавляем fetchData в зависимости
 
   // Cleanup эффект для предотвращения утечек памяти
   useEffect(() => {
