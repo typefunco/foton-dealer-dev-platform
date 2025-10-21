@@ -1,437 +1,60 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAllDealerData } from '../hooks/useAllDealerData'
+import { AllDealerData } from '../api/all-data'
 
-interface AllDealer {
-  id: string
-  // Common fields
-  name: string
-  city: string
-  salesManager: string
-  
-  // Dealer Development fields
-  class: 'A' | 'B' | 'C' | 'D'
-  checklist: number
-  brandsInPortfolio: string[]
-  dealerDevRecommendation: 'Planned Result' | 'Needs Development' | 'Find New Candidate' | 'Close Down'
-  
-  // Sales Team fields
-  salesTarget: string
-  stockHdtMdtLdt: string
-  buyoutHdtMdtLdt: string
-  fotonSalesmen: number
-  salesTrainings: boolean
-  salesDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
-  
-  // Performance fields
-  srRub: string
-  salesProfit: string
-  salesMargin: number
-  autoSalesRevenue: string
-  autoSalesProfitsRap: string
-  autoSalesMargin: number
-  ranking: number
-  autoSalesDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
-  
-  // After Sales fields
-  rStockPercent: number
-  wStockPercent: number
-  flhPercent: number
-  serviceContract: string
-  asTrainings: boolean
-  csi: string
-  asDecision: 'Needs development' | 'Planned Result' | 'Find New Candidate' | 'Close Down'
-}
+// Используем реальный интерфейс AllDealerData из API
 
 const AllTable: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('all-russia')
 
+  // Используем хук для получения реальных данных
+  const { data: dealers, loading, error, loadDataForRegion } = useAllDealerData({
+    region: selectedRegion === 'all-russia' ? undefined : selectedRegion,
+    quarter: 'Q1',
+    year: 2024,
+    autoLoad: true
+  })
+
   const regions = [
     { id: 'all-russia', name: 'All Russia' },
-    { id: 'center', name: 'Center' },
-    { id: 'north-west', name: 'North West' },
-    { id: 'volga', name: 'Volga' },
-    { id: 'south', name: 'South' },
-    { id: 'ural', name: 'Ural' },
-    { id: 'siberia', name: 'Siberia' },
-    { id: 'far-east', name: 'Far East' }
+    { id: 'Central', name: 'Central' },
+    { id: 'North West', name: 'North West' },
+    { id: 'Volga', name: 'Volga' },
+    { id: 'South', name: 'South' },
+    { id: 'Ural', name: 'Ural' },
+    { id: 'Siberia', name: 'Siberia' },
+    { id: 'Far East', name: 'Far East' }
   ]
 
-  const dealers: AllDealer[] = [
-    {
-      id: '1',
-      name: 'AvtoFurgon',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      class: 'B',
-      checklist: 80,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Needs Development',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Needs development',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: true,
-      csi: '1 500',
-      asDecision: 'Needs development'
-    },
-    {
-      id: '2',
-      name: 'Avtokub',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      class: 'B',
-      checklist: 85,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Needs Development',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Needs development',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Needs development',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: false,
-      csi: '800',
-      asDecision: 'Needs development'
-    },
-    {
-      id: '3',
-      name: 'Avto-M',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      class: 'B',
-      checklist: 82,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Needs Development',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Needs development',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Needs development',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: true,
-      csi: '1 500',
-      asDecision: 'Needs development'
-    },
-    {
-      id: '4',
-      name: 'BTS Belgorod',
-      city: 'Moscow',
-      salesManager: 'Kozeev',
-      class: 'A',
-      checklist: 92,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Planned Result',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Planned Result',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Planned Result',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: false,
-      csi: '800',
-      asDecision: 'Planned Result'
-    },
-    {
-      id: '5',
-      name: 'BTS Smolensk',
-      city: 'Noginsk',
-      salesManager: 'Kozeev',
-      class: 'A',
-      checklist: 95,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Planned Result',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Planned Result',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Planned Result',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: true,
-      csi: '1 500',
-      asDecision: 'Planned Result'
-    },
-    {
-      id: '6',
-      name: 'Centr Trak Grupp',
-      city: 'Solnechnogorsk',
-      salesManager: 'Kozeev',
-      class: 'A',
-      checklist: 96,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Planned Result',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Planned Result',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Planned Result',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: false,
-      csi: '800',
-      asDecision: 'Planned Result'
-    },
-    {
-      id: '7',
-      name: 'Ecomtekh',
-      city: 'Ecomtekh',
-      salesManager: 'Avdeev',
-      class: 'A',
-      checklist: 91,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Planned Result',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Planned Result',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Planned Result',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: true,
-      csi: '1 500',
-      asDecision: 'Planned Result'
-    },
-    {
-      id: '8',
-      name: 'GAS 36',
-      city: 'Yaroslavl',
-      salesManager: 'Avdeev',
-      class: 'C',
-      checklist: 76,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Find New Candidate',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Find New Candidate',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Find New Candidate',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: false,
-      csi: '800',
-      asDecision: 'Find New Candidate'
-    },
-    {
-      id: '9',
-      name: 'Global Truck Sales',
-      city: 'Ryazan',
-      salesManager: 'Avdeev',
-      class: 'C',
-      checklist: 73,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Find New Candidate',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Find New Candidate',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Find New Candidate',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: true,
-      csi: '1 500',
-      asDecision: 'Find New Candidate'
-    },
-    {
-      id: '10',
-      name: 'Gus Tekhcentr',
-      city: 'Tambov',
-      salesManager: 'Avdeev',
-      class: 'C',
-      checklist: 72,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Find New Candidate',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Find New Candidate',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Find New Candidate',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: false,
-      csi: '800',
-      asDecision: 'Find New Candidate'
-    },
-    {
-      id: '11',
-      name: 'KomDorAvto',
-      city: 'Tula',
-      salesManager: 'Avdeev',
-      class: 'D',
-      checklist: 68,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Close Down',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: true,
-      salesDecision: 'Close Down',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Close Down',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: true,
-      csi: '1 500',
-      asDecision: 'Close Down'
-    },
-    {
-      id: '12',
-      name: 'Major Trak Centr',
-      city: 'Lipeck',
-      salesManager: 'Avdeev',
-      class: 'D',
-      checklist: 66,
-      brandsInPortfolio: ['FOTON'],
-      dealerDevRecommendation: 'Close Down',
-      salesTarget: '40/100',
-      stockHdtMdtLdt: '5/2/3',
-      buyoutHdtMdtLdt: '5/2/3',
-      fotonSalesmen: 5,
-      salesTrainings: false,
-      salesDecision: 'Close Down',
-      srRub: '5 555 555',
-      salesProfit: '5 000 000',
-      salesMargin: 5,
-      autoSalesRevenue: '5 555 555',
-      autoSalesProfitsRap: '5 555 555',
-      autoSalesMargin: 5,
-      ranking: 5,
-      autoSalesDecision: 'Close Down',
-      rStockPercent: 5,
-      wStockPercent: 5,
-      flhPercent: 5,
-      serviceContract: 'Gold',
-      asTrainings: false,
-      csi: '800',
-      asDecision: 'Close Down'
+  // Обработчик смены региона
+  const handleRegionChange = async (regionId: string) => {
+    setSelectedRegion(regionId)
+    try {
+      await loadDataForRegion(regionId)
+    } catch (error) {
+      console.error('Error loading data for region:', error)
     }
-  ]
+  }
 
-  const getClassColor = (dealerClass: string) => {
+  // Вспомогательные функции для форматирования данных
+  const formatNumber = (num?: number) => {
+    if (num === undefined || num === null) return 'N/A'
+    return num.toLocaleString()
+  }
+
+  const formatCurrency = (num?: number) => {
+    if (num === undefined || num === null) return 'N/A'
+    return `₽${num.toLocaleString()}`
+  }
+
+  const formatStockData = (hdt?: number, mdt?: number, ldt?: number) => {
+    if (hdt === undefined || mdt === undefined || ldt === undefined) return 'N/A'
+    return `${hdt}/${mdt}/${ldt}`
+  }
+
+  const getClassColor = (dealerClass?: string) => {
+    if (!dealerClass) return 'text-gray-400'
     switch (dealerClass) {
       case 'A': return 'text-green-400'
       case 'B': return 'text-yellow-400'
@@ -441,14 +64,16 @@ const AllTable: React.FC = () => {
     }
   }
 
-  const getChecklistColor = (score: number) => {
+  const getChecklistColor = (score?: number) => {
+    if (!score) return 'text-gray-600'
     if (score >= 90) return 'text-green-600'
     if (score >= 80) return 'text-yellow-600'
     if (score >= 70) return 'text-orange-600'
     return 'text-red-600'
   }
 
-  const getDecisionColor = (decision: string) => {
+  const getDecisionColor = (decision?: string) => {
+    if (!decision) return 'text-gray-600'
     switch (decision) {
       case 'Planned Result': return 'text-green-600'
       case 'Needs development':
@@ -459,15 +84,20 @@ const AllTable: React.FC = () => {
     }
   }
 
-  const getJointDecision = (dealer: AllDealer) => {
+  const getJointDecision = (dealer: AllDealerData) => {
     // Logic to determine joint decision based on all factors
-    if (dealer.class === 'D' || dealer.checklist < 70) {
+    const dealerClass = dealer.dealership_class
+    const checklist = dealer.check_list_score
+    const salesTrainings = dealer.sales_trainings === 'Yes'
+    const asTrainings = dealer.as_trainings === true
+    
+    if (dealerClass === 'D' || (checklist && checklist < 70)) {
       return 'Close Down'
     }
-    if (dealer.class === 'A' && dealer.checklist >= 90 && dealer.salesTrainings && dealer.asTrainings) {
+    if (dealerClass === 'A' && checklist && checklist >= 90 && salesTrainings && asTrainings) {
       return 'Planned Result'
     }
-    if (dealer.class === 'C' || dealer.checklist < 80) {
+    if (dealerClass === 'C' || (checklist && checklist < 80)) {
       return 'Find New Candidate'
     }
     return 'Needs Development'
@@ -520,12 +150,13 @@ const AllTable: React.FC = () => {
           {regions.map((region) => (
             <button
               key={region.id}
-              onClick={() => setSelectedRegion(region.id)}
+              onClick={() => handleRegionChange(region.id)}
+              disabled={loading}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 selectedRegion === region.id
                   ? 'bg-blue-400 text-white shadow-lg'
                   : 'bg-white text-blue-900 hover:bg-blue-50'
-              }`}
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {region.name}
             </button>
@@ -540,7 +171,36 @@ const AllTable: React.FC = () => {
             Complete Dealer Data Overview
           </h3>
           
-          <div className="overflow-x-auto">
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-white text-xl">Loading dealer data...</p>
+            </div>
+          )}
+          
+          {/* Error State */}
+          {error && (
+            <div className="text-center py-12">
+              <div className="text-red-400 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-white text-xl font-bold mb-2">Error Loading Data</h2>
+              <p className="text-blue-200 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          
+          {/* Data Table */}
+          {!loading && !error && (
+            <div className="overflow-x-auto">
             <div className="min-w-max">
               <table className="w-full text-sm">
                 <thead>
@@ -637,125 +297,119 @@ const AllTable: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-blue-200 divide-opacity-30">
                   {dealers.map((dealer) => (
-                    <tr key={dealer.id} className="hover:bg-blue-800 hover:bg-opacity-30">
+                    <tr key={dealer.dealer_id} className="hover:bg-blue-800 hover:bg-opacity-30">
                       {/* Common Fields */}
                       <td className="px-3 py-2 text-center">
                         <Link 
-                          to={`/dealer/${dealer.id}`}
+                          to={`/dealer/${dealer.dealer_id}`}
                           className="text-xs font-medium text-white hover:text-blue-200 transition-colors duration-200 cursor-pointer"
                         >
-                          {dealer.name}
+                          {dealer.dealer_name_ru}
                         </Link>
                       </td>
                       <td className="px-3 py-2 text-center">
                         <div className="text-xs text-white">{dealer.city}</div>
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <div className="text-xs text-white">{dealer.salesManager}</div>
+                        <div className="text-xs text-white">{dealer.manager}</div>
                       </td>
                       
-                                             {/* Dealer Development Fields */}
-                       <td className="px-3 py-2 text-center bg-blue-600 bg-opacity-30">
-                         <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getClassColor(dealer.class)}`}>
-                           {dealer.class}
-                         </div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-blue-600 bg-opacity-30">
-                         <div className={`text-xs font-medium ${getChecklistColor(dealer.checklist)}`}>
-                           {dealer.checklist}
-                         </div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-blue-600 bg-opacity-30">
-                         <div className="flex justify-center">
-                           {dealer.brandsInPortfolio.map((brand, index) => (
-                             <div
-                               key={index}
-                               className="w-6 h-6 bg-blue-400 bg-opacity-80 rounded-full flex items-center justify-center border border-blue-300"
-                               title={brand}
-                             >
-                               <span className="text-xs font-bold text-white">F</span>
-                             </div>
-                           ))}
-                         </div>
-                       </td>
+                      {/* Dealer Development Fields */}
+                      <td className="px-3 py-2 text-center bg-blue-600 bg-opacity-30">
+                        <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getClassColor(dealer.dealership_class)}`}>
+                          {dealer.dealership_class || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-blue-600 bg-opacity-30">
+                        <div className={`text-xs font-medium ${getChecklistColor(dealer.check_list_score)}`}>
+                          {dealer.check_list_score || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-blue-600 bg-opacity-30">
+                        <div className="flex justify-center">
+                          <div className="w-6 h-6 bg-blue-400 bg-opacity-80 rounded-full flex items-center justify-center border border-blue-300" title="FOTON">
+                            <span className="text-xs font-bold text-white">F</span>
+                          </div>
+                        </div>
+                      </td>
                        
-                       {/* Sales Team Fields */}
-                       <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.salesTarget}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.stockHdtMdtLdt}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.buyoutHdtMdtLdt}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.fotonSalesmen}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
-                         <div className={`text-xs font-medium ${dealer.salesTrainings ? 'text-green-400' : 'text-white'}`}>
-                           {dealer.salesTrainings ? 'Yes' : 'No'}
-                         </div>
-                       </td>
+                      {/* Sales Team Fields */}
+                      <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.sales_target_plan)}/{formatNumber(dealer.sales_target_fact)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatStockData(dealer.stock_hdt, dealer.stock_mdt, dealer.stock_ldt)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatStockData(dealer.buyout_hdt, dealer.buyout_mdt, dealer.buyout_ldt)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.foton_sales_personnel)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-green-600 bg-opacity-30">
+                        <div className={`text-xs font-medium ${dealer.sales_trainings === 'Yes' ? 'text-green-400' : 'text-white'}`}>
+                          {dealer.sales_trainings || 'N/A'}
+                        </div>
+                      </td>
                        
-                       {/* Performance Fields */}
-                       <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.srRub}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.salesProfit}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.salesMargin}%</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.autoSalesRevenue}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.autoSalesProfitsRap}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.autoSalesMargin}%</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.ranking}</div>
-                       </td>
+                      {/* Performance Fields */}
+                      <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatCurrency(dealer.sales_revenue_rub)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatCurrency(dealer.sales_profit_rub)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.sales_margin_percent)}%</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatCurrency(dealer.after_sales_revenue_rub)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatCurrency(dealer.after_sales_profit_rub)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.after_sales_margin_pct)}%</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-yellow-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.foton_rank)}</div>
+                      </td>
                        
-                       {/* After Sales Fields */}
-                       <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.rStockPercent}%</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.wStockPercent}%</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.flhPercent}%</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.serviceContract}</div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
-                         <div className={`text-xs font-medium ${dealer.asTrainings ? 'text-green-400' : 'text-white'}`}>
-                           {dealer.asTrainings ? 'Yes' : 'No'}
-                         </div>
-                       </td>
-                       <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
-                         <div className="text-xs text-white">{dealer.csi}</div>
-                       </td>
+                      {/* After Sales Fields */}
+                      <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.recommended_stock)}%</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.warranty_stock)}%</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.foton_labor_hours)}%</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
+                        <div className="text-xs text-white">{formatNumber(dealer.service_contracts)}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
+                        <div className={`text-xs font-medium ${dealer.as_trainings ? 'text-green-400' : 'text-white'}`}>
+                          {dealer.as_trainings ? 'Yes' : 'No'}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-center bg-purple-600 bg-opacity-30">
+                        <div className="text-xs text-white">{dealer.csi || 'N/A'}</div>
+                      </td>
                       
-                       {/* Joint Decision Field */}
-                       <td className="px-3 py-2 text-center bg-red-600 bg-opacity-30">
-                         <div className={`text-xs font-medium ${getDecisionColor(getJointDecision(dealer))}`}>
-                           {getJointDecision(dealer)}
-                         </div>
-                       </td>
+                      {/* Joint Decision Field */}
+                      <td className="px-3 py-2 text-center bg-red-600 bg-opacity-30">
+                        <div className={`text-xs font-medium ${getDecisionColor(getJointDecision(dealer))}`}>
+                          {getJointDecision(dealer)}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-          
+          )}
           
         </div>
       </div>

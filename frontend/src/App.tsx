@@ -11,7 +11,11 @@ import BrandDemo from './pages/BrandDemo'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import Admin from './pages/Admin'
+import ExcelUploadPage from './pages/ExcelUpload'
+import ExcelTablesPage from './pages/ExcelTables'
 import { REGION_MAPPING, QUARTER_MAPPING, buildDynamicParams } from './api/index'
+import { useDealers } from './hooks/useDealers'
+import { DealerListItem } from './api/dealers'
 
 const App: React.FC = () => {
   const navigate = useNavigate()
@@ -35,6 +39,12 @@ const App: React.FC = () => {
   
   // Состояние для модального окна выбора дилеров
   const [showDealersModal, setShowDealersModal] = useState(false)
+
+  // Используем хук для получения дилеров
+  const { dealers, loading: dealersLoading, error: dealersError, loadDealersByRegion } = useDealers({ 
+    region: selectedRegion, 
+    autoLoad: true 
+  })
 
   // Читаем параметры из URL при загрузке страницы
   useEffect(() => {
@@ -107,24 +117,20 @@ const App: React.FC = () => {
     { id: '2027', name: '2027' }
   ]
 
-  // Обновленные дилеры с правильными регионами
-  const sampleDealers = [
-    { id: 'dealer1', name: 'AutoDealer Moscow', region: 'central' },
-    { id: 'dealer2', name: 'AutoDealer St. Petersburg', region: 'north-west' },
-    { id: 'dealer3', name: 'AutoDealer Kazan', region: 'volga' },
-    { id: 'dealer4', name: 'AutoDealer Rostov', region: 'south' },
-    { id: 'dealer5', name: 'AutoDealer Yekaterinburg', region: 'ural' },
-    { id: 'dealer6', name: 'AutoDealer Novosibirsk', region: 'siberia' },
-    { id: 'dealer7', name: 'AutoDealer Vladivostok', region: 'far-east' },
-    { id: 'dealer8', name: 'AutoDealer Krasnodar', region: 'n-caucasus' }
-  ]
 
   // Обработчики выбора
-  const handleRegionSelect = (regionId: string) => {
+  const handleRegionSelect = async (regionId: string) => {
     setSelectedRegion(regionId)
     setSelectedDealers([]) // Сбрасываем выбранных дилеров при смене региона
     setDealerSearchQuery('') // Сбрасываем поиск дилеров при смене региона
     setShowRegionDropdown(false)
+    
+    // Загружаем дилеров для выбранного региона
+    try {
+      await loadDealersByRegion(regionId)
+    } catch (error) {
+      console.error('Error loading dealers for region:', error)
+    }
   }
 
   const handleDealerToggle = (dealerId: string) => {
@@ -213,11 +219,11 @@ const App: React.FC = () => {
   }
 
   // Получаем доступных дилеров для выбранного региона
-  const getAvailableDealers = () => {
+  const getAvailableDealers = (): DealerListItem[] => {
     if (selectedRegion === 'all' || !selectedRegion) {
-      return sampleDealers
+      return dealers
     }
-    return sampleDealers.filter(dealer => dealer.region === selectedRegion)
+    return dealers.filter(dealer => dealer.region === REGION_MAPPING[selectedRegion as keyof typeof REGION_MAPPING])
   }
 
   const availableDealers = getAvailableDealers()
@@ -227,10 +233,10 @@ const App: React.FC = () => {
       return 'Select Dealers'
     }
     if (selectedDealers.length === 1) {
-      const dealer = sampleDealers.find(d => d.id === selectedDealers[0])
+      const dealer = dealers.find(d => d.id.toString() === selectedDealers[0])
       return dealer ? dealer.name : 'Select Dealers'
     }
-    if (selectedDealers.length === availableDealers.length) {
+    if (selectedDealers.length === availableDealers.length && availableDealers.length > 0) {
       return 'All Dealers'
     }
     return `${selectedDealers.length} Dealers Selected`
@@ -247,9 +253,10 @@ const App: React.FC = () => {
               <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
                 FOTON DEALER
               </h1>
-              <h2 className="text-3xl md:text-4xl font-bold text-blue-200">
+              <h2 className="text-3xl md:text-4xl font-bold text-blue-200 mb-8">
                 DEVELOPMENT PLATFORM
               </h2>
+              
             </div>
 
             {/* Search Panel */}
@@ -518,6 +525,8 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/excel-upload" element={<ExcelUploadPage />} />
+        <Route path="/excel-tables" element={<ExcelTablesPage />} />
       </Routes>
 
       {/* Dealers Selection Modal */}
@@ -571,7 +580,7 @@ const App: React.FC = () => {
                     if (selectedDealers.length === availableDealers.length) {
                       setSelectedDealers([])
                     } else {
-                      setSelectedDealers(availableDealers.map(d => d.id))
+                      setSelectedDealers(availableDealers.map(d => d.id.toString()))
                     }
                   }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -596,7 +605,20 @@ const App: React.FC = () => {
 
             {/* Dealers List */}
             <div className="flex-1 overflow-y-auto max-h-96">
-              {availableDealers.length > 0 ? (
+              {dealersLoading ? (
+                <div className="px-8 py-12 text-center text-gray-500">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-lg font-medium">Loading dealers...</p>
+                </div>
+              ) : dealersError ? (
+                <div className="px-8 py-12 text-center text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-red-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-lg font-medium text-red-600">Error loading dealers</p>
+                  <p className="text-sm text-red-500">{dealersError}</p>
+                </div>
+              ) : availableDealers.length > 0 ? (
                 <div className="divide-y divide-gray-200">
                   {availableDealers
                     .filter(dealer => 
@@ -607,19 +629,19 @@ const App: React.FC = () => {
                       <div
                         key={dealer.id}
                         className={`px-8 py-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer ${
-                          selectedDealers.includes(dealer.id) ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                          selectedDealers.includes(dealer.id.toString()) ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                         }`}
-                        onClick={() => handleDealerToggle(dealer.id)}
+                        onClick={() => handleDealerToggle(dealer.id.toString())}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="font-medium text-gray-900 text-lg">{dealer.name}</div>
                             <div className="text-sm text-gray-500 mt-1">
-                              Region: {regions.find(r => r.id === dealer.region)?.name}
+                              {dealer.city} • {dealer.region} • {dealer.manager}
                             </div>
                           </div>
                           <div className="flex items-center space-x-3">
-                            {selectedDealers.includes(dealer.id) && (
+                            {selectedDealers.includes(dealer.id.toString()) && (
                               <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -627,11 +649,11 @@ const App: React.FC = () => {
                               </div>
                             )}
                             <div className={`w-6 h-6 border-2 rounded-full ${
-                              selectedDealers.includes(dealer.id) 
+                              selectedDealers.includes(dealer.id.toString()) 
                                 ? 'border-blue-600 bg-blue-600' 
                                 : 'border-gray-300'
                             }`}>
-                              {selectedDealers.includes(dealer.id) && (
+                              {selectedDealers.includes(dealer.id.toString()) && (
                                 <div className="w-2 h-2 bg-white rounded-full m-auto mt-1"></div>
                               )}
                             </div>

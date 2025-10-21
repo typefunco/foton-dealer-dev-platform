@@ -4,11 +4,35 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="скрыто поле foton rank в таблице performance">
+    <list default="true" id="3a24dd68-e560-4319-8f4a-1ecfcad7eb86" name="Changes" comment="handle excel tables">
+      <change afterPath="$PROJECT_DIR$/backend/internal/delivery/excel.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/internal/model/excel.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/internal/repository/dynamic_table.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/internal/service/excel/service.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/internal/service/excel/service_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/api/all-data.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/api/excel.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useAllDealerData.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/hooks/useExcel.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/ExcelTables.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/ExcelUpload.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/b9633a43-77e2-412d-83f7-77905a9d8890.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/b9633a43-77e2-412d-83f7-77905a9d8890.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/b9633a43-77e2-412d-83f7-77905a9d8890/storage_v2/_src_/database/dealer_platform.2cfe0A/schema/public.abK9xQ.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/b9633a43-77e2-412d-83f7-77905a9d8890/storage_v2/_src_/database/dealer_platform.2cfe0A/schema/public.abK9xQ.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/b9633a43-77e2-412d-83f7-77905a9d8890/storage_v2/_src_/database/dealer_platform.2cfe0A/schema/public.abK9xQ.zip" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/repository/dealer.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/repository/dealer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/internal/service/dealer/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/service/dealer/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/DealerCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/DealerCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/backend/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/backend/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/internal/app/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/app/app.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/internal/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/dealers.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/dealers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/internal/delivery/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/internal/delivery/router.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/nginx.conf" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/nginx.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/api/dealers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/dealers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/api/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/hooks/useDealers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/hooks/useDealers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Admin.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Admin.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/AllTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/AllTable.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -173,7 +197,9 @@
     <MESSAGE value="фиксы страниц" />
     <MESSAGE value="dynamic url" />
     <MESSAGE value="скрыто поле foton rank в таблице performance" />
-    <option name="LAST_COMMIT_MESSAGE" value="скрыто поле foton rank в таблице performance" />
+    <MESSAGE value="fixes" />
+    <MESSAGE value="handle excel tables" />
+    <option name="LAST_COMMIT_MESSAGE" value="handle excel tables" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

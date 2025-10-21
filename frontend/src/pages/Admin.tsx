@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 interface User {
   id: string
@@ -18,6 +19,7 @@ interface RegionStats {
 }
 
 const Admin: React.FC = () => {
+  const navigate = useNavigate()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newUser, setNewUser] = useState({
     email: '',
@@ -406,6 +408,83 @@ const Admin: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Excel Management Section */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold text-gray-900">
+              Excel Data Management
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Upload Excel File */}
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+              <div className="flex items-center mb-4">
+                <div className="bg-green-500 rounded-lg p-3 mr-4">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">Upload Excel File</h4>
+                  <p className="text-sm text-gray-600">Convert Excel files to database tables</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/excel-upload')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>Upload Excel File</span>
+              </button>
+            </div>
+
+            {/* View Excel Tables */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+              <div className="flex items-center mb-4">
+                <div className="bg-purple-500 rounded-lg p-3 mr-4">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">View Excel Tables</h4>
+                  <p className="text-sm text-gray-600">Browse and manage uploaded data</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/excel-tables')}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>View Excel Tables</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h5 className="text-sm font-medium text-blue-800 mb-1">Excel Processing Information</h5>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Supported formats: .xlsx, .xls</li>
+                  <li>• Files are processed into unified tables by quarter and year</li>
+                  <li>• Data starts from row 3 (row 2 contains headers)</li>
+                  <li>• Region information is extracted from sheet names</li>
+                  <li>• Empty dealer records are automatically filtered out</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Regional Statistics */}

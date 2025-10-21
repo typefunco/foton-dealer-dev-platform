@@ -5,12 +5,15 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/typefunco/dealer_dev_platform/internal/repository"
 	"github.com/typefunco/dealer_dev_platform/internal/service/aftersales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/auth"
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealer"
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealerdev"
+	"github.com/typefunco/dealer_dev_platform/internal/service/excel"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance_aftersales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance_sales"
@@ -29,6 +32,10 @@ type Server struct {
 	dealerService     *dealer.Service
 	salesService      *sales.Service
 	dealerDevService  *dealerdev.Service
+	excelService      *excel.Service
+	dynamicRepo       repository.DynamicTableRepository
+	pool              *pgxpool.Pool
+	maxFileSize       int64
 	srv               *echo.Echo
 	logger            *slog.Logger
 }
@@ -44,6 +51,10 @@ func NewServer(
 	dealerService *dealer.Service,
 	salesService *sales.Service,
 	dealerDevService *dealerdev.Service,
+	excelService *excel.Service,
+	dynamicRepo repository.DynamicTableRepository,
+	pool *pgxpool.Pool,
+	maxFileSize int64,
 	logger *slog.Logger,
 ) *Server {
 	return &Server{
@@ -56,6 +67,10 @@ func NewServer(
 		dealerService:     dealerService,
 		salesService:      salesService,
 		dealerDevService:  dealerDevService,
+		excelService:      excelService,
+		dynamicRepo:       dynamicRepo,
+		pool:              pool,
+		maxFileSize:       maxFileSize,
 		srv:               echo.New(),
 		logger:            logger,
 	}
@@ -113,6 +128,7 @@ func (s *Server) RunServer() {
 	api.GET("/aftersales", s.GetAfterSalesData) // Получить данные After Sales по региону (legacy)
 
 	// Dealer routes
+	api.GET("/dealers/list", s.GetDealersList)    // Получить упрощенный список дилеров для UI
 	api.GET("/dealers", s.GetDealers)             // Получить список дилеров
 	api.GET("/dealers/:id", s.GetDealerByID)      // Получить базовую информацию о дилере
 	api.GET("/dealers/:id/card", s.GetDealerCard) // Получить полную карточку дилера
@@ -142,6 +158,13 @@ func (s *Server) RunServer() {
 	api.POST("/bulk", s.BulkOperations)    // Массовые операции
 	api.POST("/bulk/update", s.BulkUpdate) // Массовое обновление
 	api.POST("/bulk/export", s.BulkExport) // Массовый экспорт
+
+	// Excel operations routes
+	api.POST("/excel/upload", s.UploadExcelFile)                  // Загрузка Excel файла
+	api.GET("/excel/tables", s.GetExcelTables)                    // Список созданных таблиц
+	api.GET("/excel/tables/:tableName", s.GetExcelTableMetadata)  // Метаданные таблицы
+	api.GET("/excel/tables/:tableName/data", s.GetExcelTableData) // Данные таблицы
+	api.DELETE("/excel/tables/:tableName", s.DeleteExcelTable)    // Удаление таблицы
 
 	if err := s.srv.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.logger.Error("failed to start server", "error", err)

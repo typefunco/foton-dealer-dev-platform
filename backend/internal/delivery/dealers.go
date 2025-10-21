@@ -144,3 +144,64 @@ func (s *Server) GetDealerByID(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dealer)
 }
+
+// GetDealersList возвращает упрощенный список дилеров для выпадающих меню.
+// @Summary Get dealers list for dropdown
+// @Description Получение упрощенного списка дилеров для использования в UI (выпадающие меню, селекторы)
+// @Tags dealers
+// @Accept json
+// @Produce json
+// @Param region query string false "Region filter"
+// @Param limit query int false "Limit for pagination" default(100)
+// @Param offset query int false "Offset for pagination" default(0)
+// @Success 200 {array} DealerListItem
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/dealers/list [get]
+func (s *Server) GetDealersList(c echo.Context) error {
+	// Парсим параметры фильтрации
+	filters := utils.ParseFilterParamsFromContext(c)
+
+	// Устанавливаем разумные значения по умолчанию для списка дилеров
+	if filters.Limit == 0 {
+		filters.Limit = 100 // Загружаем до 100 дилеров сразу
+	}
+	if filters.Offset < 0 {
+		filters.Offset = 0
+	}
+
+	// Получаем дилеров с фильтрами
+	dealers, err := s.dealerService.GetDealersWithFilters(c.Request().Context(), filters)
+	if err != nil {
+		s.logger.Error("GetDealersList: failed to get dealers",
+			"filters", filters,
+			"error", err,
+		)
+		return c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error: "Failed to get dealers list",
+		})
+	}
+
+	// Преобразуем в упрощенный формат для фронтенда
+	dealerList := make([]DealerListItem, 0, len(dealers))
+	for _, dealer := range dealers {
+		dealerList = append(dealerList, DealerListItem{
+			ID:      dealer.DealerID,
+			Name:    dealer.DealerNameRu,
+			Region:  dealer.Region,
+			City:    dealer.City,
+			Manager: dealer.Manager,
+		})
+	}
+
+	return c.JSON(http.StatusOK, dealerList)
+}
+
+// DealerListItem представляет упрощенную информацию о дилере для UI.
+type DealerListItem struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	Region  string `json:"region"`
+	City    string `json:"city"`
+	Manager string `json:"manager"`
+}

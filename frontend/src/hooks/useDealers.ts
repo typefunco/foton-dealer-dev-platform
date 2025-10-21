@@ -1,120 +1,97 @@
-// React Hook для работы с дилерами
-import { useState, useEffect, useCallback } from 'react';
-import * as dealerApi from '../api/dealers';
-import type { Dealer, DealerCard, DealerFilters } from '../api/dealers';
-
-// Расширяем интерфейс фильтров для поддержки новых параметров
-interface ExtendedDealerFilters extends DealerFilters {
-  quarter?: string;
-  year?: number;
-}
+import { useState, useEffect, useCallback } from 'react'
+import { getDealersList, DealerListItem, DealerListParams } from '../api/dealers'
 
 interface UseDealersOptions {
-  initialFilters?: ExtendedDealerFilters;
-  autoLoad?: boolean;
+  region?: string
+  autoLoad?: boolean
 }
 
-export function useDealers(options: UseDealersOptions = {}) {
-  const { initialFilters = {}, autoLoad = true } = options;
+interface UseDealersReturn {
+  dealers: DealerListItem[]
+  loading: boolean
+  error: string | null
+  refetch: () => Promise<void>
+  loadDealersByRegion: (region: string) => Promise<void>
+  clearError: () => void
+}
 
-  const [dealers, setDealers] = useState<Dealer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<ExtendedDealerFilters>(initialFilters);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  });
+/**
+ * Хук для работы со списком дилеров
+ */
+export function useDealers(options: UseDealersOptions = {}): UseDealersReturn {
+  const { region, autoLoad = true } = options
+  
+  const [dealers, setDealers] = useState<DealerListItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Загрузка дилеров
-  const loadDealers = useCallback(async (customFilters?: ExtendedDealerFilters) => {
+  const loadDealers = useCallback(async (params: DealerListParams = {}) => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
       
-      const filtersToUse = customFilters || filters;
-      const response = await dealerApi.getDealers(filtersToUse);
-      
-      setDealers(response.dealers);
-      setPagination(response.pagination);
+      const data = await getDealersList(params)
+      setDealers(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dealers');
-      console.error('Failed to load dealers:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(errorMessage)
+      console.error('Error loading dealers:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [filters]);
+  }, [])
 
-  // Получение дилера по ID
-  const getDealerById = useCallback(async (id: string): Promise<Dealer | null> => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const dealer = await dealerApi.getDealerById(id);
-      return dealer;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dealer');
-      console.error('Failed to load dealer:', err);
-      return null;
-    } finally {
-      setLoading(false);
+  const loadDealersByRegion = useCallback(async (regionName: string) => {
+    if (regionName === 'all' || !regionName) {
+      await loadDealers()
+    } else {
+      await loadDealers({ region: regionName })
     }
-  }, []);
+  }, [loadDealers])
 
-  // Получение карточки дилера
-  const getDealerCard = useCallback(async (id: string): Promise<DealerCard | null> => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const card = await dealerApi.getDealerCard(id);
-      return card;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dealer card');
-      console.error('Failed to load dealer card:', err);
-      return null;
-    } finally {
-      setLoading(false);
+  const refetch = useCallback(async () => {
+    if (region) {
+      await loadDealersByRegion(region)
+    } else {
+      await loadDealers()
     }
-  }, []);
+  }, [region, loadDealersByRegion, loadDealers])
 
-  // Обновление фильтров
-  const updateFilters = useCallback((newFilters: Partial<ExtendedDealerFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
-  }, []);
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
 
-  // Сброс фильтров
-  const resetFilters = useCallback(() => {
-    setFilters({});
-  }, []);
-
-  // Автоматическая загрузка при монтировании
+  // Автоматическая загрузка при монтировании компонента
   useEffect(() => {
     if (autoLoad) {
-      loadDealers();
+      if (region) {
+        loadDealersByRegion(region)
+      } else {
+        loadDealers()
+      }
     }
-  }, [autoLoad]);
-
-  // Перезагрузка при изменении фильтров
-  useEffect(() => {
-    if (autoLoad && Object.keys(filters).length > 0) {
-      loadDealers(filters);
-    }
-  }, [filters]);
+  }, [autoLoad, region, loadDealersByRegion, loadDealers])
 
   return {
     dealers,
     loading,
     error,
-    filters,
-    pagination,
-    loadDealers,
-    getDealerById,
-    getDealerCard,
-    updateFilters,
-    resetFilters,
-  };
+    refetch,
+    loadDealersByRegion,
+    clearError
+  }
+}
+
+/**
+ * Хук для получения всех дилеров (упрощенная версия)
+ */
+export function useAllDealers(): UseDealersReturn {
+  return useDealers({ autoLoad: true })
+}
+
+/**
+ * Хук для получения дилеров по региону
+ */
+export function useDealersByRegion(region: string): UseDealersReturn {
+  return useDealers({ region, autoLoad: true })
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/service/auth"
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealer"
 	"github.com/typefunco/dealer_dev_platform/internal/service/dealerdev"
+	"github.com/typefunco/dealer_dev_platform/internal/service/excel"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance_aftersales"
 	"github.com/typefunco/dealer_dev_platform/internal/service/performance_sales"
@@ -47,7 +48,9 @@ func RunApp() {
 
 	// Подключение к базе данных
 	ctx := context.Background()
-	pool, err := database.NewPostgresPool(ctx, cfg.DatabaseURL, database.DefaultPostgresConfig())
+	dbConfig := database.DefaultPostgresConfig()
+	dbConfig.MaxConns = cfg.DBMaxConns
+	pool, err := database.NewPostgresPool(ctx, cfg.DatabaseURL, dbConfig)
 	if err != nil {
 		logger.Error("Failed to connect to database", slog.String("error", err.Error()))
 		os.Exit(1)
@@ -77,6 +80,7 @@ func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *sl
 	afterSalesRepo := repository.NewAfterSalesRepository(pool)
 	authRepo := repository.NewAuthRepository(pool, logger)
 	userRepo := repository.NewUserRepository(pool, logger)
+	dynamicRepo := repository.NewDynamicTableRepository(pool, logger)
 
 	logger.Info("Repositories initialized")
 
@@ -91,11 +95,12 @@ func run(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, logger *sl
 	dealerService := dealer.NewService(dealerRepo, logger)
 	salesService := sales.NewService(salesRepo, logger)
 	dealerDevService := dealerdev.NewService(dealerDevRepo, logger)
+	excelService := excel.NewService(dynamicRepo, logger)
 
 	logger.Info("Services initialized")
 
 	// Инициализация HTTP сервера
-	server := delivery.NewServer(authService, perfService, perfSalesService, perfASService, userService, afterSalesService, dealerService, salesService, dealerDevService, logger)
+	server := delivery.NewServer(authService, perfService, perfSalesService, perfASService, userService, afterSalesService, dealerService, salesService, dealerDevService, excelService, dynamicRepo, pool, cfg.MaxFileSize, logger)
 	logger.Info("HTTP server initialized", slog.String("port", cfg.ServerPort))
 
 	// Graceful shutdown
