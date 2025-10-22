@@ -4,13 +4,13 @@ services:
     container_name: dealer_platform_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: dealer_dev_352
       POSTGRES_DB: dealer_platform
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/internal/migrations:/docker-entrypoint-initdb.d:ro
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d dealer_platform"]
       interval: 5s
@@ -28,11 +28,15 @@ services:
     container_name: dealer_platform_backend
     environment:
       # Database
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/dealer_platform?sslmode=disable
+      DATABASE_URL: postgres://postgres:dealer_dev_352@postgres:5432/dealer_platform?sslmode=disable
       # JWT
       JWT_SECRET: extra-secret
       # Server
       SERVER_PORT: 8080
+      # Development settings
+      MAX_FILE_SIZE: 100
+      LOG_LEVEL: DEBUG
+      DB_MAX_CONNECTIONS: 25
     ports:
       - "8080:8080"
     depends_on:

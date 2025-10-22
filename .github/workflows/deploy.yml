@@ -1,279 +1,48 @@
-name: 🚀 Deploy
+name: Deploy Dealer Platform
 
 on:
+  push:
+    branches: [ main, master ]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        type: choice
-        options:
-          - staging
-          - production
-          - both
-        default: 'staging'
-      
-      skip_build:
-        description: 'Skip build (use existing artifacts)'
-        required: false
-        type: boolean
-        default: false
-      
-      run_migrations:
-        description: 'Run database migrations'
-        required: false
-        type: boolean
-        default: true
-
-env:
-  GO_VERSION: '1.24'
-  NODE_VERSION: '18'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # ==========================================
-  # STAGE 1: BUILD (опционально)
-  # ==========================================
-  
-  build-binary:
-    name: 🔨 Build Binary
+  deploy:
     runs-on: ubuntu-latest
-    if: github.event.inputs.skip_build != 'true'
-    
-    defaults:
-      run:
-        working-directory: ./backend
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Build backend binary
-        run: go build -o bin/dealer-platform ./cmd/app/main.go
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-binary-${{ github.sha }}
-          path: backend/bin/dealer-platform
-          retention-days: 7
-
-  # ==========================================
-  # STAGE 2: DEPLOY TO STAGING
-  # ==========================================
-
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build-binary]
-    if: |
-      always() &&
-      (github.event.inputs.environment == 'staging' || 
-       github.event.inputs.environment == 'both') &&
-      (needs.build-binary.result == 'success' || 
-       needs.build-binary.result == 'skipped')
-    environment:
-      name: staging
-      url: https://stage.your-domain.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download binary artifact
-        if: github.event.inputs.skip_build != 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-binary-${{ github.sha }}
-          path: ./backend/bin
-        continue-on-error: true
-
-      - name: Make binary executable
-        run: chmod +x ./backend/bin/dealer-platform || true
-
-      - name: Deploy to staging
-        run: |
-          echo "🚀 Deploying to staging environment"
-          echo "Version: ${{ github.sha }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Triggered by: ${{ github.actor }}"
-          
-          # Здесь добавьте ваш реальный деплой:
-          # - scp binary на staging сервер
-          # - docker-compose pull && up на staging
-          # - kubectl apply для Kubernetes staging
-
-      - name: Health check
-        run: |
-          echo "✅ Staging deployment completed"
-          # curl -f https://stage.your-domain.com/health || exit 1
-
-  # ==========================================
-  # STAGE 3: RUN MIGRATIONS
-  # ==========================================
-
-  run-migrations:
-    name: 🗄️ Run Migrations
-    runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    if: |
-      always() &&
-      github.event.inputs.run_migrations == 'true' &&
-      (github.event.inputs.environment == 'production' || 
-       github.event.inputs.environment == 'both') &&
-      (needs.deploy-staging.result == 'success' || 
-       needs.deploy-staging.result == 'skipped')
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check for new migrations
-        id: check-migrations
-        run: |
-          echo "Checking for new migration files..."
-          MIGRATIONS=$(ls -1 backend/migrations/*.sql 2>/dev/null | wc -l)
-          echo "Found $MIGRATIONS migration files"
-          echo "migrations_count=$MIGRATIONS" >> $GITHUB_OUTPUT
-
-      - name: Apply migrations to staging
-        if: steps.check-migrations.outputs.migrations_count > 0
-        env:
-          STAGE_DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
-        run: |
-          echo "Applying migrations to staging database..."
-          # for migration in backend/migrations/*.sql; do
-          #   echo "Applying $migration..."
-          #   psql $STAGE_DATABASE_URL -f $migration
-          # done
-
-      - name: Verify migrations
-        run: |
-          echo "✅ Migrations applied successfully"
-
-  # ==========================================
-  # STAGE 4: DEPLOY TO PRODUCTION
-  # ==========================================
-
-  deploy-production:
-    name: 🌍 Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-binary, deploy-staging, run-migrations]
-    if: |
-      always() &&
-      (github.event.inputs.environment == 'production' || 
-       github.event.inputs.environment == 'both') &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
-    environment:
-      name: production
-      url: https://your-domain.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Apply production migrations
-        if: github.event.inputs.run_migrations == 'true'
-        env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-        run: |
-          echo "Applying migrations to production database..."
-          # for migration in backend/migrations/*.sql; do
-          #   echo "Applying $migration..."
-          #   psql $PROD_DATABASE_URL -f $migration
-          # done
-
-      - name: Deploy to production
-        run: |
-          echo "🌍 Deploying to production environment"
-          echo "Version: ${{ github.sha }}"
-          echo "Docker image: ${{ steps.meta.outputs.tags }}"
-          
-          # Здесь добавьте ваш реальный деплой:
-          # - SSH на production сервер
-          # - docker-compose pull && up
-          # - kubectl apply для Kubernetes
-
-      - name: Health check
-        run: |
-          echo "Checking production health..."
-          # sleep 30
-          # curl -f https://your-domain.com/health || exit 1
-
-      - name: Notify success
-        if: success()
-        run: |
-          echo "✅ Production deployment successful!"
-          echo "🎉 Version ${{ github.sha }} is live!"
-          # Добавьте уведомления:
-          # - Slack webhook
-          # - Telegram bot
-
-  # ==========================================
-  # FINAL: DEPLOYMENT SUMMARY
-  # ==========================================
-
-  deployment-summary:
-    name: 📊 Deployment Summary
-    runs-on: ubuntu-latest
-    needs: [build-binary, deploy-staging, run-migrations, deploy-production]
-    if: always()
-    
-    steps:
-      - name: Print summary
-        run: |
-          echo "📊 Deployment Summary"
-          echo "===================="
-          echo "Environment: ${{ github.event.inputs.environment }}"
-          echo "Build: ${{ needs.build-binary.result }}"
-          echo "Staging: ${{ needs.deploy-staging.result }}"
-          echo "Migrations: ${{ needs.run-migrations.result }}"
-          echo "Production: ${{ needs.deploy-production.result }}"
-          echo "===================="
-          
-          if [ "${{ needs.deploy-production.result }}" == "success" ]; then
-            echo "✅ Deployment completed successfully!"
-          elif [ "${{ needs.deploy-staging.result }}" == "success" ]; then
-            echo "✅ Staging deployment completed!"
-          else
-            echo "ℹ️ Deployment finished with status: ${{ job.status }}"
-          fi
-
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Deploy to server
+      run: |
+        ssh -i ~/.ssh/id_ed25519 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+          cd ${{ secrets.PROJECT_PATH }} &&
+          git pull origin main &&
+          docker-compose down &&
+          docker-compose build --no-cache &&
+          docker-compose up -d &&
+          docker system prune -f
+        '
+        
+    - name: Health check
+      run: |
+        ssh -i ~/.ssh/id_ed25519 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+          sleep 30 &&
+          curl -f http://localhost:3000/health || exit 1
+        '
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment successful!"
+        else
+          echo "❌ Deployment failed!"
+        fi

@@ -10,7 +10,7 @@ export async function apiRequest<T>(
   endpoint: string, 
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}/api${endpoint}`;
   
   // Получаем токен из localStorage
   const token = localStorage.getItem('auth_token');
@@ -79,7 +79,7 @@ export async function fetchData<T>(
     params.append('limit', filters.limit.toString());
   }
 
-  const url = `${API_BASE_URL}/${endpoint}?${params.toString()}`;
+  const url = `${API_BASE_URL}/api/${endpoint}?${params.toString()}`;
   
   // Получаем токен из localStorage
   const token = localStorage.getItem('auth_token');
@@ -108,7 +108,7 @@ export async function fetchData<T>(
 
 // Специфичные функции для каждого типа данных
 export async function fetchDealers(filters: SearchFilters = {}): Promise<any[]> {
-  return fetchData('dealers', filters);
+  return fetchData('dealers/list', filters);
 }
 
 export async function fetchDealerDev(filters: SearchFilters = {}): Promise<any[]> {

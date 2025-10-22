@@ -32,7 +32,7 @@ export async function getDealersList(params: DealerListParams = {}): Promise<Dea
     searchParams.set('offset', params.offset.toString())
   }
 
-  const url = `${API_BASE_URL}/dealers/list?${searchParams.toString()}`
+  const url = `${API_BASE_URL}/api/dealers/list?${searchParams.toString()}`
   
   try {
     // Получаем токен из localStorage

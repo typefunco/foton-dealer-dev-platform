@@ -59,6 +59,9 @@ func RunApp() {
 
 	logger.Info("Database connection established")
 
+	// Устанавливаем глобальную конфигурацию БД
+	database.SetGlobalConfig(dbConfig)
+
 	// Инициализация компонентов
 	if err := run(ctx, pool, cfg, logger); err != nil {
 		logger.Error("Application error", slog.String("error", err.Error()))

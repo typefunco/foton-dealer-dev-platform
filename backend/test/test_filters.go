@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,7 +22,7 @@ func main() {
 	// Подключение к базе данных
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		databaseURL = "postgres://postgres:password@localhost:5432/dealer_dev_platform?sslmode=disable"
+		log.Fatal("DATABASE_URL environment variable is required for testing")
 	}
 
 	pool, err := pgxpool.New(context.Background(), databaseURL)
@@ -32,15 +33,21 @@ func main() {
 
 	fmt.Println("✅ Database connected successfully")
 
-	// Инициализируем сервисы
+	// Создаем логгер
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	// Инициализируем репозитории
 	dealerRepo := repository.NewDealerRepository(pool)
-	dealerService := dealer.NewService(dealerRepo, nil)
-
+	excelDealerRepo := repository.NewExcelDealerRepository(pool, logger)
 	afterSalesRepo := repository.NewAfterSalesRepository(pool)
-	afterSalesService := aftersales.NewService(afterSalesRepo, nil)
-
 	performanceRepo := repository.NewPerformanceRepository(pool)
-	performanceService := performance.NewService(performanceRepo, nil)
+
+	// Инициализируем сервисы
+	dealerService := dealer.NewService(dealerRepo, excelDealerRepo, logger)
+	afterSalesService := aftersales.NewService(afterSalesRepo, excelDealerRepo, logger)
+	performanceService := performance.NewService(performanceRepo, logger)
 
 	ctx := context.Background()
 

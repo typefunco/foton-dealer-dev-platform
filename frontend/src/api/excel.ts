@@ -46,10 +46,10 @@ export const uploadExcelFile = async (file: File): Promise<ExcelUploadResponse> 
   // Получаем токен из localStorage
   const token = localStorage.getItem('auth_token');
   
-  const response = await fetch(`${API_BASE_URL}/api/excel/upload`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/excel/upload`, {
     method: 'POST',
     headers: {
-        'Content-Type': 'application/json',
+        // Не устанавливаем Content-Type для FormData - браузер установит автоматически с boundary
         ...(token && { 'Authorization': `Bearer ${token}` }),
       },
     body: formData,
@@ -72,7 +72,7 @@ export const getExcelTables = async (): Promise<ExcelTableMetadata[]> => {
   // Получаем токен из localStorage
   const token = localStorage.getItem('auth_token');
   
-  const response = await fetch(`${API_BASE_URL}/api/excel/tables`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/excel/tables`, {
     headers: {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -95,7 +95,7 @@ export const getExcelTableMetadata = async (tableName: string): Promise<ExcelTab
   // Получаем токен из localStorage
   const token = localStorage.getItem('auth_token');
   
-  const response = await fetch(`${API_BASE_URL}/api/excel/tables/${tableName}`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/excel/tables/${tableName}`, {
     headers: {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -121,7 +121,7 @@ export const getExcelTableData = async (
   const token = localStorage.getItem('auth_token');
   
   const response = await fetch(
-    `${API_BASE_URL}/excel/tables/${tableName}/data?limit=${limit}&offset=${offset}`,
+    `${API_BASE_URL}/api/admin/excel/tables/${tableName}/data?limit=${limit}&offset=${offset}`,
     {
       headers: {
         'Content-Type': 'application/json',
@@ -146,7 +146,7 @@ export const deleteExcelTable = async (tableName: string): Promise<void> => {
   // Получаем токен из localStorage
   const token = localStorage.getItem('auth_token');
   
-  const response = await fetch(`${API_BASE_URL}/api/excel/tables/${tableName}`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/excel/tables/${tableName}`, {
     method: 'DELETE',
     headers: {
         'Content-Type': 'application/json',

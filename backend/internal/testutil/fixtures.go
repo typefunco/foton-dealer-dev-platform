@@ -45,34 +45,21 @@ func CreateTestUser() *model.User {
 
 // CreateTestSales создает тестовые данные продаж
 func CreateTestSales(dealerID int) *model.Sales {
-	stockHDT := 10
-	stockMDT := 15
-	stockLDT := 20
-	buyoutHDT := 5
-	buyoutMDT := 8
-	buyoutLDT := 12
-	fotonPersonnel := 3
-	targetPlan := 100
-	targetFact := 85
-	serviceContracts := 5.0
-	trainings := model.SalesTrainingsYes
-	recommendation := "Planned Result"
-
 	return &model.Sales{
 		DealerID:              dealerID,
-		Period:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		StockHDT:              &stockHDT,
-		StockMDT:              &stockMDT,
-		StockLDT:              &stockLDT,
-		BuyoutHDT:             &buyoutHDT,
-		BuyoutMDT:             &buyoutMDT,
-		BuyoutLDT:             &buyoutLDT,
-		FotonSalesPersonnel:   &fotonPersonnel,
-		SalesTargetPlan:       &targetPlan,
-		SalesTargetFact:       &targetFact,
-		ServiceContractsSales: &serviceContracts,
-		SalesTrainings:        &trainings,
-		SalesRecommendation:   &recommendation,
+		Quarter:               "Q1",
+		Year:                  2024,
+		SalesTarget:           "100",
+		StockHDT:              10,
+		StockMDT:              15,
+		StockLDT:              20,
+		BuyoutHDT:             5,
+		BuyoutMDT:             8,
+		BuyoutLDT:             12,
+		FotonSalesmen:         3,
+		ServiceContractsSales: 5,
+		SalesTrainings:        true,
+		SalesDecision:         "Planned Result",
 		CreatedAt:             time.Now(),
 		UpdatedAt:             time.Now(),
 	}
@@ -144,7 +131,8 @@ func CreateTestPerformanceSales(dealerID int) *model.PerformanceSales {
 
 	return &model.PerformanceSales{
 		DealerID:          dealerID,
-		Period:            time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		Quarter:           "Q1",
+		Year:              2024,
 		QuantitySold:      &quantitySold,
 		SalesRevenue:      &salesRevenue,
 		SalesRevenueNoVat: &salesRevenueNoVat,
@@ -168,7 +156,8 @@ func CreateTestPerformanceAfterSales(dealerID int) *model.PerformanceAfterSales 
 
 	return &model.PerformanceAfterSales{
 		DealerID:       dealerID,
-		Period:         time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		Quarter:        "Q1",
+		Year:           2024,
 		ASRevenue:      &asRevenue,
 		ASRevenueNoVat: &asRevenueNoVat,
 		ASCost:         &asCost,
