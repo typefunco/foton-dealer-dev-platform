@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: dealer_platform_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dealer_dev_352
+      POSTGRES_DB: dealer_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dealer_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - dealer_network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dealer_platform_backend
+    environment:
+      # Database
+      DATABASE_URL: postgres://postgres:dealer_dev_352@postgres:5432/dealer_platform?sslmode=disable
+      # JWT
+      JWT_SECRET: extra-secret
+      # Server
+      SERVER_PORT: 8080
+      # Development settings
+      MAX_FILE_SIZE: 100
+      LOG_LEVEL: DEBUG
+      DB_MAX_CONNECTIONS: 25
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dealer_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dealer_platform_frontend
+    environment:
+      # API Configuration - используем относительные пути для Docker
+      VITE_API_BASE_URL: ""
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - dealer_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  dealer_network:
+    driver: bridge
