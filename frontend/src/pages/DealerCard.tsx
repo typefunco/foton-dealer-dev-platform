@@ -9,29 +9,32 @@ interface DealerData {
   city: string
   manager: string
   dealership_class: string
-  check_list_score: number
-  brands: string[]
-  branding: string
-  marketing_investments: number
-  by_side_businesses: string
-  stock_hdt: number
-  stock_mdt: number
-  stock_ldt: number
-  buyout_hdt: number
-  buyout_mdt: number
-  buyout_ldt: number
-  foton_sales_personnel: number
-  sales_trainings: string
-  service_contracts_sales: number
-  sales_recommendation: string
-  sales_revenue: number
-  sales_margin: number
-  sales_margin_pct: number
-  sales_profit_pct: number
-  as_revenue: number
-  as_margin: number
-  as_margin_pct: number
-  as_profit_pct: number
+  check_list_score: number | null
+  brands: string[] | null
+  branding: string | null
+  marketing_investments: number | null
+  by_side_businesses: string | null
+  stock_hdt: number | null
+  stock_mdt: number | null
+  stock_ldt: number | null
+  buyout_hdt: number | null
+  buyout_mdt: number | null
+  buyout_ldt: number | null
+  foton_sales_personnel: number | null
+  sales_trainings: string | null
+  service_contracts_sales: number | null
+  sales_recommendation: string | null
+  sales_revenue: number | null
+  sales_margin: number | null
+  sales_margin_pct: number | null
+  sales_profit_pct: number | null
+  as_revenue: number | null
+  as_margin: number | null
+  as_margin_pct: number | null
+  as_profit_pct: number | null
+  sales_target_plan: number | null
+  sales_target_fact: number | null
+  quantity_sold: number | null
 }
 
 const DealerCard: React.FC = () => {
@@ -49,7 +52,7 @@ const DealerCard: React.FC = () => {
         setLoading(true)
         setError(null)
         
-        const response = await fetch(`http://localhost:8080/api/dealers/${dealerId}/card?quarter=Q1&year=2024`)
+        const response = await fetch(`/api/dealers/${dealerId}/card?quarter=Q3&year=2025`)
         
         if (!response.ok) {
           throw new Error(`Failed to fetch dealer data: ${response.status}`)
@@ -70,22 +73,62 @@ const DealerCard: React.FC = () => {
 
   // Данные для pie charts - единые цвета для HDT, MDT, LDT
   const stockData = dealer ? [
-    { name: 'HDT', value: dealer.stock_hdt, color: '#3B82F6' },
-    { name: 'MDT', value: dealer.stock_mdt, color: '#10B981' },
-    { name: 'LDT', value: dealer.stock_ldt, color: '#8B5CF6' }
-  ] : []
+    { name: 'HDT', value: dealer.stock_hdt || 0, color: '#3B82F6' },
+    { name: 'MDT', value: dealer.stock_mdt || 0, color: '#10B981' },
+    { name: 'LDT', value: dealer.stock_ldt || 0, color: '#8B5CF6' }
+  ].filter(item => item.value > 0) : []
 
   const buyoutData = dealer ? [
-    { name: 'HDT', value: dealer.buyout_hdt, color: '#3B82F6' },
-    { name: 'MDT', value: dealer.buyout_mdt, color: '#10B981' },
-    { name: 'LDT', value: dealer.buyout_ldt, color: '#8B5CF6' }
-  ] : []
+    { name: 'HDT', value: dealer.buyout_hdt || 0, color: '#3B82F6' },
+    { name: 'MDT', value: dealer.buyout_mdt || 0, color: '#10B981' },
+    { name: 'LDT', value: dealer.buyout_ldt || 0, color: '#8B5CF6' }
+  ].filter(item => item.value > 0) : []
 
-  // Данные для sales target pie chart - план по году и выполнение в квартале
+  // Динамические данные для Sales Target Performance
+  const calculateSalesTargetData = () => {
+    if (!dealer) return { completed: 0, remaining: 0, total: 0 }
+    
+    // Используем buyout данные как выполненные продажи
+    const completed = (dealer.buyout_hdt || 0) + (dealer.buyout_mdt || 0) + (dealer.buyout_ldt || 0)
+    
+    // Используем stock данные как план на остаток года (примерно)
+    const stockTotal = (dealer.stock_hdt || 0) + (dealer.stock_mdt || 0) + (dealer.stock_ldt || 0)
+    
+    // Если есть данные о плане и факте, используем их
+    if (dealer.sales_target_plan && dealer.sales_target_fact) {
+      return {
+        completed: dealer.sales_target_fact,
+        remaining: Math.max(0, dealer.sales_target_plan - dealer.sales_target_fact),
+        total: dealer.sales_target_plan
+      }
+    }
+    
+    // Если есть только quantity_sold, используем его
+    if (dealer.quantity_sold) {
+      const estimatedPlan = Math.max(completed, dealer.quantity_sold) + stockTotal
+      return {
+        completed: dealer.quantity_sold,
+        remaining: Math.max(0, estimatedPlan - dealer.quantity_sold),
+        total: estimatedPlan
+      }
+    }
+    
+    // Fallback: используем buyout + stock как общий план
+    const total = completed + stockTotal
+    return {
+      completed,
+      remaining: stockTotal,
+      total
+    }
+  }
+
+  const salesTarget = calculateSalesTargetData()
+
+  // Данные для sales target pie chart - динамические данные
   const salesTargetData = [
-    { name: 'Completed', value: 32, color: '#10B981' },
-    { name: 'Remaining', value: 68, color: '#EF4444' }
-  ]
+    { name: 'Completed', value: salesTarget.completed, color: '#10B981' },
+    { name: 'Remaining', value: salesTarget.remaining, color: '#EF4444' }
+  ].filter(item => item.value > 0)
 
   if (loading) {
     return (
@@ -212,7 +255,7 @@ const DealerCard: React.FC = () => {
         {/* Brands Portfolio Visualization */}
         <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20 mb-8">
           <h3 className="text-xl font-semibold text-white mb-4">Brands Portfolio</h3>
-          <BrandLogos brands={dealer.brands} className="justify-center" />
+          <BrandLogos brands={dealer.brands || []} className="justify-center" />
         </div>
 
         {/* Charts Section */}
@@ -261,15 +304,15 @@ const DealerCard: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-lg font-medium text-white mb-2">Annual Target in Units</h4>
-                    <p className="text-3xl font-bold text-white">100</p>
+                    <p className="text-3xl font-bold text-white">{salesTarget.total}</p>
                   </div>
                   <div>
                     <h4 className="text-lg font-medium text-white mb-2">Delivered in Units</h4>
-                    <p className="text-3xl font-bold text-green-400">32</p>
+                    <p className="text-3xl font-bold text-green-400">{salesTarget.completed}</p>
                   </div>
                   <div>
                     <h4 className="text-lg font-bold text-white mb-2">Remaining in Units</h4>
-                    <p className="text-3xl font-bold text-red-400">68</p>
+                    <p className="text-3xl font-bold text-red-400">{salesTarget.remaining}</p>
                   </div>
                 </div>
               </div>

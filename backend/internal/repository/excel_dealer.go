@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -77,7 +78,7 @@ func (r *ExcelDealerRepository) GetDealersWithFilters(ctx context.Context, year 
 	}
 
 	// Строим запрос
-	query := r.sq.Select("dealer", "region", "city", "manager").
+	query := r.sq.Select("id", "dealer", "region", "city", "manager").
 		From(tableName).
 		Where(squirrel.NotEq{"dealer": nil}).
 		Where(squirrel.NotEq{"dealer": ""})
@@ -137,14 +138,16 @@ func (r *ExcelDealerRepository) GetDealersWithFilters(ctx context.Context, year 
 
 	var dealers []*model.Dealer
 	for rows.Next() {
+		var id int
 		var dealerName, region, city, manager *string
-		err = rows.Scan(&dealerName, &region, &city, &manager)
+		err = rows.Scan(&id, &dealerName, &region, &city, &manager)
 		if err != nil {
 			return nil, fmt.Errorf("ExcelDealerRepository.GetDealersWithFilters: error scanning row: %w", err)
 		}
 
 		// Создаем объект дилера
 		dealer := &model.Dealer{
+			DealerID:     id,
 			DealerNameRu: getStringValue(dealerName),
 			Region:       getStringValue(region),
 			City:         getStringValue(city),
@@ -262,6 +265,136 @@ func (r *ExcelDealerRepository) GetDealerCardData(ctx context.Context, year int,
 	return cardData, nil
 }
 
+// GetDealerByIDFromExcel возвращает дилера по ID из Excel таблицы.
+func (r *ExcelDealerRepository) GetDealerByIDFromExcel(ctx context.Context, year int, quarter string, dealerID int) (*model.DealerCardData, error) {
+	tableName := r.GetDealerNetTableName(year, quarter)
+
+	query := `
+		SELECT id, dealer, region, city, manager, class, check_list_percent, marketing_investments, branding,
+		       hdt, mdt, ldt, hdt_2, mdt_2, ldt_2, service_contracts_sales, spare_parts_sales_q3,
+		       spare_parts_sales_ytd_percent, warranty_stock_percent, recommended_stock_percent,
+		       foton_labour_hours, foton_labour_hours_share, warranty_hours, service_contracts_hours,
+		       as_trainings, dealer_development, sales, aftersales, joint_decision, created_at
+		FROM ` + tableName + `
+		WHERE id = $1`
+
+	var cardData model.DealerCardData
+	var checkListPercent, marketingInvestments, serviceContractsSales sql.NullString
+	var hdt, mdt, ldt, hdt2, mdt2, ldt2 sql.NullString
+	var sparePartsSalesQ3, sparePartsSalesYTDPercent, warrantyStockPercent, recommendedStockPercent sql.NullString
+	var fotonLabourHours, fotonLabourHoursShare, warrantyHours, serviceContractsHours sql.NullString
+	var asTrainings, dealerDevelopment, sales, aftersales, jointDecision sql.NullString
+
+	err := r.pool.QueryRow(ctx, query, dealerID).Scan(
+		&cardData.DealerID,
+		&cardData.DealerNameRu,
+		&cardData.Region,
+		&cardData.City,
+		&cardData.Manager,
+		&cardData.DealershipClass,
+		&checkListPercent,
+		&marketingInvestments,
+		&cardData.Branding,
+		&hdt,
+		&mdt,
+		&ldt,
+		&hdt2,
+		&mdt2,
+		&ldt2,
+		&serviceContractsSales,
+		&sparePartsSalesQ3,
+		&sparePartsSalesYTDPercent,
+		&warrantyStockPercent,
+		&recommendedStockPercent,
+		&fotonLabourHours,
+		&fotonLabourHoursShare,
+		&warrantyHours,
+		&serviceContractsHours,
+		&asTrainings,
+		&dealerDevelopment,
+		&sales,
+		&aftersales,
+		&jointDecision,
+		&cardData.Period,
+	)
+
+	if err != nil {
+		r.logger.Error("Failed to get dealer by ID from Excel table",
+			slog.String("table", tableName),
+			slog.Int("dealer_id", dealerID),
+			slog.String("error", err.Error()),
+		)
+		return nil, fmt.Errorf("failed to get dealer by ID from Excel table: %w", err)
+	}
+
+	// Конвертируем строковые значения в нужные типы
+	if checkListPercent.Valid {
+		if val, err := strconv.ParseFloat(checkListPercent.String, 64); err == nil {
+			cardData.CheckListScore = &val
+		}
+	}
+
+	if marketingInvestments.Valid {
+		if val, err := strconv.ParseFloat(marketingInvestments.String, 64); err == nil {
+			cardData.MarketingInvestments = &val
+		}
+	}
+
+	if hdt.Valid {
+		if val, err := strconv.Atoi(hdt.String); err == nil {
+			cardData.StockHDT = &val
+		}
+	}
+
+	if mdt.Valid {
+		if val, err := strconv.Atoi(mdt.String); err == nil {
+			cardData.StockMDT = &val
+		}
+	}
+
+	if ldt.Valid {
+		if val, err := strconv.Atoi(ldt.String); err == nil {
+			cardData.StockLDT = &val
+		}
+	}
+
+	if hdt2.Valid {
+		if val, err := strconv.Atoi(hdt2.String); err == nil {
+			cardData.BuyoutHDT = &val
+		}
+	}
+
+	if mdt2.Valid {
+		if val, err := strconv.Atoi(mdt2.String); err == nil {
+			cardData.BuyoutMDT = &val
+		}
+	}
+
+	if ldt2.Valid {
+		if val, err := strconv.Atoi(ldt2.String); err == nil {
+			cardData.BuyoutLDT = &val
+		}
+	}
+
+	if serviceContractsSales.Valid {
+		if val, err := strconv.ParseFloat(serviceContractsSales.String, 64); err == nil {
+			cardData.ServiceContractsSales = &val
+		}
+	}
+
+	if jointDecision.Valid {
+		cardData.JointDecision = &jointDecision.String
+	}
+
+	r.logger.Info("Dealer retrieved from Excel table",
+		slog.String("table", tableName),
+		slog.Int("dealer_id", dealerID),
+		slog.String("dealer_name", cardData.DealerNameRu),
+	)
+
+	return &cardData, nil
+}
+
 // GetAvailableRegions получает список доступных регионов из таблицы dealer_net.
 func (r *ExcelDealerRepository) GetAvailableRegions(ctx context.Context, year int, quarter string) ([]string, error) {
 	tableName := r.GetDealerNetTableName(year, quarter)
@@ -338,7 +471,7 @@ func (r *ExcelDealerRepository) GetSalesDataFromExcel(ctx context.Context, year 
 	}
 
 	// Строим запрос для получения данных продаж
-	query := r.sq.Select("dealer", "region", "city", "manager", "hdt", "mdt", "ldt", "hdt_2", "mdt_2", "ldt_2", "sales").
+	query := r.sq.Select("id", "dealer", "region", "city", "manager", "hdt", "mdt", "ldt", "hdt_2", "mdt_2", "ldt_2", "sales").
 		From(tableName).
 		Where(squirrel.NotEq{"dealer": nil}).
 		Where(squirrel.NotEq{"dealer": ""})
@@ -370,10 +503,11 @@ func (r *ExcelDealerRepository) GetSalesDataFromExcel(ctx context.Context, year 
 
 	var salesData []*model.SalesWithDetails
 	for rows.Next() {
+		var id int
 		var dealerName, region, city, manager, sales *string
 		var hdt, mdt, ldt, hdt2, mdt2, ldt2 *string
 
-		err = rows.Scan(&dealerName, &region, &city, &manager, &hdt, &mdt, &ldt, &hdt2, &mdt2, &ldt2, &sales)
+		err = rows.Scan(&id, &dealerName, &region, &city, &manager, &hdt, &mdt, &ldt, &hdt2, &mdt2, &ldt2, &sales)
 		if err != nil {
 			return nil, fmt.Errorf("ExcelDealerRepository.GetSalesDataFromExcel: error scanning row: %w", err)
 		}
@@ -381,6 +515,7 @@ func (r *ExcelDealerRepository) GetSalesDataFromExcel(ctx context.Context, year 
 		// Создаем объект данных продаж
 		salesDetail := &model.SalesWithDetails{
 			Sales: model.Sales{
+				DealerID:    id,
 				StockHDT:    getIntFromString(hdt),
 				StockMDT:    getIntFromString(mdt),
 				StockLDT:    getIntFromString(ldt),
@@ -429,7 +564,7 @@ func (r *ExcelDealerRepository) GetDealerDevDataFromExcel(ctx context.Context, y
 	}
 
 	// Строим запрос для получения данных дилер-девелопмента
-	query := r.sq.Select("dealer", "region", "city", "manager", "class", "check_list_percent", "marketing_investments", "branding", "dealer_development").
+	query := r.sq.Select("id", "dealer", "region", "city", "manager", "class", "check_list_percent", "marketing_investments", "branding", "dealer_development").
 		From(tableName).
 		Where(squirrel.NotEq{"dealer": nil}).
 		Where(squirrel.NotEq{"dealer": ""})
@@ -461,9 +596,10 @@ func (r *ExcelDealerRepository) GetDealerDevDataFromExcel(ctx context.Context, y
 
 	var dealerDevData []*model.DealerDevWithDetails
 	for rows.Next() {
+		var id int
 		var dealerName, region, city, manager, class, checkListPercent, marketingInvestments, branding, dealerDevelopment *string
 
-		err = rows.Scan(&dealerName, &region, &city, &manager, &class, &checkListPercent, &marketingInvestments, &branding, &dealerDevelopment)
+		err = rows.Scan(&id, &dealerName, &region, &city, &manager, &class, &checkListPercent, &marketingInvestments, &branding, &dealerDevelopment)
 		if err != nil {
 			return nil, fmt.Errorf("ExcelDealerRepository.GetDealerDevDataFromExcel: error scanning row: %w", err)
 		}
@@ -471,6 +607,7 @@ func (r *ExcelDealerRepository) GetDealerDevDataFromExcel(ctx context.Context, y
 		// Создаем объект данных дилер-девелопмента
 		dealerDevDetail := &model.DealerDevWithDetails{
 			DealerDevelopment: model.DealerDevelopment{
+				DealerID:             id,
 				DealershipClass:      getStringValue(class),
 				CheckListScore:       getIntFromString(checkListPercent),
 				MarketingInvestments: int64(getFloatFromString(marketingInvestments)),
@@ -517,7 +654,7 @@ func (r *ExcelDealerRepository) GetAfterSalesDataFromExcel(ctx context.Context, 
 	}
 
 	// Строим запрос для получения данных автозапчастей
-	query := r.sq.Select("dealer", "region", "city", "manager", "service_contracts_sales", "spare_parts_sales_q3", "spare_parts_sales_ytd_percent", "warranty_stock_percent", "recommended_stock_percent", "foton_labour_hours", "foton_labour_hours_share", "warranty_hours", "service_contracts_hours", "as_trainings", "aftersales").
+	query := r.sq.Select("id", "dealer", "region", "city", "manager", "service_contracts_sales", "spare_parts_sales_q3", "spare_parts_sales_ytd_percent", "warranty_stock_percent", "recommended_stock_percent", "foton_labour_hours", "foton_labour_hours_share", "warranty_hours", "service_contracts_hours", "as_trainings", "aftersales").
 		From(tableName).
 		Where(squirrel.NotEq{"dealer": nil}).
 		Where(squirrel.NotEq{"dealer": ""})
@@ -549,9 +686,10 @@ func (r *ExcelDealerRepository) GetAfterSalesDataFromExcel(ctx context.Context, 
 
 	var afterSalesData []*model.AfterSalesWithDetails
 	for rows.Next() {
+		var id int
 		var dealerName, region, city, manager, serviceContractsSales, sparePartsSalesQ3, sparePartsSalesYtdPercent, warrantyStockPercent, recommendedStockPercent, fotonLabourHours, fotonLabourHoursShare, warrantyHours, serviceContractsHours, asTrainings, aftersales *string
 
-		err = rows.Scan(&dealerName, &region, &city, &manager, &serviceContractsSales, &sparePartsSalesQ3, &sparePartsSalesYtdPercent, &warrantyStockPercent, &recommendedStockPercent, &fotonLabourHours, &fotonLabourHoursShare, &warrantyHours, &serviceContractsHours, &asTrainings, &aftersales)
+		err = rows.Scan(&id, &dealerName, &region, &city, &manager, &serviceContractsSales, &sparePartsSalesQ3, &sparePartsSalesYtdPercent, &warrantyStockPercent, &recommendedStockPercent, &fotonLabourHours, &fotonLabourHoursShare, &warrantyHours, &serviceContractsHours, &asTrainings, &aftersales)
 		if err != nil {
 			return nil, fmt.Errorf("ExcelDealerRepository.GetAfterSalesDataFromExcel: error scanning row: %w", err)
 		}
@@ -559,6 +697,7 @@ func (r *ExcelDealerRepository) GetAfterSalesDataFromExcel(ctx context.Context, 
 		// Создаем объект данных автозапчастей
 		afterSalesDetail := &model.AfterSalesWithDetails{
 			AfterSales: model.AfterSales{
+				DealerID:           id,
 				RecommendedStock:   getIntFromString(recommendedStockPercent),
 				WarrantyStock:      getIntFromString(warrantyStockPercent),
 				FotonLaborHours:    getIntFromString(fotonLabourHours),

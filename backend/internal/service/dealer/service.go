@@ -34,6 +34,7 @@ type ExcelRepository interface {
 	TableExists(ctx context.Context, year int, quarter string) (bool, error)
 	GetDealersWithFilters(ctx context.Context, year int, quarter string, filters *model.FilterParams) ([]*model.Dealer, error)
 	GetDealerCardData(ctx context.Context, year int, quarter string, dealerName string) (*model.DealerCardData, error)
+	GetDealerByIDFromExcel(ctx context.Context, year int, quarter string, dealerID int) (*model.DealerCardData, error)
 	GetAvailableRegions(ctx context.Context, year int, quarter string) ([]string, error)
 }
 
@@ -427,6 +428,57 @@ func (s *Service) GetDealerCardFromExcel(ctx context.Context, year int, quarter 
 		slog.Int("year", year),
 		slog.String("quarter", quarter),
 		slog.String("dealer_name", dealerName),
+	)
+
+	return cardData, nil
+}
+
+// GetDealerByIDFromExcel получает дилера по ID из Excel таблицы.
+func (s *Service) GetDealerByIDFromExcel(ctx context.Context, year int, quarter string, dealerID int) (*model.DealerCardData, error) {
+	s.logger.Info("Getting dealer by ID from Excel table",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.Int("dealer_id", dealerID),
+	)
+
+	// Проверяем валидность параметров
+	if year < 2020 || year > 2030 {
+		return nil, fmt.Errorf("invalid year: %d", year)
+	}
+
+	if !isValidQuarter(quarter) {
+		return nil, fmt.Errorf("invalid quarter: %s", quarter)
+	}
+
+	if dealerID <= 0 {
+		return nil, fmt.Errorf("invalid dealer ID: %d", dealerID)
+	}
+
+	// Проверяем существование таблицы
+	exists, err := s.excelRepo.TableExists(ctx, year, quarter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if !exists {
+		s.logger.Warn("Excel table does not exist",
+			slog.Int("year", year),
+			slog.String("quarter", quarter),
+		)
+		return nil, fmt.Errorf("Excel table does not exist for year %d quarter %s", year, quarter)
+	}
+
+	// Получаем дилера из Excel таблицы
+	cardData, err := s.excelRepo.GetDealerByIDFromExcel(ctx, year, quarter, dealerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dealer by ID from Excel: %w", err)
+	}
+
+	s.logger.Info("Dealer retrieved from Excel",
+		slog.Int("year", year),
+		slog.String("quarter", quarter),
+		slog.Int("dealer_id", dealerID),
+		slog.String("dealer_name", cardData.DealerNameRu),
 	)
 
 	return cardData, nil

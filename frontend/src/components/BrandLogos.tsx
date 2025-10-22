@@ -12,6 +12,9 @@ interface BrandLogosProps {
 }
 
 const BrandLogos: React.FC<BrandLogosProps> = ({ brands, className = '' }) => {
+  // Проверяем, что brands не null и является массивом
+  const safeBrands = brands || []
+  
   // Определяем размер логотипов в зависимости от количества брендов
   const getLogoSize = (brandCount: number) => {
     if (brandCount <= 2) return 'w-28 h-28' // 112px для 1-2 брендов (было 80px)
@@ -20,7 +23,7 @@ const BrandLogos: React.FC<BrandLogosProps> = ({ brands, className = '' }) => {
     return 'w-18 h-18' // 72px для 7+ брендов (было 48px)
   }
 
-  const logoSize = getLogoSize(brands.length)
+  const logoSize = getLogoSize(safeBrands.length)
 
   // Список всех доступных брендов с их логотипами
   const allBrands: Record<string, BrandLogo> = {
@@ -107,7 +110,7 @@ const BrandLogos: React.FC<BrandLogosProps> = ({ brands, className = '' }) => {
   }
 
   // Фильтруем только те бренды, которые есть в портфеле дилера
-  const availableBrands = brands
+  const availableBrands = safeBrands
     .filter(brand => allBrands[brand])
     .map(brand => allBrands[brand])
 

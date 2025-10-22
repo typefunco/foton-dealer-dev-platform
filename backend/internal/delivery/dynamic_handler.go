@@ -176,7 +176,7 @@ func (s *Server) getDealerDevData(c echo.Context, filters *model.FilterParams) (
 	response := make([]DealerDevResponse, 0, len(ddList))
 	for _, dd := range ddList {
 		response = append(response, DealerDevResponse{
-			ID:                      strconv.FormatInt(int64(dd.DealerID), 10),
+			ID:                      strconv.Itoa(dd.DealerID),
 			Name:                    dd.DealerNameRu,
 			City:                    dd.City,
 			Class:                   dd.DealershipClass,
@@ -208,7 +208,7 @@ func (s *Server) getSalesData(c echo.Context, filters *model.FilterParams) (inte
 		buyoutHdtMdtLdt := fmt.Sprintf("%d/%d/%d", sale.BuyoutHDT, sale.BuyoutMDT, sale.BuyoutLDT)
 
 		response = append(response, map[string]interface{}{
-			"id":              strconv.FormatInt(int64(sale.DealerID), 10),
+			"id":              strconv.Itoa(sale.DealerID),
 			"name":            sale.DealerNameRu,
 			"city":            sale.City,
 			"salesManager":    sale.Manager,
@@ -235,7 +235,7 @@ func (s *Server) getAfterSalesData(c echo.Context, filters *model.FilterParams) 
 	response := make([]AfterSalesDealerResponse, 0, len(afterSalesList))
 	for _, as := range afterSalesList {
 		response = append(response, AfterSalesDealerResponse{
-			ID:                    strconv.FormatInt(int64(as.DealerID), 10),
+			ID:                    strconv.Itoa(as.DealerID),
 			Name:                  as.DealerNameRu,
 			City:                  as.City,
 			RStockPercent:         &as.RecommendedStock,
@@ -268,7 +268,7 @@ func (s *Server) getPerformanceData(c echo.Context, filters *model.FilterParams)
 		rap := calculateRAP(int16(perf.FotonRank))
 
 		response = append(response, PerformanceDealerResponse{
-			ID:                  strconv.FormatInt(int64(perf.DealerID), 10),
+			ID:                  strconv.Itoa(perf.DealerID),
 			Name:                perf.DealerNameRu,
 			City:                perf.City,
 			SrRub:               formatMoney(int64(perf.SalesRevenueRub)),
@@ -299,7 +299,7 @@ func (s *Server) getSalesTeamData(c echo.Context, filters *model.FilterParams) (
 	response := make([]interface{}, 0, len(salesList))
 	for _, sale := range salesList {
 		response = append(response, map[string]interface{}{
-			"id":              strconv.FormatInt(int64(sale.DealerID), 10),
+			"id":              strconv.Itoa(sale.DealerID),
 			"name":            sale.DealerNameRu,
 			"city":            sale.City,
 			"salesManager":    sale.Manager,

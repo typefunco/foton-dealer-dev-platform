@@ -61,19 +61,8 @@ func (s *Server) GetDealerCard(c echo.Context) error {
 			slog.String("quarter", quarter),
 		)
 
-		// Сначала получаем название дилера по ID из основной таблицы
-		dealer, err := s.dealerService.GetDealerByID(c.Request().Context(), int(id))
-		if err != nil {
-			s.logger.Error("GetDealerCard: failed to get dealer by ID",
-				slog.Int64("id", id),
-				slog.String("error", err.Error()),
-			)
-			return c.JSON(http.StatusNotFound, ErrorResponse{
-				Error: "Dealer not found",
-			})
-		}
-
-		cardData, err = s.dealerService.GetDealerCardFromExcel(c.Request().Context(), year, quarter, dealer.DealerNameRu)
+		// Получаем карточку дилера по ID из Excel таблицы
+		cardData, err = s.dealerService.GetDealerByIDFromExcel(c.Request().Context(), year, quarter, int(id))
 		if err != nil {
 			s.logger.Error("GetDealerCard: failed to get dealer card from Excel",
 				slog.Int64("id", id),
