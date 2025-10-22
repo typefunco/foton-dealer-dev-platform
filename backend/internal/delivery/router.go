@@ -92,6 +92,12 @@ func (s *Server) RunServer() {
 			"http://localhost:3000", // Development
 			"http://frontend:3000",  // Docker frontend service
 			"http://127.0.0.1:3000", // Alternative localhost
+			"http://localhost",      // Generic localhost
+			"http://frontend",       // Docker service name
+			"http://localhost:80",   // Production HTTP
+			"http://localhost:443",  // Production HTTPS
+			"https://localhost",     // Production HTTPS
+			"https://localhost:443", // Production HTTPS
 		},
 		AllowHeaders: []string{
 			echo.HeaderOrigin,
@@ -99,6 +105,9 @@ func (s *Server) RunServer() {
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,
 			echo.HeaderXRequestedWith,
+			echo.HeaderXRealIP,
+			echo.HeaderXForwardedFor,
+			echo.HeaderXForwardedProto,
 		},
 		AllowMethods: []string{
 			http.MethodGet,
@@ -110,6 +119,7 @@ func (s *Server) RunServer() {
 			http.MethodOptions,
 		},
 		AllowCredentials: true,
+		MaxAge:           86400, // Cache preflight for 24 hours
 	}))
 
 	// Auth routes (без middleware)

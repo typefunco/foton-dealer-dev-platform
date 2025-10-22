@@ -100,7 +100,12 @@ func ParseFromContext(c echo.Context) (*DynamicTableParams, error) {
 		for _, part := range regionParts {
 			region := strings.TrimSpace(part)
 			if region != "" {
-				regions = append(regions, region)
+				// Применяем маппинг регионов
+				if mappedRegion := mapRegion(region); mappedRegion != "" {
+					regions = append(regions, mappedRegion)
+				} else {
+					regions = append(regions, region)
+				}
 			}
 		}
 	}
@@ -132,4 +137,24 @@ func ParseFromContext(c echo.Context) (*DynamicTableParams, error) {
 	}
 
 	return params, nil
+}
+
+// mapRegion применяет маппинг регионов для совместимости с фронтендом
+func mapRegion(region string) string {
+	regionMapping := map[string]string{
+		"all":        "all-russia",
+		"central":    "Central",
+		"north-west": "North West",
+		"volga":      "Volga",
+		"south":      "South",
+		"n-caucasus": "Kavkaz",
+		"ural":       "Ural",
+		"siberia":    "Siberia",
+		"far-east":   "Far East",
+	}
+
+	if mapped, exists := regionMapping[region]; exists {
+		return mapped
+	}
+	return ""
 }

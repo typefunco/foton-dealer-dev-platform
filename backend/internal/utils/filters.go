@@ -11,8 +11,14 @@ import (
 // ParseFilterParamsFromContext парсит параметры фильтрации из Echo контекста.
 // Универсальная функция для всех эндпоинтов.
 func ParseFilterParamsFromContext(c echo.Context) *model.FilterParams {
+	region := c.QueryParam("region")
+	// Применяем маппинг регионов
+	if mappedRegion := mapRegion(region); mappedRegion != "" {
+		region = mappedRegion
+	}
+
 	filters := &model.FilterParams{
-		Region:    c.QueryParam("region"),
+		Region:    region,
 		Quarter:   c.QueryParam("quarter"),
 		SortBy:    c.QueryParam("sort_by"),
 		SortOrder: c.QueryParam("sort_order"),
@@ -48,6 +54,26 @@ func ParseFilterParamsFromContext(c echo.Context) *model.FilterParams {
 	}
 
 	return filters
+}
+
+// mapRegion применяет маппинг регионов для совместимости с фронтендом
+func mapRegion(region string) string {
+	regionMapping := map[string]string{
+		"all":        "all-russia",
+		"central":    "Central",
+		"north-west": "North West",
+		"volga":      "Volga",
+		"south":      "South",
+		"n-caucasus": "Kavkaz",
+		"ural":       "Ural",
+		"siberia":    "Siberia",
+		"far-east":   "Far East",
+	}
+
+	if mapped, exists := regionMapping[region]; exists {
+		return mapped
+	}
+	return ""
 }
 
 // SetDefaultFilters устанавливает значения по умолчанию для фильтров.

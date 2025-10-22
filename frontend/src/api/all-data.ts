@@ -57,7 +57,7 @@ export interface AllDataParams {
   year?: number
 }
 
-const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 /**
  * Получает все данные дилеров (комплексные данные из всех таблиц)
@@ -78,8 +78,14 @@ export async function getAllDealerData(params: AllDataParams = {}): Promise<AllD
   const url = `${API_BASE_URL}/all-data?${searchParams.toString()}`
   
   try {
+    // Получаем токен из localStorage
+    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(url, {
-      credentials: 'include', // Включаем cookies для аутентификации
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
     })
     
     if (!response.ok) {

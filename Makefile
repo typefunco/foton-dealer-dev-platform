@@ -1,6 +1,6 @@
 # Dealer Development Platform Makefile
 
-.PHONY: help install test test-unit test-integration test-all lint build clean docker-build docker-run
+.PHONY: help install test test-unit test-integration test-all lint build clean docker-build docker-run docker-prod docker-stop
 
 # Default target
 help:
@@ -22,7 +22,9 @@ help:
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-build     Build Docker images"
-	@echo "  docker-run       Run application in Docker"
+	@echo "  docker-run       Run application in Docker (development)"
+	@echo "  docker-prod      Run application in Docker (production)"
+	@echo "  docker-stop      Stop all Docker containers"
 	@echo ""
 	@echo "Database:"
 	@echo "  db-migrate       Run database migrations"
@@ -81,8 +83,22 @@ docker-build:
 	docker build -t dealer-platform-frontend ./frontend
 
 docker-run:
-	@echo "Running application in Docker..."
+	@echo "Running application in Docker (development)..."
 	docker-compose up -d
+
+docker-prod:
+	@echo "Running application in Docker (production)..."
+	@if [ ! -f .env.prod ]; then \
+		echo "ERROR: .env.prod file not found!"; \
+		echo "Please copy env.prod.example to .env.prod and configure it."; \
+		exit 1; \
+	fi
+	docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+docker-stop:
+	@echo "Stopping all Docker containers..."
+	docker-compose down
+	docker-compose -f docker-compose.prod.yml down
 
 # Database
 db-migrate:

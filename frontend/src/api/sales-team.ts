@@ -1,7 +1,7 @@
 // API клиент для работы с данными команды продаж
 // Интеграция с backend Sales Team API
 
-const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 export interface SalesTeamMember {
   id: string;
@@ -54,8 +54,14 @@ export async function getSalesTeamData(filters?: SalesTeamFilters): Promise<Sale
   params.append('quarter', 'Q1');
   params.append('year', '2024');
 
-  const response = await fetch(`${API_BASE_URL}/sales?${params.toString()}`, {
-    credentials: 'include', // Включаем cookies для аутентификации
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/sales?${params.toString()}`, {
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {

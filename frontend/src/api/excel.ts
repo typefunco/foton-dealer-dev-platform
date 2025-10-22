@@ -39,9 +39,19 @@ export const uploadExcelFile = async (file: File): Promise<ExcelUploadResponse> 
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${API_BASE_URL}/excel/upload`, {
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/excel/upload`, {
     method: 'POST',
-    credentials: 'include', // Включаем cookies для аутентификации
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
     body: formData,
   });
 
@@ -55,8 +65,18 @@ export const uploadExcelFile = async (file: File): Promise<ExcelUploadResponse> 
 
 // Получение списка таблиц
 export const getExcelTables = async (): Promise<ExcelTableMetadata[]> => {
-  const response = await fetch(`${API_BASE_URL}/excel/tables`, {
-    credentials: 'include', // Включаем cookies для аутентификации
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/excel/tables`, {
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {
@@ -68,8 +88,18 @@ export const getExcelTables = async (): Promise<ExcelTableMetadata[]> => {
 
 // Получение метаданных таблицы
 export const getExcelTableMetadata = async (tableName: string): Promise<ExcelTableMetadata> => {
-  const response = await fetch(`${API_BASE_URL}/excel/tables/${tableName}`, {
-    credentials: 'include', // Включаем cookies для аутентификации
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/excel/tables/${tableName}`, {
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {
@@ -85,10 +115,18 @@ export const getExcelTableData = async (
   limit: number = 10, 
   offset: number = 0
 ): Promise<ExcelTableData> => {
+  // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
   const response = await fetch(
     `${API_BASE_URL}/excel/tables/${tableName}/data?limit=${limit}&offset=${offset}`,
     {
-      credentials: 'include', // Включаем cookies для аутентификации
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
     }
   );
   
@@ -101,9 +139,19 @@ export const getExcelTableData = async (
 
 // Удаление таблицы
 export const deleteExcelTable = async (tableName: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/excel/tables/${tableName}`, {
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/excel/tables/${tableName}`, {
     method: 'DELETE',
-    credentials: 'include', // Включаем cookies для аутентификации
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {

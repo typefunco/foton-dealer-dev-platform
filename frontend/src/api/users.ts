@@ -1,7 +1,7 @@
 // API клиент для работы с пользователями
 // Интеграция с backend User Management API
 
-const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 export interface User {
   id: string;
@@ -82,8 +82,16 @@ export async function getUsers(filters?: UserFilters): Promise<UsersResponse> {
   if (filters?.page) params.append('page', filters.page.toString());
   if (filters?.limit) params.append('limit', filters.limit.toString());
 
-  const response = await fetch(`${API_BASE_URL}/users?${params.toString()}`, {
-    credentials: 'include', // Включаем cookies для аутентификации
+  // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/users?${params.toString()}`, {
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {
@@ -97,8 +105,18 @@ export async function getUsers(filters?: UserFilters): Promise<UsersResponse> {
  * Получить пользователя по ID
  */
 export async function getUserById(id: string): Promise<User> {
-  const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-    credentials: 'include', // Включаем cookies для аутентификации
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {
@@ -115,12 +133,19 @@ export async function getUserById(id: string): Promise<User> {
  * Создать нового пользователя
  */
 export async function createUser(data: CreateUserRequest): Promise<CreateUserResponse> {
-  const response = await fetch(`${API_BASE_URL}/users`, {
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/users`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Включаем cookies для аутентификации
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
     body: JSON.stringify(data),
   });
   
@@ -136,12 +161,19 @@ export async function createUser(data: CreateUserRequest): Promise<CreateUserRes
  * Обновить пользователя
  */
 export async function updateUser(id: string, data: UpdateUserRequest): Promise<User> {
-  const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
     method: 'PUT',
     headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Включаем cookies для аутентификации
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
     body: JSON.stringify(data),
   });
   
@@ -157,9 +189,19 @@ export async function updateUser(id: string, data: UpdateUserRequest): Promise<U
  * Удалить пользователя
  */
 export async function deleteUser(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
     method: 'DELETE',
-    credentials: 'include', // Включаем cookies для аутентификации
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {
@@ -172,8 +214,18 @@ export async function deleteUser(id: string): Promise<void> {
  * Получить статистику пользователей
  */
 export async function getUserStats(): Promise<UserStatsResponse> {
-  const response = await fetch(`${API_BASE_URL}/users/stats`, {
-    credentials: 'include', // Включаем cookies для аутентификации
+  // Получаем токен из localStorage
+    
+    // Получаем токен из localStorage
+  
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/users/stats`, {
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {

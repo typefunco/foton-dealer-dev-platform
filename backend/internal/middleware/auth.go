@@ -8,24 +8,26 @@ import (
 	"github.com/typefunco/dealer_dev_platform/internal/utils/jwt"
 )
 
-// AuthMiddleware проверяет JWT токен из cookie или Authorization header
+// AuthMiddleware проверяет JWT токен из Authorization header (localStorage)
 func AuthMiddleware(jwtService *jwt.Service) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// Получаем токен из cookie
-			cookie, err := c.Cookie("auth_token")
 			var token string
 
-			if err == nil && cookie != nil {
-				token = cookie.Value
-			} else {
-				// Если нет cookie, проверяем Authorization header
-				authHeader := c.Request().Header.Get("Authorization")
-				if authHeader != "" {
-					parts := strings.Split(authHeader, " ")
-					if len(parts) == 2 && parts[0] == "Bearer" {
-						token = parts[1]
-					}
+			// Проверяем Authorization header (основной способ для localStorage)
+			authHeader := c.Request().Header.Get("Authorization")
+			if authHeader != "" {
+				parts := strings.Split(authHeader, " ")
+				if len(parts) == 2 && parts[0] == "Bearer" {
+					token = parts[1]
+				}
+			}
+
+			// Fallback на cookie (для совместимости)
+			if token == "" {
+				cookie, err := c.Cookie("auth_token")
+				if err == nil && cookie != nil {
+					token = cookie.Value
 				}
 			}
 

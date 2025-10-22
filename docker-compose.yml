@@ -30,7 +30,7 @@ services:
       # Database
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/dealer_platform?sslmode=disable
       # JWT
-      JWT_SECRET: your-secret-key-change-in-production-please
+      JWT_SECRET: extra-secret
       # Server
       SERVER_PORT: 8080
     ports:
@@ -54,8 +54,8 @@ services:
       dockerfile: Dockerfile
     container_name: dealer_platform_frontend
     environment:
-      # API Configuration
-      VITE_API_BASE_URL: http://backend:8080/api
+      # API Configuration - используем относительные пути для Docker
+      VITE_API_BASE_URL: ""
     ports:
       - "3000:3000"
     depends_on:

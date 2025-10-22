@@ -1,15 +1,23 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080')
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 // Создаем экземпляр axios для API запросов
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
-  withCredentials: true, // Включаем cookies для аутентификации
   headers: {
     'Content-Type': 'application/json',
   },
+})
+
+// Добавляем interceptor для автоматического добавления токена
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
 })
 
 // Типы для динамического API
@@ -58,7 +66,7 @@ export const getDynamicData = async <T = any>(
   })
   
   const queryString = searchParams.toString()
-  const url = `/api/${tableType}${queryString ? `?${queryString}` : ''}`
+  const url = `${API_BASE_URL}/api/${tableType}${queryString ? `?${queryString}` : ''}`
   
   const response = await api.get<DynamicDataResponse<T>>(url)
   return response.data

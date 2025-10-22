@@ -1,7 +1,7 @@
 // API клиент для работы с данными производительности
 // Интеграция с backend Performance API
 
-const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 export interface PerformanceDealer {
   id: string;
@@ -53,8 +53,14 @@ export async function getPerformanceData(filters?: PerformanceFilters): Promise<
   params.append('quarter', 'Q1');
   params.append('year', '2024');
 
-  const response = await fetch(`${API_BASE_URL}/performance?${params.toString()}`, {
-    credentials: 'include', // Включаем cookies для аутентификации
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/performance?${params.toString()}`, {
+    headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
   });
   
   if (!response.ok) {

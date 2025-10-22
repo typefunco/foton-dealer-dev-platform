@@ -1,21 +1,24 @@
 // Универсальный API сервис для всех типов данных
 // Интеграция с backend API
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080/api');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : '');
 
 export { API_BASE_URL };
 
-// Универсальная функция для API запросов с поддержкой cookies
+// Универсальная функция для API запросов с поддержкой localStorage токенов
 export async function apiRequest<T>(
   endpoint: string, 
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
   const defaultOptions: RequestInit = {
-    credentials: 'include', // Включаем cookies
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
   };
@@ -78,9 +81,15 @@ export async function fetchData<T>(
 
   const url = `${API_BASE_URL}/${endpoint}?${params.toString()}`;
   
+  // Получаем токен из localStorage
+  const token = localStorage.getItem('auth_token');
+  
   try {
     const response = await fetch(url, {
-      credentials: 'include', // Включаем cookies для аутентификации
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
     });
     
     if (!response.ok) {
