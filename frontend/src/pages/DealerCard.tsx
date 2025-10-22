@@ -52,7 +52,15 @@ const DealerCard: React.FC = () => {
         setLoading(true)
         setError(null)
         
-        const response = await fetch(`/api/dealers/${dealerId}/card?quarter=Q3&year=2025`)
+        // Получаем токен из localStorage
+        const token = localStorage.getItem('auth_token')
+        
+        const response = await fetch(`/api/dealers/${dealerId}/card?quarter=Q3&year=2025`, {
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Content-Type': 'application/json',
+          }
+        })
         
         if (!response.ok) {
           throw new Error(`Failed to fetch dealer data: ${response.status}`)

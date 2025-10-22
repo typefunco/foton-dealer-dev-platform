@@ -89,15 +89,17 @@ func (s *Server) RunServer() {
 	// CORS configuration for Docker environment
 	s.srv.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{
-			"http://localhost:3000", // Development
-			"http://frontend:3000",  // Docker frontend service
-			"http://127.0.0.1:3000", // Alternative localhost
-			"http://localhost",      // Generic localhost
-			"http://frontend",       // Docker service name
-			"http://localhost:80",   // Production HTTP
-			"http://localhost:443",  // Production HTTPS
-			"https://localhost",     // Production HTTPS
-			"https://localhost:443", // Production HTTPS
+			"http://localhost:3000",      // Development
+			"http://frontend:3000",       // Docker frontend service
+			"http://127.0.0.1:3000",      // Alternative localhost
+			"http://localhost",           // Generic localhost
+			"http://frontend",            // Docker service name
+			"http://localhost:80",        // Production HTTP
+			"http://localhost:443",       // Production HTTPS
+			"https://localhost",          // Production HTTPS
+			"https://localhost:443",      // Production HTTPS
+			"http://77.223.123.147:3000", // Production server
+			"http://77.223.123.147",      // Production server without port
 		},
 		AllowHeaders: []string{
 			echo.HeaderOrigin,
