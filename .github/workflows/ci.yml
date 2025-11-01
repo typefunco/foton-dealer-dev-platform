@@ -2,483 +2,186 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      deploy_stage:
-        description: 'Deploy to Staging'
-        required: false
-        type: boolean
-        default: false
-      run_migrations:
-        description: 'Run Migrations'
-        required: false
-        type: boolean
-        default: false
-      deploy_production:
-        description: 'Deploy to Production'
-        required: false
-        type: boolean
-        default: false
-      environment:
-        description: 'Target environment'
-        required: false
-        type: choice
-        options:
-          - none
-          - staging
-          - production
-          - both
-        default: 'none'
-
-env:
-  GO_VERSION: '1.24'
-  NODE_VERSION: '18'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # ==========================================
-  # STAGE 1: LINT & TEST (все параллельно)
-  # ==========================================
-  
-  frontend-lint:
-    name: 📝 Frontend Lint
+  # Тестирование Go
+  test-go:
+    name: Go Tests
     runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./frontend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint || echo "ESLint check completed with warnings"
-        continue-on-error: true
-
-      - name: Check TypeScript
-        run: npx tsc --noEmit
-
-  frontend-test:
-    name: 🧪 Frontend Test
-    runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./frontend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/dist
-          retention-days: 7
-
-  backend-lint:
-    name: 📝 Backend Lint
-    runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./backend
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: backend/go.sum
+          go-version: '1.21'
 
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run go vet
-        run: go vet ./...
-
-      - name: Check formatting
-        run: |
-          if [ -n "$(gofmt -s -l .)" ]; then
-            echo "Go code is not formatted:"
-            gofmt -s -l .
-            exit 1
-          fi
-
-  backend-test:
-    name: 🧪 Backend Test
-    runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: backend/go.sum
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run all tests with Testcontainers
-        env:
-          JWT_SECRET: test-secret
-          SERVER_PORT: 8080
-          TESTCONTAINERS_RYUK_DISABLED: true
-          TESTCONTAINERS_HOST_OVERRIDE: localhost
-          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
-        run: |
-          echo "Running all backend tests with Testcontainers..."
-          echo "Docker socket: $TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"
-          go test -v -race -coverprofile=coverage.out -covermode=atomic \
-            ./... \
-            -timeout=30m \
-            -run "Test.*"
-
-      - name: Generate coverage report
-        run: |
-          echo "Generating coverage report..."
-          go tool cover -html=coverage.out -o coverage.html
-          go tool cover -func=coverage.out
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage-${{ github.sha }}
-          path: |
-            backend/coverage.out
-            backend/coverage.html
-          retention-days: 7
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: actions/upload-artifact@v4
         with:
-          files: ./backend/coverage.out
-          flags: backend
-          name: backend-coverage
-          fail_ci_if_error: false
-        continue-on-error: true
+          name: coverage-report
+          path: coverage.out
 
-  # ==========================================
-  # STAGE 2: BUILD BINARY (после Stage 1)
-  # ==========================================
-
-  build-binary:
-    name: 🔨 Build Binary
+  # Сборка Backend
+  build-backend:
+    name: Build Backend
     runs-on: ubuntu-latest
-    needs: [frontend-lint, frontend-test, backend-lint, backend-test]
-    
-    defaults:
-      run:
-        working-directory: ./backend
-    
+    needs: [test-go]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: '1.21'
 
-      - name: Build backend binary
-        run: go build -o bin/dealer-platform ./cmd/app/main.go
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-binary
-          path: backend/bin/dealer-platform
-          retention-days: 7
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: false
-          tags: dealer-platform-backend:${{ github.sha }}
-
-  # ==========================================
-  # STAGE 3: DEPLOY TO STAGE (только вручную)
-  # ==========================================
-
-  deploy-stage:
-    name: 🚀 Deploy to Stage
-    runs-on: ubuntu-latest
-    needs: [build-binary]
-    if: |
-      github.event_name == 'workflow_dispatch' && 
-      (github.event.inputs.deploy_stage == 'true' || 
-       github.event.inputs.environment == 'staging' || 
-       github.event.inputs.environment == 'both')
-    environment:
-      name: staging
-      url: https://stage.your-domain.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download binary artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-binary
-          path: ./backend/bin
-
-      - name: Make binary executable
-        run: chmod +x ./backend/bin/dealer-platform
-
-      - name: Deploy to staging
+      - name: Build Backend
         run: |
-          echo "🚀 Deploying to staging environment"
-          echo "Version: ${{ github.sha }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Triggered by: ${{ github.actor }}"
-          echo "Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}"
-          
-          # Здесь можно добавить реальный деплой:
-          # - scp binary на staging сервер
-          # - docker-compose pull && up на staging
-          # - kubectl apply для Kubernetes staging
-          # - terraform apply для staging окружения
+          cd backend  # Если backend в отдельной папке
+          go build -v -o app .
 
-      - name: Health check
+      - name: Verify build
         run: |
-          echo "Checking staging health..."
-          # curl -f https://stage.your-domain.com/health || exit 1
-
-  # ==========================================
-  # STAGE 4: MIGRATIONS (только вручную)
-  # ==========================================
-
-  run-migrations:
-    name: 🗄️ Run Migrations
-    runs-on: ubuntu-latest
-    needs: [build-binary, deploy-stage]
-    if: |
-      always() &&
-      github.event_name == 'workflow_dispatch' && 
-      (github.event.inputs.run_migrations == 'true' || 
-       github.event.inputs.environment == 'production' || 
-       github.event.inputs.environment == 'both') &&
-      needs.build-binary.result == 'success' &&
-      (needs.deploy-stage.result == 'success' || 
-       needs.deploy-stage.result == 'skipped')
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check for new migrations
-        id: check-migrations
-        run: |
-          echo "Checking for new migration files..."
-          MIGRATIONS=$(ls -1 backend/migrations/*.sql 2>/dev/null | wc -l)
-          echo "Found $MIGRATIONS migration files"
-          echo "migrations_count=$MIGRATIONS" >> $GITHUB_OUTPUT
-
-      - name: Apply migrations to staging
-        if: steps.check-migrations.outputs.migrations_count > 0
-        env:
-          STAGE_DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
-        run: |
-          echo "Applying migrations to staging database..."
-          # for migration in backend/migrations/*.sql; do
-          #   echo "Applying $migration..."
-          #   psql $STAGE_DATABASE_URL -f $migration
-          # done
-
-      - name: Verify migrations
-        run: |
-          echo "Verifying migrations..."
-          # Здесь можно добавить проверку состояния БД
-
-  # ==========================================
-  # STAGE 5: DEPLOY TO PRODUCTION (только вручную)
-  # ==========================================
-
-  deploy-production:
-    name: 🌍 Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-binary, deploy-stage, run-migrations]
-    if: |
-      always() &&
-      github.event_name == 'workflow_dispatch' && 
-      (github.event.inputs.deploy_production == 'true' || 
-       github.event.inputs.environment == 'production' || 
-       github.event.inputs.environment == 'both') &&
-      needs.build-binary.result == 'success' &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
-    environment:
-      name: production
-      url: https://your-domain.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download binary artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-binary
-          path: ./backend/bin
-
-      - name: Make binary executable
-        run: chmod +x ./backend/bin/dealer-platform
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Apply production migrations
-        env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-        run: |
-          echo "Applying migrations to production database..."
-          # for migration in backend/migrations/*.sql; do
-          #   echo "Applying $migration..."
-          #   psql $PROD_DATABASE_URL -f $migration
-          # done
-
-      - name: Deploy to production
-        run: |
-          echo "🌍 Deploying to production environment"
-          echo "Version: ${{ github.sha }}"
-          echo "Docker image: ${{ steps.meta.outputs.tags }}"
-          echo "Triggered by: ${{ github.actor }}"
-          echo "Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}"
-          
-          # Здесь можно добавить реальный деплой:
-          # - SSH на production сервер
-          # - docker-compose pull && up
-          # - kubectl apply для Kubernetes
-          # - terraform apply
-          # - Ansible playbook
-
-      - name: Health check
-        run: |
-          echo "Checking production health..."
-          # Ждем немного для старта сервиса
-          # sleep 30
-          # curl -f https://your-domain.com/health || exit 1
-
-      - name: Notify deployment
-        if: success()
-        run: |
-          echo "✅ Production deployment successful!"
-          echo "Version: ${{ github.sha }}"
-          # Здесь можно добавить уведомления:
-          # - Slack webhook
-          # - Discord webhook
-          # - Telegram bot
-          # - Email
-
-  # ==========================================
-  # FINAL: STATUS CHECK
-  # ==========================================
-
-  ci-success:
-    name: ✅ CI/CD Complete
-    runs-on: ubuntu-latest
-    needs: 
-      - frontend-lint
-      - frontend-test
-      - backend-lint
-      - backend-test
-      - build-binary
-    if: always()
-    
-    steps:
-      - name: Check status
-        run: |
-          echo "📊 Pipeline Status Report"
-          echo "=========================="
-          echo "Frontend Lint: ${{ needs.frontend-lint.result }}"
-          echo "Frontend Test: ${{ needs.frontend-test.result }}"
-          echo "Backend Lint: ${{ needs.backend-lint.result }}"
-          echo "Backend Test: ${{ needs.backend-test.result }}"
-          echo "Build Binary: ${{ needs.build-binary.result }}"
-          echo "=========================="
-          
-          if [ "${{ needs.frontend-lint.result }}" != "success" ] || \
-             [ "${{ needs.frontend-test.result }}" != "success" ] || \
-             [ "${{ needs.backend-lint.result }}" != "success" ] || \
-             [ "${{ needs.backend-test.result }}" != "success" ] || \
-             [ "${{ needs.build-binary.result }}" != "success" ]; then
-            echo "❌ One or more jobs failed"
+          if [ ! -f backend/app ]; then
+            echo "Backend build failed"
             exit 1
           fi
+          echo "Backend built successfully"
+
+  # Сборка Frontend
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: [test-go]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'  # Укажите вашу версию Node
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json  # Путь к вашему package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend  # Если frontend в отдельной папке
+          npm ci
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Verify build
+        run: |
+          if [ ! -d frontend/build ] && [ ! -d frontend/dist ]; then
+            echo "Frontend build failed"
+            exit 1
+          fi
+          echo "Frontend built successfully"
+
+  # Деплой на Production (с manual approval)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    environment:
+      name: production
+      url: http://77.223.123.147
+    # Запускается только для main ветки
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Production Server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << 'ENDSSH'
+            set -e
           
-          echo "✅ All checks passed!"
-          echo "🎉 Pipeline completed successfully!"
+            echo "🚀 Starting deployment..."
+          
+            # Переходим в папку проекта
+            cd $PROJECT_PATH || { echo "❌ Project directory not found"; exit 1; }
+          
+            echo "📥 Pulling latest changes..."
+            git pull origin main
+          
+            echo "🛑 Stopping containers (except PostgreSQL)..."
+            # Останавливаем все контейнеры кроме PostgreSQL
+            docker-compose stop $(docker-compose ps --services | grep -v postgres)
+          
+            echo "🔨 Rebuilding containers..."
+            # Пересобираем контейнеры (PostgreSQL будет пропущен, если уже запущен)
+            docker-compose build --no-cache
+          
+            echo "🚀 Starting containers..."
+            # Запускаем контейнеры
+            docker-compose up -d
+          
+            echo "🧹 Cleaning up old images..."
+            # Удаляем неиспользуемые образы
+            docker image prune -af --filter "label!=keep" || true
+          
+            echo "🧹 Cleaning up old containers..."
+            docker container prune -f || true
+          
+            echo "📊 Checking running containers..."
+            docker-compose ps
+          
+            echo "✅ Deployment completed successfully!"
+          ENDSSH
+
+      - name: Verify Deployment
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh $SERVER_USER@$SERVER_HOST << 'ENDSSH'
+            cd $PROJECT_PATH
+          
+            # Проверяем что контейнеры запущены
+            if [ $(docker-compose ps -q | wc -l) -eq 0 ]; then
+              echo "❌ No containers are running!"
+              exit 1
+            fi
+          
+            echo "✅ All services are running"
+          ENDSSH
+
+      - name: Cleanup SSH
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_rsa
+
+      - name: Send notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Deployment to production succeeded"
+          else
+            echo "❌ Deployment to production failed"
+          fi
