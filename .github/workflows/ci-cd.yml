@@ -122,37 +122,130 @@ jobs:
           
             echo "🚀 Starting deployment..."
           
-            # Переходим в папку проекта
-            echo "📂 Checking project path: $PROJECT_PATH"
+            # Определяем путь к проекту
+            # Если PROJECT_PATH не задан или пустой, ищем проект автоматически
+            if [ -z "$PROJECT_PATH" ] || [ "$PROJECT_PATH" = "" ]; then
+              echo "⚠️ PROJECT_PATH not set, searching for project directory automatically..."
+              
+              # Определяем домашнюю директорию текущего пользователя
+              CURRENT_USER=$(whoami)
+              USER_HOME=$(eval echo ~$CURRENT_USER || echo "/root")
+              echo "Current user: $CURRENT_USER"
+              echo "User home: $USER_HOME"
+              
+              # Ищем папки с git репозиторием или docker-compose.yml
+              SEARCH_DIRS="$USER_HOME /root /home/$CURRENT_USER"
+              FOUND_DIR=""
+              
+              for search_dir in $SEARCH_DIRS; do
+                if [ -d "$search_dir" ]; then
+                  echo "🔍 Searching in: $search_dir"
+                  # Ищем директории с .git
+                  for dir in "$search_dir"/*; do
+                    if [ -d "$dir" ] && [ -d "$dir/.git" ]; then
+                      echo "📁 Found git repository: $dir"
+                      FOUND_DIR="$dir"
+                      break
+                    fi
+                  done
+                  [ -n "$FOUND_DIR" ] && break
+                fi
+              done
+              
+              # Если не нашли по .git, ищем по docker-compose.yml
+              if [ -z "$FOUND_DIR" ]; then
+                echo "🔍 Git repository not found, searching for docker-compose.yml..."
+                for search_dir in $SEARCH_DIRS; do
+                  if [ -d "$search_dir" ]; then
+                    for dir in "$search_dir"/*; do
+                      if [ -d "$dir" ] && [ -f "$dir/docker-compose.yml" ]; then
+                        echo "📁 Found docker-compose.yml in: $dir"
+                        FOUND_DIR="$dir"
+                        break
+                      fi
+                    done
+                    [ -n "$FOUND_DIR" ] && break
+                  fi
+                done
+              fi
+              
+              if [ -n "$FOUND_DIR" ]; then
+                PROJECT_PATH="$FOUND_DIR"
+                echo "✅ Auto-detected project path: $PROJECT_PATH"
+              else
+                echo "❌ Could not find project directory automatically"
+                echo "Searched in: $SEARCH_DIRS"
+                echo "Available directories in /root:"
+                ls -la /root/ 2>/dev/null | grep "^d" || true
+                exit 1
+              fi
+            else
+              echo "📂 Using provided project path: $PROJECT_PATH"
+            fi
+            
+            # Проверяем что директория существует
+            # Если путь указан относительно корня (начинается с /), но не найден, пробуем в /root
             if [ ! -d "$PROJECT_PATH" ]; then
-              echo "❌ Project directory not found: $PROJECT_PATH"
-              echo "Available directories in root:"
-              ls -la /root/ | grep "^d" || ls -la /home/ | grep "^d"
-              exit 1
+              echo "⚠️ Project directory not found: $PROJECT_PATH, trying to resolve..."
+              CURRENT_USER=$(whoami)
+              USER_HOME=$(eval echo ~$CURRENT_USER || echo "/root")
+              
+              # Если путь начинается с /, но не является полным путем в /root или домашней директории
+              if [[ "$PROJECT_PATH" == /* ]]; then
+                # Если путь вида /foton-dealer-dev-platform, пробуем /root/foton-dealer-dev-platform
+                if [[ "$PROJECT_PATH" != /root/* ]] && [[ "$PROJECT_PATH" != "$USER_HOME"/* ]]; then
+                  TRIED_PATHS=(
+                    "/root$PROJECT_PATH"
+                    "$USER_HOME$PROJECT_PATH"
+                    "/home/$CURRENT_USER$PROJECT_PATH"
+                  )
+                  
+                  FOUND=0
+                  for TRIED_PATH in "${TRIED_PATHS[@]}"; do
+                    if [ -d "$TRIED_PATH" ]; then
+                      echo "✅ Found project in: $TRIED_PATH"
+                      PROJECT_PATH="$TRIED_PATH"
+                      FOUND=1
+                      break
+                    fi
+                  done
+                  
+                  if [ "$FOUND" -eq 0 ]; then
+                    echo "❌ Project directory not found in any location"
+                    echo "Tried: $PROJECT_PATH"
+                    for TRIED_PATH in "${TRIED_PATHS[@]}"; do
+                      echo "Tried: $TRIED_PATH"
+                    done
+                    echo "Current user: $CURRENT_USER"
+                    echo "Available directories in /root:"
+                    ls -la /root/ 2>/dev/null | grep "^d" || true
+                    exit 1
+                  fi
+                else
+                  echo "❌ Project directory not found: $PROJECT_PATH"
+                  echo "Current user: $CURRENT_USER"
+                  echo "Current directory: $(pwd)"
+                  echo "Available directories in /root:"
+                  ls -la /root/ 2>/dev/null | grep "^d" || true
+                  exit 1
+                fi
+              else
+                echo "❌ Project directory not found: $PROJECT_PATH"
+                echo "Current user: $(whoami)"
+                echo "Current directory: $(pwd)"
+                echo "Available directories in /root:"
+                ls -la /root/ 2>/dev/null | grep "^d" || true
+                exit 1
+              fi
             fi
             
             cd "$PROJECT_PATH" || { echo "❌ Failed to cd to $PROJECT_PATH"; exit 1; }
             echo "✅ Current directory: $(pwd)"
             
-            # Ищем git репозиторий в текущей папке или в подпапках
+            # Проверяем наличие git репозитория
             if [ ! -d .git ]; then
-              echo "⚠️ .git not found in $PROJECT_PATH, searching for git repositories..."
-              # Ищем папки с .git
-              for dir in */; do
-                if [ -d "$dir/.git" ]; then
-                  echo "📁 Found git repository in: $dir"
-                  cd "$dir" || continue
-                  echo "✅ Changed to: $(pwd)"
-                  break
-                fi
-              done
-            fi
-            
-            # Проверяем что мы в git репозитории
-            if [ ! -d .git ]; then
-              echo "❌ .git directory not found"
-              echo "Current directory: $(pwd)"
-              echo "Listing contents:"
+              echo "❌ .git directory not found in $PROJECT_PATH"
+              echo "Current directory contents:"
               ls -la
               exit 1
             fi
@@ -229,17 +322,78 @@ jobs:
           ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << 'ENDSSH'
             echo "📂 Finding project directory..."
             
+            # Определяем путь к проекту (аналогично деплою)
+            if [ -z "$PROJECT_PATH" ] || [ "$PROJECT_PATH" = "" ]; then
+              echo "⚠️ PROJECT_PATH not set, searching automatically..."
+              CURRENT_USER=$(whoami)
+              USER_HOME=$(eval echo ~$CURRENT_USER || echo "/root")
+              
+              SEARCH_DIRS="$USER_HOME /root /home/$CURRENT_USER"
+              FOUND_DIR=""
+              
+              for search_dir in $SEARCH_DIRS; do
+                if [ -d "$search_dir" ]; then
+                  for dir in "$search_dir"/*; do
+                    if [ -d "$dir" ] && [ -f "$dir/docker-compose.yml" ]; then
+                      FOUND_DIR="$dir"
+                      break
+                    fi
+                  done
+                  [ -n "$FOUND_DIR" ] && break
+                fi
+              done
+              
+              if [ -n "$FOUND_DIR" ]; then
+                PROJECT_PATH="$FOUND_DIR"
+                echo "✅ Auto-detected: $PROJECT_PATH"
+              else
+                echo "❌ Could not find project directory"
+                exit 1
+              fi
+            fi
+            
             # Переходим в папку проекта
+            # Если путь не найден, пробуем в /root (для случая /foton-dealer-dev-platform -> /root/foton-dealer-dev-platform)
             if [ ! -d "$PROJECT_PATH" ]; then
-              echo "❌ Project directory not found: $PROJECT_PATH"
-              exit 1
+              echo "⚠️ Project directory not found: $PROJECT_PATH, trying to resolve..."
+              CURRENT_USER=$(whoami)
+              USER_HOME=$(eval echo ~$CURRENT_USER || echo "/root")
+              
+              if [[ "$PROJECT_PATH" == /* ]] && [[ "$PROJECT_PATH" != /root/* ]] && [[ "$PROJECT_PATH" != "$USER_HOME"/* ]]; then
+                TRIED_PATHS=(
+                  "/root$PROJECT_PATH"
+                  "$USER_HOME$PROJECT_PATH"
+                  "/home/$CURRENT_USER$PROJECT_PATH"
+                )
+                
+                FOUND=0
+                for TRIED_PATH in "${TRIED_PATHS[@]}"; do
+                  if [ -d "$TRIED_PATH" ]; then
+                    echo "✅ Found project in: $TRIED_PATH"
+                    PROJECT_PATH="$TRIED_PATH"
+                    FOUND=1
+                    break
+                  fi
+                done
+                
+                if [ "$FOUND" -eq 0 ]; then
+                  echo "❌ Project directory not found"
+                  echo "Tried: $PROJECT_PATH"
+                  for TRIED_PATH in "${TRIED_PATHS[@]}"; do
+                    echo "Tried: $TRIED_PATH"
+                  done
+                  exit 1
+                fi
+              else
+                echo "❌ Project directory not found: $PROJECT_PATH"
+                exit 1
+              fi
             fi
             
             cd "$PROJECT_PATH" || exit 1
             
-            # Ищем git репозиторий или директорию с docker-compose.yml
+            # Ищем docker-compose.yml если его нет в текущей директории
             if [ ! -f docker-compose.yml ]; then
-              # Ищем папки с git или docker-compose.yml
               for dir in */; do
                 if [ -f "$dir/docker-compose.yml" ]; then
                   echo "📁 Found docker-compose.yml in: $dir"
@@ -251,7 +405,7 @@ jobs:
             
             # Проверяем наличие docker-compose.yml
             if [ ! -f docker-compose.yml ]; then
-              echo "❌ docker-compose.yml not found in $PROJECT_PATH"
+              echo "❌ docker-compose.yml not found"
               echo "Current directory: $(pwd)"
               ls -la
               exit 1
