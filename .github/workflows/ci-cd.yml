@@ -123,15 +123,76 @@ jobs:
             echo "🚀 Starting deployment..."
           
             # Переходим в папку проекта
-            cd $PROJECT_PATH || { echo "❌ Project directory not found"; exit 1; }
+            echo "📂 Checking project path: $PROJECT_PATH"
+            if [ ! -d "$PROJECT_PATH" ]; then
+              echo "❌ Project directory not found: $PROJECT_PATH"
+              echo "Available directories in root:"
+              ls -la /root/ | grep "^d" || ls -la /home/ | grep "^d"
+              exit 1
+            fi
+            
+            cd "$PROJECT_PATH" || { echo "❌ Failed to cd to $PROJECT_PATH"; exit 1; }
+            echo "✅ Current directory: $(pwd)"
+            
+            # Ищем git репозиторий в текущей папке или в подпапках
+            if [ ! -d .git ]; then
+              echo "⚠️ .git not found in $PROJECT_PATH, searching for git repositories..."
+              # Ищем папки с .git
+              for dir in */; do
+                if [ -d "$dir/.git" ]; then
+                  echo "📁 Found git repository in: $dir"
+                  cd "$dir" || continue
+                  echo "✅ Changed to: $(pwd)"
+                  break
+                fi
+              done
+            fi
+            
+            # Проверяем что мы в git репозитории
+            if [ ! -d .git ]; then
+              echo "❌ .git directory not found"
+              echo "Current directory: $(pwd)"
+              echo "Listing contents:"
+              ls -la
+              exit 1
+            fi
+            
+            # Сохраняем путь к проекту для дальнейшего использования
+            PROJECT_DIR=$(pwd)
+            echo "✅ Working in git repository: $PROJECT_DIR"
           
             echo "📥 Pulling latest changes..."
+            
             # Определяем текущую ветку
-            BRANCH=$(git branch --show-current || echo "main")
-            git pull origin $BRANCH || git pull origin main || git pull origin master
+            BRANCH=$(git branch --show-current || git rev-parse --abbrev-ref HEAD || echo "main")
+            echo "Current branch: $BRANCH"
+            
+            # Пробуем pull из нужной ветки
+            git fetch origin
+            git pull origin $BRANCH || git pull origin main || git pull origin master || {
+              echo "⚠️ Warning: git pull failed, trying to checkout branch..."
+              git checkout $BRANCH || git checkout main || git checkout master || true
+              git pull origin $BRANCH || git pull origin main || git pull origin master || true
+            }
           
             echo "🛑 Stopping containers (except PostgreSQL)..."
-            # Останавливаем все контейнеры кроме PostgreSQL
+            # Убеждаемся что мы в правильной директории с docker-compose.yml
+            # Если docker-compose.yml не в текущей директории, ищем его в родительской или корне репозитория
+            if [ ! -f docker-compose.yml ]; then
+              echo "⚠️ docker-compose.yml not found in $PROJECT_DIR, searching..."
+              # Ищем в текущей директории и подпапках
+              COMPOSE_FILE=$(find . -maxdepth 2 -name "docker-compose.yml" -type f | head -1)
+              if [ -n "$COMPOSE_FILE" ]; then
+                COMPOSE_DIR=$(dirname "$COMPOSE_FILE")
+                echo "✅ Found docker-compose.yml in: $COMPOSE_DIR"
+                cd "$COMPOSE_DIR"
+                PROJECT_DIR=$(pwd)
+                echo "✅ Changed to directory with docker-compose.yml: $PROJECT_DIR"
+              else
+                echo "❌ docker-compose.yml not found!"
+                exit 1
+              fi
+            fi
             docker-compose stop frontend backend 2>/dev/null || true
           
             echo "🔨 Rebuilding containers..."
@@ -166,8 +227,37 @@ jobs:
           PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
         run: |
           ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << 'ENDSSH'
-            cd $PROJECT_PATH
+            echo "📂 Finding project directory..."
             
+            # Переходим в папку проекта
+            if [ ! -d "$PROJECT_PATH" ]; then
+              echo "❌ Project directory not found: $PROJECT_PATH"
+              exit 1
+            fi
+            
+            cd "$PROJECT_PATH" || exit 1
+            
+            # Ищем git репозиторий или директорию с docker-compose.yml
+            if [ ! -f docker-compose.yml ]; then
+              # Ищем папки с git или docker-compose.yml
+              for dir in */; do
+                if [ -f "$dir/docker-compose.yml" ]; then
+                  echo "📁 Found docker-compose.yml in: $dir"
+                  cd "$dir"
+                  break
+                fi
+              done
+            fi
+            
+            # Проверяем наличие docker-compose.yml
+            if [ ! -f docker-compose.yml ]; then
+              echo "❌ docker-compose.yml not found in $PROJECT_PATH"
+              echo "Current directory: $(pwd)"
+              ls -la
+              exit 1
+            fi
+            
+            echo "✅ Working directory: $(pwd)"
             echo "📊 Checking container status..."
             docker-compose ps
             
