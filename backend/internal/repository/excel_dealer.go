@@ -564,7 +564,7 @@ func (r *ExcelDealerRepository) GetDealerDevDataFromExcel(ctx context.Context, y
 	}
 
 	// Строим запрос для получения данных дилер-девелопмента
-	query := r.sq.Select("id", "dealer", "region", "city", "manager", "class", "check_list_percent", "marketing_investments", "branding", "dealer_development").
+	query := r.sq.Select("id", "dealer", "region", "city", "manager", "class", "check_list_percent", "marketing_investments", "branding", "dealer_development", "brands_in_portfolio", "byside_businesses").
 		From(tableName).
 		Where(squirrel.NotEq{"dealer": nil}).
 		Where(squirrel.NotEq{"dealer": ""})
@@ -597,9 +597,9 @@ func (r *ExcelDealerRepository) GetDealerDevDataFromExcel(ctx context.Context, y
 	var dealerDevData []*model.DealerDevWithDetails
 	for rows.Next() {
 		var id int
-		var dealerName, region, city, manager, class, checkListPercent, marketingInvestments, branding, dealerDevelopment *string
+		var dealerName, region, city, manager, class, checkListPercent, marketingInvestments, branding, dealerDevelopment, brandsInPortfolio, bysideBusinesses *string
 
-		err = rows.Scan(&id, &dealerName, &region, &city, &manager, &class, &checkListPercent, &marketingInvestments, &branding, &dealerDevelopment)
+		err = rows.Scan(&id, &dealerName, &region, &city, &manager, &class, &checkListPercent, &marketingInvestments, &branding, &dealerDevelopment, &brandsInPortfolio, &bysideBusinesses)
 		if err != nil {
 			return nil, fmt.Errorf("ExcelDealerRepository.GetDealerDevDataFromExcel: error scanning row: %w", err)
 		}
@@ -614,10 +614,12 @@ func (r *ExcelDealerRepository) GetDealerDevDataFromExcel(ctx context.Context, y
 				Branding:             getStringValue(branding) == "Yes" || getStringValue(branding) == "Y",
 				DDRecommendation:     getStringValue(dealerDevelopment),
 			},
-			DealerNameRu: getStringValue(dealerName),
-			Region:       getStringValue(region),
-			City:         getStringValue(city),
-			Manager:      getStringValue(manager),
+			DealerNameRu:      getStringValue(dealerName),
+			Region:            getStringValue(region),
+			City:              getStringValue(city),
+			Manager:           getStringValue(manager),
+			BrandsInPortfolio: getStringValue(brandsInPortfolio),
+			BySideBusinesses:  getStringValue(bysideBusinesses),
 		}
 
 		dealerDevData = append(dealerDevData, dealerDevDetail)

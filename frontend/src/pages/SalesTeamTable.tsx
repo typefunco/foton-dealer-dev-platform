@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useDealerDevData } from '../hooks/useDynamicData'
+import { getBusinessIcons, getBrandIcons } from '../utils'
 
 interface Dealer {
   id: string
@@ -37,6 +38,32 @@ const SalesTeamTable: React.FC = () => {
     quarter: quarterFromUrl || navigationFilters.quarter,
     year: yearFromUrl || navigationFilters.year
   })
+
+  // Отладка: проверяем данные, которые приходят с бэкенда
+  useEffect(() => {
+    if (dealers && dealers.length > 0) {
+      console.log('=== DEBUG: Dealers Data ===')
+      console.log('Total dealers:', dealers.length)
+      console.log('First dealer sample:', dealers[0])
+      console.log('First dealer buySideBusiness:', dealers[0]?.buySideBusiness)
+      console.log('Type of buySideBusiness:', typeof dealers[0]?.buySideBusiness)
+      console.log('Is array:', Array.isArray(dealers[0]?.buySideBusiness))
+      
+      if (dealers[0]?.buySideBusiness && dealers[0].buySideBusiness.length > 0) {
+        console.log('Business icons result:', getBusinessIcons(dealers[0].buySideBusiness))
+      } else {
+        console.warn('buySideBusiness is empty or undefined for first dealer')
+      }
+      
+      // Проверяем, есть ли хотя бы один дилер с бизнесами
+      const dealersWithBusinesses = dealers.filter(d => d.buySideBusiness && d.buySideBusiness.length > 0)
+      console.log('Dealers with businesses:', dealersWithBusinesses.length)
+      if (dealersWithBusinesses.length > 0) {
+        console.log('Sample dealer with businesses:', dealersWithBusinesses[0])
+      }
+      console.log('=== END DEBUG ===')
+    }
+  }, [dealers])
 
 
   // Обработка изменения региона
@@ -116,6 +143,28 @@ const SalesTeamTable: React.FC = () => {
           return bOrder - aOrder // Planned Result first
         } else {
           return aOrder - bOrder // Close Down first
+        }
+      }
+      
+      if (sortConfig.key === 'brandsInPortfolio') {
+        const aCount = (a.brandsInPortfolio?.length || 0)
+        const bCount = (b.brandsInPortfolio?.length || 0)
+        
+        if (sortConfig.direction === 'asc') {
+          return bCount - aCount // Больше к меньшему
+        } else {
+          return aCount - bCount // Меньше к большему
+        }
+      }
+      
+      if (sortConfig.key === 'buySideBusiness') {
+        const aCount = (a.buySideBusiness?.length || 0)
+        const bCount = (b.buySideBusiness?.length || 0)
+        
+        if (sortConfig.direction === 'asc') {
+          return bCount - aCount // Больше к меньшему
+        } else {
+          return aCount - bCount // Меньше к большему
         }
       }
       
@@ -333,11 +382,20 @@ const SalesTeamTable: React.FC = () => {
               </th>
               <th 
                 className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
-                onClick={() => handleSort('brandsCount')}
+                onClick={() => handleSort('brandsInPortfolio')}
               >
                 <div className="flex items-center justify-center space-x-1">
-                  <span>Brands Count</span>
-                  {getSortIcon('brandsCount')}
+                  <span>Brands Portfolio</span>
+                  {getSortIcon('brandsInPortfolio')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-blue-700 hover:bg-opacity-80 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 rounded-3xl mx-2"
+                onClick={() => handleSort('buySideBusiness')}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Business Portfolio</span>
+                  {getSortIcon('buySideBusiness')}
                 </div>
               </th>
               <th 
@@ -381,7 +439,89 @@ const SalesTeamTable: React.FC = () => {
                   <div className="text-sm text-white">{dealer.checklist}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="text-sm text-white">{dealer.brandsCount}</div>
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                    {dealer.brandsInPortfolio && dealer.brandsInPortfolio.length > 0 ? (
+                      getBrandIcons(dealer.brandsInPortfolio).map((brand, index) => (
+                        <div
+                          key={index}
+                          className="relative group"
+                          title={brand.name}
+                        >
+                          {brand.iconPath ? (
+                            <img
+                              src={brand.iconPath}
+                              alt={brand.name}
+                              className="w-[40px] h-[40px] object-contain rounded-lg hover:scale-125 transition-transform duration-200 bg-white bg-opacity-10 p-0.5"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                if (target.nextSibling) {
+                                  (target.nextSibling as HTMLElement).style.display = 'inline-flex'
+                                }
+                              }}
+                            />
+                          ) : null}
+                          {!brand.iconPath && (
+                            <div className="w-[40px] h-[40px] bg-blue-500 bg-opacity-50 rounded-lg flex items-center justify-center text-white text-xs font-semibold">
+                              {brand.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            {brand.name}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                    {dealer.buySideBusiness && dealer.buySideBusiness.length > 0 ? (
+                      getBusinessIcons(dealer.buySideBusiness).map((business, index) => {
+                        // Отладка для первого бизнеса первого дилера
+                        if (index === 0 && dealers && dealers[0]?.id === dealer.id) {
+                          console.log('Rendering business icon:', business)
+                        }
+                        return (
+                        <div
+                          key={index}
+                          className="relative group"
+                          title={business.name}
+                        >
+                          {business.iconPath ? (
+                            <img
+                              src={business.iconPath}
+                              alt={business.name}
+                              className="w-[40px] h-[40px] object-contain rounded-lg hover:scale-125 transition-transform duration-200 bg-white bg-opacity-10 p-0.5"
+                              onError={(e) => {
+                                // Fallback если иконка не загрузилась
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                if (target.nextSibling) {
+                                  (target.nextSibling as HTMLElement).style.display = 'inline-flex'
+                                }
+                              }}
+                            />
+                          ) : null}
+                          {/* Fallback если иконка не найдена */}
+                          {!business.iconPath && (
+                            <div className="w-[40px] h-[40px] bg-blue-500 bg-opacity-50 rounded-lg flex items-center justify-center text-white text-xs font-semibold">
+                              {business.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {/* Tooltip с названием бизнеса */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            {business.name}
+                          </div>
+                        </div>
+                        )
+                      })
+                    ) : (
+                      <span className="text-gray-400 text-sm" title={`Debug: buySideBusiness = ${JSON.stringify(dealer.buySideBusiness)}`}>-</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className={`text-sm font-medium ${

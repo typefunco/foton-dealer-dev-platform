@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
 import { 
   uploadExcelFile, 
+  uploadBrandsFile,
   getExcelTables, 
   getExcelTableData, 
   deleteExcelTable,
   ExcelUploadResponse,
+  BrandsUploadResponse,
   ExcelTableMetadata,
   ExcelTableData,
   ExcelFilePreview,
@@ -15,8 +17,9 @@ export interface UseExcelUploadState {
   isUploading: boolean;
   uploadProgress: number;
   uploadStatus: 'idle' | 'preview' | 'uploading' | 'success' | 'error';
+  uploadType: 'dealer_data' | 'brands';
   error: string | null;
-  result: ExcelUploadResponse | null;
+  result: ExcelUploadResponse | BrandsUploadResponse | null;
   preview: ExcelFilePreview | null;
 }
 
@@ -25,6 +28,7 @@ export const useExcelUpload = () => {
     isUploading: false,
     uploadProgress: 0,
     uploadStatus: 'idle',
+    uploadType: 'dealer_data',
     error: null,
     result: null,
     preview: null,
@@ -35,10 +39,15 @@ export const useExcelUpload = () => {
       isUploading: false,
       uploadProgress: 0,
       uploadStatus: 'idle',
+      uploadType: 'dealer_data',
       error: null,
       result: null,
       preview: null,
     });
+  }, []);
+
+  const setUploadType = useCallback((type: 'dealer_data' | 'brands') => {
+    setState(prev => ({ ...prev, uploadType: type }));
   }, []);
 
   const previewFile = useCallback((file: File) => {
@@ -51,7 +60,7 @@ export const useExcelUpload = () => {
     }));
   }, []);
 
-  const uploadFile = useCallback(async (file: File) => {
+  const uploadFile = async (file: File) => {
     setState(prev => ({
       ...prev,
       isUploading: true,
@@ -61,6 +70,9 @@ export const useExcelUpload = () => {
     }));
 
     try {
+      // Получаем текущий тип загрузки перед использованием
+      const currentType = state.uploadType;
+      
       // Симуляция прогресса загрузки
       const progressInterval = setInterval(() => {
         setState(prev => ({
@@ -69,7 +81,9 @@ export const useExcelUpload = () => {
         }));
       }, 200);
 
-      const result = await uploadExcelFile(file);
+      const result = currentType === 'brands' 
+        ? await uploadBrandsFile(file)
+        : await uploadExcelFile(file);
 
       clearInterval(progressInterval);
 
@@ -88,13 +102,14 @@ export const useExcelUpload = () => {
         error: error instanceof Error ? error.message : 'Upload failed',
       }));
     }
-  }, []);
+  };
 
   return {
     ...state,
     previewFile,
     uploadFile,
     resetState,
+    setUploadType,
   };
 };
 

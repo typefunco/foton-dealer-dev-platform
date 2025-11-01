@@ -175,6 +175,7 @@ func (s *Server) RunServer() {
 
 	// Excel operations routes (только для админов)
 	admin.POST("/excel/upload", s.UploadExcelFile)                  // Загрузка Excel файла
+	admin.POST("/excel/brands/upload", s.UploadBrandsFile)          // Загрузка файла с брендами и побочными бизнесами
 	admin.GET("/excel/tables", s.GetExcelTables)                    // Список созданных таблиц
 	admin.GET("/excel/tables/:tableName", s.GetExcelTableMetadata)  // Метаданные таблицы
 	admin.GET("/excel/tables/:tableName/data", s.GetExcelTableData) // Данные таблицы

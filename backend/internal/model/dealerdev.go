@@ -42,12 +42,14 @@ type DealerDevelopment struct {
 // Используется для API ответов с объединёнными данными.
 type DealerDevelopmentWithDetails struct {
 	DealerDevelopment
-	DealerNameRu string `json:"dealer_name_ru"`
-	DealerNameEn string `json:"dealer_name_en"`
-	City         string `json:"city"`
-	Region       string `json:"region"`
-	Manager      string `json:"manager"`
-	Ruft         string `json:"ruft"`
+	DealerNameRu      string `json:"dealer_name_ru"`
+	DealerNameEn      string `json:"dealer_name_en"`
+	City              string `json:"city"`
+	Region            string `json:"region"`
+	Manager           string `json:"manager"`
+	Ruft              string `json:"ruft"`
+	BrandsInPortfolio string `json:"brands_in_portfolio"` // Строка брендов через запятую из Excel
+	BySideBusinesses  string `json:"by_side_businesses"`  // Строка бизнесов через запятую из Excel
 }
 
 // DealerDevWithDetails - алиас для совместимости со старым кодом.

@@ -34,6 +34,12 @@ type DynamicTableRepository interface {
 
 	// BeginTransaction начинает транзакцию
 	BeginTransaction(ctx context.Context) (pgx.Tx, error)
+
+	// UpdateDealerBrands обновляет бренды и побочные бизнесы дилеров
+	UpdateDealerBrands(ctx context.Context, tx pgx.Tx, year int, quarter string, updates []model.BrandsUpdate) (int, []string, error)
+
+	// CheckDealerExists проверяет существование дилера в таблице
+	CheckDealerExists(ctx context.Context, year int, quarter string, dealerName string, city string) (bool, error)
 }
 
 // dynamicTableRepository реализация репозитория для динамических таблиц.
@@ -69,6 +75,10 @@ func (r *dynamicTableRepository) CreateDealerNetTable(ctx context.Context, tx pg
 			columnDefs = append(columnDefs, fmt.Sprintf("%s TEXT", col))
 		}
 	}
+
+	// Добавляем специальные поля для brands и byside_businesses
+	columnDefs = append(columnDefs, "brands_in_portfolio TEXT")
+	columnDefs = append(columnDefs, "byside_businesses TEXT")
 
 	columnDefs = append(columnDefs, "created_at TIMESTAMP DEFAULT NOW()")
 
@@ -468,4 +478,84 @@ func (r *dynamicTableRepository) buildInsertQuery(tableName string, columns []st
 		strings.Join(placeholders, ", "))
 
 	return query
+}
+
+// UpdateDealerBrands обновляет бренды и побочные бизнесы дилеров.
+func (r *dynamicTableRepository) UpdateDealerBrands(ctx context.Context, tx pgx.Tx, year int, quarter string, updates []model.BrandsUpdate) (int, []string, error) {
+	tableName := r.GetDealerNetTableName(year, quarter)
+
+	var updatedCount int
+	var notFoundDealers []string
+
+	for _, update := range updates {
+		// Проверяем, существует ли дилер
+		exists, err := r.CheckDealerExists(ctx, year, quarter, update.DealerName, update.City)
+		if err != nil {
+			return 0, nil, fmt.Errorf("failed to check dealer existence: %w", err)
+		}
+
+		if !exists {
+			notFoundDealers = append(notFoundDealers, fmt.Sprintf("%s (%s)", update.DealerName, update.City))
+			continue
+		}
+
+		// Обновляем бренды и побочные бизнесы
+		// Если city пустой, обновляем только по dealer, иначе по dealer + city
+		var query string
+		var args []interface{}
+
+		if update.City == "" {
+			query = fmt.Sprintf("UPDATE %s SET brands_in_portfolio = $1, byside_businesses = $2 WHERE dealer = $3", tableName)
+			args = []interface{}{update.Brands, update.BysideBusinesses, update.DealerName}
+		} else {
+			query = fmt.Sprintf("UPDATE %s SET brands_in_portfolio = $1, byside_businesses = $2 WHERE dealer = $3 AND city = $4", tableName)
+			args = []interface{}{update.Brands, update.BysideBusinesses, update.DealerName, update.City}
+		}
+
+		_, err = tx.Exec(ctx, query, args...)
+		if err != nil {
+			r.logger.Error("Failed to update dealer brands",
+				slog.String("dealer", update.DealerName),
+				slog.String("error", err.Error()),
+			)
+			return 0, nil, fmt.Errorf("failed to update dealer brands for %s: %w", update.DealerName, err)
+		}
+
+		updatedCount++
+	}
+
+	r.logger.Info("Updated dealer brands",
+		slog.String("table_name", tableName),
+		slog.Int("updated_count", updatedCount),
+		slog.Int("not_found_count", len(notFoundDealers)),
+	)
+
+	return updatedCount, notFoundDealers, nil
+}
+
+// CheckDealerExists проверяет существование дилера в таблице.
+func (r *dynamicTableRepository) CheckDealerExists(ctx context.Context, year int, quarter string, dealerName string, city string) (bool, error) {
+	tableName := r.GetDealerNetTableName(year, quarter)
+
+	// Если city пустой, ищем только по dealer
+	if city == "" {
+		query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE dealer = $1)", tableName)
+		var exists bool
+		err := r.pool.QueryRow(ctx, query, dealerName).Scan(&exists)
+		if err != nil {
+			return false, fmt.Errorf("failed to check dealer existence: %w", err)
+		}
+		return exists, nil
+	}
+
+	// Ищем по dealer AND city
+	query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE dealer = $1 AND city = $2)", tableName)
+
+	var exists bool
+	err := r.pool.QueryRow(ctx, query, dealerName, city).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check dealer existence: %w", err)
+	}
+
+	return exists, nil
 }

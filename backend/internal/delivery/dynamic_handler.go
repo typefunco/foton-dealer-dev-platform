@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/typefunco/dealer_dev_platform/internal/model"
@@ -175,16 +176,104 @@ func (s *Server) getDealerDevData(c echo.Context, filters *model.FilterParams) (
 	// Преобразуем в API response
 	response := make([]DealerDevResponse, 0, len(ddList))
 	for _, dd := range ddList {
+		// Преобразуем строку брендов в массив строк
+		var brandsInPortfolio []string
+		if dd.BrandsInPortfolio != "" {
+			// Основной формат: "Brand1, Brand2, Brand3" (запятая + один пробел)
+			// Также обрабатываем другие форматы: "Brand1,Brand2", "Brand1; Brand2" и т.д.
+
+			// Сначала обрабатываем основной формат ", " (запятая + один пробел)
+			brands := strings.Split(dd.BrandsInPortfolio, ", ")
+
+			// Если разделитель ", " не найден (результат - одна строка, идентичная исходной),
+			// пробуем другие разделители
+			if len(brands) == 1 && brands[0] == dd.BrandsInPortfolio {
+				// Пробуем другие разделители в порядке приоритета
+				separators := []string{"; ", ",", ";", "\n", "|"}
+				for _, sep := range separators {
+					if strings.Contains(dd.BrandsInPortfolio, sep) {
+						brands = strings.Split(dd.BrandsInPortfolio, sep)
+						break
+					}
+				}
+			}
+
+			// Очищаем от пробелов и добавляем в результат
+			for _, brand := range brands {
+				trimmed := strings.TrimSpace(brand)
+				// Убираем запятые в конце, если остались
+				trimmed = strings.TrimRight(trimmed, ",")
+				trimmed = strings.TrimSpace(trimmed)
+				if trimmed != "" {
+					brandsInPortfolio = append(brandsInPortfolio, trimmed)
+				}
+			}
+
+			// Логируем для отладки (первые 3 дилера с брендами)
+			if len(response) < 3 && len(brandsInPortfolio) > 0 {
+				s.logger.Info("getDealerDevData: parsed brands",
+					"dealer_id", dd.DealerID,
+					"dealer_name", dd.DealerNameRu,
+					"brands_in_portfolio_raw", dd.BrandsInPortfolio,
+					"brands_in_portfolio_parsed", brandsInPortfolio,
+				)
+			}
+		}
+
+		// Преобразуем строку бизнесов в массив строк
+		var buySideBusiness []string
+		if dd.BySideBusinesses != "" {
+			// Основной формат: "Business1, Business2, Business3" (запятая + один пробел)
+			// Также обрабатываем другие форматы: "Business1,Business2", "Business1; Business2" и т.д.
+
+			// Сначала обрабатываем основной формат ", " (запятая + один пробел)
+			businesses := strings.Split(dd.BySideBusinesses, ", ")
+
+			// Если разделитель ", " не найден (результат - одна строка, идентичная исходной),
+			// пробуем другие разделители
+			if len(businesses) == 1 && businesses[0] == dd.BySideBusinesses {
+				// Пробуем другие разделители в порядке приоритета
+				separators := []string{"; ", ",", ";", "\n", "|"}
+				for _, sep := range separators {
+					if strings.Contains(dd.BySideBusinesses, sep) {
+						businesses = strings.Split(dd.BySideBusinesses, sep)
+						break
+					}
+				}
+			}
+
+			// Очищаем от пробелов и добавляем в результат
+			for _, business := range businesses {
+				trimmed := strings.TrimSpace(business)
+				// Убираем запятые в конце, если остались
+				trimmed = strings.TrimRight(trimmed, ",")
+				trimmed = strings.TrimSpace(trimmed)
+				if trimmed != "" {
+					buySideBusiness = append(buySideBusiness, trimmed)
+				}
+			}
+
+			// Логируем для отладки (первые 3 дилера с бизнесами)
+			if len(response) < 3 && len(buySideBusiness) > 0 {
+				s.logger.Info("getDealerDevData: parsed businesses",
+					"dealer_id", dd.DealerID,
+					"dealer_name", dd.DealerNameRu,
+					"by_side_businesses_raw", dd.BySideBusinesses,
+					"by_side_businesses_parsed", buySideBusiness,
+				)
+			}
+		}
+
 		response = append(response, DealerDevResponse{
 			ID:                      strconv.Itoa(dd.DealerID),
 			Name:                    dd.DealerNameRu,
 			City:                    dd.City,
 			Class:                   dd.DealershipClass,
 			Checklist:               dd.CheckListScore,
-			BrandsInPortfolio:       []string{},
-			BrandsCount:             0,
+			BrandsInPortfolio:       brandsInPortfolio,
+			BrandsCount:             len(brandsInPortfolio),
 			Branding:                dd.Branding,
-			BuySideBusiness:         []string{},
+			BuySideBusiness:         buySideBusiness,
 			DealerDevRecommendation: dd.DDRecommendation,
 		})
 	}

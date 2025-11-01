@@ -867,3 +867,256 @@ func (s *Service) buildUnifiedInsertQuery(tableName string, columns []string, ro
 
 	return query
 }
+
+// ProcessBrandsFile обрабатывает файл с брендами и обновляет существующие записи в БД.
+func (s *Service) ProcessBrandsFile(ctx context.Context, file io.Reader, fileName string) (*model.BrandsUploadResponse, error) {
+	startTime := time.Now()
+
+	s.logger.Info("Processing brands file",
+		slog.String("file_name", fileName),
+	)
+
+	// Парсим имя файла для извлечения года и квартала
+	fileInfo, err := s.parseBrandsFileName(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse file name: %w", err)
+	}
+
+	// Проверяем существование таблицы
+	exists, err := s.dynamicRepo.TableExists(ctx, fileInfo.TableName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if !exists {
+		return nil, fmt.Errorf("table %s does not exist", fileInfo.TableName)
+	}
+
+	// Читаем Excel файл
+	f, err := excelize.OpenReader(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open Excel file: %w", err)
+	}
+	defer f.Close()
+
+	// Получаем первый лист
+	sheetList := f.GetSheetList()
+	if len(sheetList) == 0 {
+		return nil, fmt.Errorf("Excel file contains no sheets")
+	}
+
+	// Парсим лист с брендами
+	updates, err := s.parseBrandsSheet(f, sheetList[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse brands sheet: %w", err)
+	}
+
+	// Начинаем транзакцию
+	tx, err := s.dynamicRepo.BeginTransaction(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Обновляем бренды в БД
+	updatedCount, notFoundDealers, err := s.dynamicRepo.UpdateDealerBrands(ctx, tx, fileInfo.Year, fileInfo.Quarter, updates)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update dealer brands: %w", err)
+	}
+
+	// Коммитим транзакцию
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	processingTime := time.Since(startTime)
+
+	message := fmt.Sprintf("Обновлено %d дилеров", updatedCount)
+	if len(notFoundDealers) > 0 {
+		message = fmt.Sprintf("%s (%d не найдено)", message, len(notFoundDealers))
+	}
+
+	return &model.BrandsUploadResponse{
+		Status:          "success",
+		Message:         message,
+		UpdatedCount:    updatedCount,
+		NotFoundDealers: notFoundDealers,
+		ProcessingTime:  processingTime.String(),
+	}, nil
+}
+
+// parseBrandsFileName парсит имя файла и извлекает год и квартал.
+func (s *Service) parseBrandsFileName(fileName string) (*model.BrandsFileInfo, error) {
+	// Убираем расширение
+	name := strings.TrimSuffix(fileName, ".xlsx")
+	name = strings.TrimSuffix(name, ".XLSX")
+
+	// Извлекаем год и квартал: Name_2024_Q3.xlsx, Name-2024-Q3.xlsx, Name_2024_3.xlsx
+	re := regexp.MustCompile(`(\d{4})[_-](Q?[1-4])`)
+	matches := re.FindStringSubmatch(name)
+
+	if len(matches) < 3 {
+		return nil, fmt.Errorf("invalid file name format: %s", fileName)
+	}
+
+	year, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid year in file name: %w", err)
+	}
+
+	quarter := matches[2]
+	// Если квартал без "Q", добавляем
+	if !strings.HasPrefix(quarter, "Q") {
+		quarter = "Q" + quarter
+	}
+
+	tableName := fmt.Sprintf("dealer_net_%d_%s", year, strings.ToLower(quarter))
+
+	return &model.BrandsFileInfo{
+		FileName:  fileName,
+		Year:      year,
+		Quarter:   quarter,
+		TableName: tableName,
+	}, nil
+}
+
+// parseBrandsSheet парсит лист Excel с брендами.
+func (s *Service) parseBrandsSheet(f *excelize.File, sheetName string) ([]model.BrandsUpdate, error) {
+	rows, err := f.GetRows(sheetName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rows: %w", err)
+	}
+
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("sheet is empty")
+	}
+
+	// Первая строка - заголовки
+	headers := rows[0]
+
+	// Находим индексы нужных колонок
+	dealerIndex := -1
+	cityIndex := -1
+	brandsIndex := -1
+	bysideIndex := -1
+
+	for i, header := range headers {
+		lowerHeader := strings.ToLower(header)
+		switch {
+		case strings.Contains(lowerHeader, "dealer") && strings.Contains(lowerHeader, "name"):
+			dealerIndex = i
+		case strings.Contains(lowerHeader, "dealer") && strings.Contains(lowerHeader, "city"):
+			cityIndex = i
+		case strings.Contains(lowerHeader, "brand"):
+			brandsIndex = i
+		case strings.Contains(lowerHeader, "byside") ||
+			strings.Contains(lowerHeader, "side business") ||
+			strings.Contains(lowerHeader, "side businesses") ||
+			strings.Contains(lowerHeader, "by-side") ||
+			(lowerHeader == "bv-sice businesses"): // опечатка в файле пользователя
+			bysideIndex = i
+		}
+	}
+
+	// Логируем найденные колонки
+	s.logger.Info("Found columns",
+		"dealer", dealerIndex,
+		"city", cityIndex,
+		"brands", brandsIndex,
+		"byside", bysideIndex,
+		"headers", headers)
+
+	if dealerIndex == -1 {
+		return nil, fmt.Errorf("dealer column not found")
+	}
+
+	var updates []model.BrandsUpdate
+
+	// Парсим строки данных
+	for rowIndex, row := range rows[1:] {
+		if len(row) == 0 {
+			continue
+		}
+
+		dealerName := s.getCellValue(row, dealerIndex)
+		if dealerName == "" {
+			continue // Пропускаем строки без названия дилера
+		}
+
+		city := ""
+		if cityIndex != -1 && cityIndex < len(row) {
+			city = s.getCellValue(row, cityIndex)
+		}
+
+		// Собираем бренды из нескольких колонок
+		var brandsList []string
+		if brandsIndex != -1 && brandsIndex < len(row) {
+			brands := s.getCellValue(row, brandsIndex)
+			brandsList = append(brandsList, s.parseBrandsString(brands)...)
+		}
+
+		// Собираем побочные бизнесы из нескольких колонок
+		var bysideList []string
+		if bysideIndex != -1 && bysideIndex < len(row) {
+			byside := s.getCellValue(row, bysideIndex)
+			bysideList = append(bysideList, s.parseBrandsString(byside)...)
+		}
+
+		// Примечание: дополнительные колонки не обрабатываем
+		// Используем только основные колонки Brands и By-side Businesses
+
+		// Объединяем списки через запятую
+		brands := strings.Join(brandsList, ", ")
+		byside := strings.Join(bysideList, ", ")
+
+		updates = append(updates, model.BrandsUpdate{
+			DealerName:       dealerName,
+			City:             city,
+			Brands:           brands,
+			BysideBusinesses: byside,
+		})
+
+		if rowIndex < 3 {
+			s.logger.Info("Parsed brands update",
+				slog.String("dealer", dealerName),
+				slog.String("brands", brands),
+				slog.String("byside", byside),
+			)
+		}
+	}
+
+	s.logger.Info("Parsed brands sheet",
+		slog.String("sheet", sheetName),
+		slog.Int("total_updates", len(updates)),
+	)
+
+	return updates, nil
+}
+
+// getCellValue получает значение ячейки по индексу.
+func (s *Service) getCellValue(row []string, index int) string {
+	if index < 0 || index >= len(row) {
+		return ""
+	}
+	return strings.TrimSpace(row[index])
+}
+
+// parseBrandsString парсит строку с брендами/бизнесами через запятую и возвращает список.
+func (s *Service) parseBrandsString(str string) []string {
+	if str == "" {
+		return []string{}
+	}
+
+	// Разделяем по запятой
+	parts := strings.Split(str, ",")
+	result := make([]string, 0, len(parts))
+
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+
+	return result
+}

@@ -341,3 +341,84 @@ func (s *Server) getTableCount(ctx context.Context, tableName string) (int, erro
 
 	return count, nil
 }
+
+// UploadBrandsFile обрабатывает загрузку файла с брендами и побочными бизнесами.
+// @Summary Upload brands file
+// @Description Загружает Excel файл с брендами и обновляет существующие записи дилеров в БД
+// @Tags excel
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Excel file with brands and byside businesses (.xlsx)"
+// @Success 200 {object} model.BrandsUploadResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/excel/brands/upload [post]
+func (s *Server) UploadBrandsFile(c echo.Context) error {
+	// Получаем файл из формы
+	file, err := c.FormFile("file")
+	if err != nil {
+		s.logger.Error("Failed to get file from form", slog.String("error", err.Error()))
+		return c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "No file provided",
+		})
+	}
+
+	// Проверяем размер файла
+	if file.Size > s.maxFileSize {
+		s.logger.Error("File too large",
+			slog.String("file_name", file.Filename),
+			slog.Int64("file_size", file.Size),
+			slog.Int64("max_size", s.maxFileSize),
+		)
+		return c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{
+			Error: fmt.Sprintf("File size exceeds maximum allowed size of %d MB", s.maxFileSize/(1024*1024)),
+		})
+	}
+
+	// Проверяем расширение файла
+	if !isExcelFile(file.Filename) {
+		s.logger.Error("Invalid file type", slog.String("file_name", file.Filename))
+		return c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "Only .xlsx files are supported",
+		})
+	}
+
+	// Открываем файл
+	src, err := file.Open()
+	if err != nil {
+		s.logger.Error("Failed to open uploaded file",
+			slog.String("file_name", file.Filename),
+			slog.String("error", err.Error()),
+		)
+		return c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error: "Failed to open uploaded file",
+		})
+	}
+	defer src.Close()
+
+	s.logger.Info("Processing brands file",
+		slog.String("file_name", file.Filename),
+		slog.Int64("file_size", file.Size),
+	)
+
+	// Обрабатываем файл
+	result, err := s.excelService.ProcessBrandsFile(c.Request().Context(), src, file.Filename)
+	if err != nil {
+		s.logger.Error("Failed to process brands file",
+			slog.String("file_name", file.Filename),
+			slog.String("error", err.Error()),
+		)
+		return c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error: fmt.Sprintf("Failed to process brands file: %s", err.Error()),
+		})
+	}
+
+	s.logger.Info("Brands file processed successfully",
+		slog.String("file_name", file.Filename),
+		slog.Int("updated_count", result.UpdatedCount),
+		slog.Int("not_found_count", len(result.NotFoundDealers)),
+		slog.String("processing_time", result.ProcessingTime),
+	)
+
+	return c.JSON(http.StatusOK, result)
+}

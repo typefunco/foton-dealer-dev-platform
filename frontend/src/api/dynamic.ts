@@ -20,6 +20,22 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Добавляем interceptor для обработки ошибок авторизации
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Токен невалиден или истек - очищаем localStorage и перенаправляем на логин
+      console.warn('Unauthorized: token expired or invalid')
+      localStorage.removeItem('auth_token')
+      // Перенаправляем на страницу логина, сохранив текущий путь для редиректа после логина
+      const currentPath = window.location.pathname + window.location.search
+      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Типы для динамического API
 export interface DynamicTableParams {
   year?: number

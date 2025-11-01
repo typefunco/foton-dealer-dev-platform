@@ -8,6 +8,14 @@ export interface ExcelUploadResponse {
   processing_time: number;
 }
 
+export interface BrandsUploadResponse {
+  status: string;
+  message: string;
+  updated_count: number;
+  not_found_dealers: string[];
+  processing_time: string;
+}
+
 export interface ExcelTableMetadata {
   table_name: string;
   rows_count: number;
@@ -189,4 +197,27 @@ export const parseFileName = (fileName: string): ExcelFilePreview => {
     estimatedRows: 0, // Будет заполнено после загрузки
     sheets: [], // Будет заполнено после загрузки
   };
+};
+
+// Загрузка файла с брендами и побочными бизнесами
+export const uploadBrandsFile = async (file: File): Promise<BrandsUploadResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/api/admin/excel/brands/upload`, {
+    method: 'POST',
+    headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload brands file');
+  }
+
+  return response.json();
 };
