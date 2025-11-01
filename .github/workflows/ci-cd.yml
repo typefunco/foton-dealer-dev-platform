@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master, main, develop]
   pull_request:
-    branches: [master]
+    branches: [master, main]
   workflow_dispatch:
 
 jobs:
@@ -20,20 +20,34 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.24'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: |
+          cd backend
+          go mod download
 
       - name: Build Backend
         run: |
-          cd backend  # Если backend в отдельной папке
-          go build -v -o app .
+          cd backend
+          CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/app/main.go
 
       - name: Verify build
         run: |
-          if [ ! -f backend/app ]; then
-            echo "Backend build failed"
+          if [ ! -f backend/main ]; then
+            echo "❌ Backend build failed"
             exit 1
           fi
-          echo "Backend built successfully"
+          echo "✅ Backend built successfully"
+          ls -lh backend/main
 
   # Сборка Frontend
   build-frontend:
@@ -46,27 +60,33 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # Укажите вашу версию Node
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json  # Путь к вашему package-lock.json
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
 
       - name: Install dependencies
         run: |
-          cd frontend  # Если frontend в отдельной папке
-          npm ci
+          cd frontend
+          yarn install --frozen-lockfile
 
       - name: Build Frontend
         run: |
           cd frontend
-          npm run build
+          yarn build
 
       - name: Verify build
         run: |
-          if [ ! -d frontend/build ] && [ ! -d frontend/dist ]; then
-            echo "Frontend build failed"
+          if [ ! -d frontend/dist ]; then
+            echo "❌ Frontend build failed - dist directory not found"
             exit 1
           fi
-          echo "Frontend built successfully"
+          echo "✅ Frontend built successfully"
+          ls -lh frontend/dist | head -10
 
   # Деплой на Production (с manual approval)
   deploy-production:
@@ -76,8 +96,8 @@ jobs:
     environment:
       name: production
       url: http://77.223.123.147
-    # Запускается только для main ветки
-    if: github.ref == 'refs/heads/main'
+    # Запускается только для main/master ветки
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout code
@@ -105,19 +125,25 @@ jobs:
             cd $PROJECT_PATH || { echo "❌ Project directory not found"; exit 1; }
           
             echo "📥 Pulling latest changes..."
-            git pull origin main
+            # Определяем текущую ветку
+            BRANCH=$(git branch --show-current || echo "main")
+            git pull origin $BRANCH || git pull origin main || git pull origin master
           
             echo "🛑 Stopping containers (except PostgreSQL)..."
             # Останавливаем все контейнеры кроме PostgreSQL
-            docker-compose stop $(docker-compose ps --services | grep -v postgres)
+            docker-compose stop frontend backend 2>/dev/null || true
           
             echo "🔨 Rebuilding containers..."
-            # Пересобираем контейнеры (PostgreSQL будет пропущен, если уже запущен)
-            docker-compose build --no-cache
+            # Пересобираем контейнеры frontend и backend
+            docker-compose build frontend backend
           
             echo "🚀 Starting containers..."
             # Запускаем контейнеры
-            docker-compose up -d
+            docker-compose up -d frontend backend
+          
+            echo "⏳ Waiting for containers to be healthy..."
+            # Ждем пока контейнеры станут здоровыми
+            sleep 10
           
             echo "🧹 Cleaning up old images..."
             # Удаляем неиспользуемые образы
@@ -136,17 +162,37 @@ jobs:
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
+          PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
         run: |
-          ssh $SERVER_USER@$SERVER_HOST << 'ENDSSH'
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << 'ENDSSH'
             cd $PROJECT_PATH
-          
+            
+            echo "📊 Checking container status..."
+            docker-compose ps
+            
             # Проверяем что контейнеры запущены
-            if [ $(docker-compose ps -q | wc -l) -eq 0 ]; then
+            RUNNING_CONTAINERS=$(docker-compose ps -q | wc -l)
+            if [ "$RUNNING_CONTAINERS" -eq 0 ]; then
               echo "❌ No containers are running!"
               exit 1
             fi
-          
-            echo "✅ All services are running"
+            
+            # Проверяем что backend и frontend запущены
+            if ! docker-compose ps | grep -q "dealer_platform_backend.*Up"; then
+              echo "❌ Backend container is not running!"
+              exit 1
+            fi
+            
+            if ! docker-compose ps | grep -q "dealer_platform_frontend.*Up"; then
+              echo "❌ Frontend container is not running!"
+              exit 1
+            fi
+            
+            echo "✅ All services are running successfully"
+            
+            # Проверяем health checks
+            echo "🏥 Checking health status..."
+            docker-compose ps --format "table {{.Name}}\t{{.Status}}"
           ENDSSH
 
       - name: Cleanup SSH
